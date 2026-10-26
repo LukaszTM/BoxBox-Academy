@@ -21,3 +21,7 @@ Wyslij .bin.xz (albo wszystkie czesci) razem z .txt i .guide.json: GitHub, galaz
 folder recordings, Add file -> Upload files.
 
 Linux/macOS: python3 -m boxbox.ui.overlay --name <nazwa> --plan plany/<plan>.json
+
+GLOS MECHANIKA (jednorazowo, ElevenLabs):
+  wygeneruj_glos.bat   -> pyta o klucz API i ID glosu, pokazuje liczbe znakow, generuje assets\voice\raw\*.wav
+  Potem spakuj assets\voice\raw do ZIP i przeslij.

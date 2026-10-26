@@ -169,6 +169,8 @@ def build_zip(pdf: Path, target: Path) -> None:
         for pattern in ("*.py", "*.json"):
             for path in sorted((ROOT / "boxbox").rglob(pattern)):
                 z.write(path, path.relative_to(ROOT).as_posix())
+        z.write(ROOT / "tools" / "generate_voice_elevenlabs.py", "wygeneruj_glos.py")
+        z.write(ROOT / "assets" / "voice" / "phrases.csv", "phrases.csv")
         z.writestr("recordings/.gitkeep", "")
 
 

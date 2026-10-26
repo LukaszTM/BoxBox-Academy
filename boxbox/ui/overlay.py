@@ -22,13 +22,14 @@ from boxbox.telemetry.udp import DEFAULT_PORT, listen
 from boxbox.tracks.detect import SpeedSample, detect_corners
 from boxbox.ui.overlay_model import (
     GUIDE_DIR, OverlayView, SessionPlan, TrackGuide, build_view, calibrate_guide, load_guide_for, load_plan,
-    save_guide,
+    save_guide, update_progress,
 )
 
 BG = "#101010"
 FG = "#f2f2f2"
 ACCENT = "#ff2d2d"
 CYAN = "#19e6e6"
+GREEN = "#3ddc3d"
 
 
 class Receiver(threading.Thread):
@@ -104,9 +105,17 @@ class OverlayWindow:
         self.l_task = tk.Label(inner, text="", fg=ACCENT, bg=BG, font=font(24, True), wraplength=wrap, justify="left")
         self.l_note = tk.Label(inner, text="", fg="#cfcfcf", bg=BG, font=font(13), wraplength=wrap, justify="left")
         self.l_status = tk.Label(inner, text="", fg="#b0b0b0", bg=BG, font=font(11), wraplength=wrap, justify="left")
-        for w in (self.l_title, self.l_lap, self.l_goal, self.l_corner, self.l_task, self.l_note, self.l_status):
+        for w in (self.l_title, self.l_lap, self.l_goal, self.l_corner, self.l_task, self.l_note):
             w.pack(fill="x", **pad)
+        self.list_frame = tk.Frame(inner, bg=BG)
+        self.list_frame.pack(fill="x", padx=16, pady=(6, 2), anchor="w")
+        self.list_font = font(12)
+        self.list_font_bold = font(12, True)
+        self.list_labels: list[tk.Label] = []
+        self.list_keys: list[str] = []
+        self.l_status.pack(fill="x", **pad)
         tk.Label(inner, text="przeciągnij, aby przesunąć | Esc zamyka i kończy nagranie", fg="#808080", bg=BG, font=font(9)).pack(fill="x", padx=16, pady=(2, 8), anchor="w")
+        self.done: set[str] = set()
         self._drag: tuple[int, int] | None = None
         self.root.bind("<ButtonPress-1>", self._drag_start)
         self.root.bind("<B1-Motion>", self._drag_move)
@@ -133,7 +142,8 @@ class OverlayWindow:
                 self.calibrated = False
             if self.guide is not None and not self.calibrated and state.session is not None:
                 self._try_calibrate(self.receiver.completed, float(state.session.track_length_m))
-            view = build_view(state, self.plan, self.guide, packets, self.recording_name)
+            update_progress(self.done, state, self.plan, self.guide)
+            view = build_view(state, self.plan, self.guide, packets, self.recording_name, self.done)
         self.apply(view)
         if self.receiver.error:
             self.l_status.configure(text=self.receiver.error, fg=ACCENT)
@@ -166,6 +176,20 @@ class OverlayWindow:
         self.l_task.configure(text=view.task_line)
         self.l_note.configure(text=view.note_line)
         self.l_status.configure(text=view.status_line)
+        keys = [item.key for item in view.items]
+        if keys != self.list_keys:  # lista zmienia skład tylko po kalibracji przewodnika
+            for label in self.list_labels:
+                label.destroy()
+            self.list_labels = [
+                tk.Label(self.list_frame, text="", bg=BG, font=self.list_font, anchor="w", justify="left")
+                for _ in view.items
+            ]
+            for label in self.list_labels:
+                label.pack(fill="x", anchor="w")
+            self.list_keys = keys
+        for label, item in zip(self.list_labels, view.items):
+            mark = "✓ " if item.done else "○ "
+            label.configure(text=mark + item.label, fg=GREEN if item.done else FG)
 
     def close(self) -> None:
         self.closed = True

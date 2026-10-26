@@ -128,3 +128,34 @@ def test_resolve_plan(tmp_path: Path, capsys) -> None:
     assert ov.resolve_plan(str(PLANS / "pakiet2026.json"), None, PLANS).stem == "pakiet2026"
     assert ov.resolve_plan("nie-ma", None, PLANS) is None
     assert "Dostępne" in capsys.readouterr().out
+
+
+def test_checklist_and_progress() -> None:
+    from boxbox.ui.overlay_model import checklist, update_progress
+    plan = load_plan(PLANS / "bahrajn-tt.json")
+    guide = load_guide_for(3)
+    items = checklist(plan, guide, set())
+    labels = [i.label for i in items]
+    assert labels[0].startswith("Okr. 1:") and len([i for i in items if i.key.startswith("lap:")]) == 6
+    assert "    T1: HAMUJ ZA PÓŹNO" in labels and "    T9-T10: ZAHAMUJ I PUŚĆ HAMULEC NARAZ" in labels
+    assert len([i for i in items if i.key.startswith("task:4:")]) == 3 and len([i for i in items if i.key.startswith("task:5:")]) == 3
+    assert not any(i.done for i in items)
+
+    done: set[str] = set()
+    state = TelemetryState()
+    state.feed(session_packet())
+    state.feed(lap_packet(lap_distance=800.0, lap_num=4, lap_invalid=False))  # za T1 na okrążeniu 4
+    state.feed(telemetry_packet())
+    update_progress(done, state, plan, guide)
+    assert {"lap:1", "lap:2", "lap:3", "task:4:T1"} == done  # okrążenia 1-3 minęły, T1 zaliczone
+    state.feed(lap_packet(lap_distance=3000.0, lap_num=4, lap_invalid=False))
+    state.feed(telemetry_packet())
+    update_progress(done, state, plan, guide)
+    assert {"task:4:T4", "task:4:T9-T10"} <= done and "task:5:T1" not in done
+    state.feed(lap_packet(lap_distance=50.0, lap_num=6, lap_invalid=False, pit_status=1))  # zjazd
+    state.feed(telemetry_packet())
+    update_progress(done, state, plan, guide)
+    assert {"lap:4", "lap:5", "lap:6"} <= done
+    view = build_view(state, plan, guide, 10, None, done)
+    assert sum(1 for i in view.items if i.done) == 6 + 3
+    assert all(i.done for i in view.items if i.key.startswith("lap:"))

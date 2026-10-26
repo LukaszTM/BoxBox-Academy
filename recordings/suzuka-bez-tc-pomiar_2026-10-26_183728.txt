@@ -1,0 +1,6 @@
+Tor: Suzuka, Time Trial, okrążenia pomiarowe bez TC (format UDP 2025, 60 Hz, recorder z filtrem pakietów)
+Asysty (skrzynia / TC / ABS): automat / wył. / wł. (z telemetrii)
+Duch rywala: "kevdechef", 1:46,630 (indeks auta 3)
+Okrążenia (z telemetrii): 1: 1:45,354 (wyjazdowe, nieważne)  2: 1:47,709 (ważne)  3: 1:39,163 (ważne, najlepsze)  4: urwane na 439 m
+Okrążenia i błędy: brak celowych błędów, same okrążenia pomiarowe.
+Oryginalna nazwa pliku: suzuka-bez-tc_2026-10-26_183728.bin (85 MB).

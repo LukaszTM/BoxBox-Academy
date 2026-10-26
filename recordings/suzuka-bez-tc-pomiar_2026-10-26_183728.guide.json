@@ -1,0 +1,53 @@
+{
+  "track_id": 13,
+  "name": "Suzuka",
+  "length_m": 5807.0,
+  "accuracy": "skalibrowane z okrążenia (strefy hamowania)",
+  "corners": [
+    {
+      "name": "T1-T2",
+      "apex_m": 868.3,
+      "note": "pierwszy zakręt, długi prawy w dół"
+    },
+    {
+      "name": "T3-T7",
+      "apex_m": 1400.0,
+      "note": "esy, rytm bez mocnego hamowania"
+    },
+    {
+      "name": "T8",
+      "apex_m": 1950.0,
+      "note": "Dunlop, lewy pod górę"
+    },
+    {
+      "name": "T9-T10",
+      "apex_m": 2400.0,
+      "note": "Degner 1 i 2"
+    },
+    {
+      "name": "T11",
+      "apex_m": 2984.4,
+      "note": "spinka, 1.-2. bieg"
+    },
+    {
+      "name": "T12",
+      "apex_m": 3450.0,
+      "note": "długi prawy przed Spoon"
+    },
+    {
+      "name": "T13-T14",
+      "apex_m": 3850.0,
+      "note": "Spoon, podwójny lewy"
+    },
+    {
+      "name": "T15",
+      "apex_m": 4800.0,
+      "note": "130R, szybki lewy"
+    },
+    {
+      "name": "T16-T18",
+      "apex_m": 5466.2,
+      "note": "szykana Casio przed metą"
+    }
+  ]
+}

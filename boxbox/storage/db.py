@@ -14,7 +14,7 @@ _SAMPLE = struct.Struct("<fIHffbf")  # dystans, czas, prędkość, gaz, hamulec,
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS sessions (
     id INTEGER PRIMARY KEY,
-    session_uid INTEGER,
+    session_uid TEXT,  -- uint64 z gry nie mieści się w INTEGER SQLite (max 2^63-1)
     source TEXT NOT NULL,
     track_id INTEGER,
     track_name TEXT,
@@ -113,7 +113,7 @@ class Database:
 
     def save_session(self, session: SessionPacket | None, source: str) -> int:
         """Zwraca id sesji; ta sama sesja (session_uid) z tego samego źródła nie jest dublowana."""
-        uid = session.header.session_uid if session else None
+        uid = str(session.header.session_uid) if session else None
         row = self.conn.execute(
             "SELECT id FROM sessions WHERE session_uid IS ? AND source = ?", (uid, source)
         ).fetchone()

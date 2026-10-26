@@ -29,6 +29,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--db", type=Path, default=DEFAULT_DB, help=f"baza okrążeń SQLite (domyślnie {DEFAULT_DB})"
     )
+    parser.add_argument(
+        "--reference", choices=["best", "rival", "pb"], default="best",
+        help="z czym porównać zakręty: własne najlepsze okrążenie albo duch z Time Trial (tylko --replay)",
+    )
     return parser
 
 
@@ -79,7 +83,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.mode == "coach":
         source = str(args.replay) if args.replay else f"live {state.session.header.session_uid if state.session else ''}".strip()
         print()
-        print(report_laps(recorder, args.track, args.db, source))
+        print(report_laps(recorder, args.track, args.db, source, args.reference, args.replay))
     return 0
 
 

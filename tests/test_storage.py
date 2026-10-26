@@ -50,6 +50,17 @@ def test_save_and_query_laps(tmp_path: Path) -> None:
     assert db.best_lap(99) is None and db.reference(99) is None
 
 
+def test_session_uid_above_int64_is_stored(tmp_path: Path) -> None:
+    from boxbox.telemetry.header import PacketHeader, PacketId, pack_header
+    raw = bytearray(session_packet())
+    raw[:29] = pack_header(PacketHeader(2025, 25, 1, 0, 1, int(PacketId.SESSION), 2**64 - 1, 0.0, 0, 0, 3, 255))
+    session = parse_session(bytes(raw))
+    db = Database(tmp_path / "t.sqlite")
+    sid = db.save_session(session, source="x")
+    assert db.save_session(session, source="x") == sid
+    assert db.save_session(session, source="y") != sid
+
+
 def test_lap_without_time_is_not_reference(tmp_path: Path) -> None:
     db = Database(tmp_path / "t.sqlite")
     sid = db.save_session(None, source="x")

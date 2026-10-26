@@ -109,10 +109,10 @@ Siedem etapów, każdy z kryterium ukończenia, które da się sprawdzić bez dy
 
 **Etap 2 – Zakręty i okrążenie referencyjne (2 sesje)**
 
-- [ ] Format JSON toru: lista zakrętów z numerem, dystansem wejścia i wyjścia. Pliki dla 3 torów z nagrań. (Format, model z walidacją i narzędzie `python -m boxbox.tracks.detect <nagranie>` gotowe; pliki torów czekają na nagrania.)
+- [ ] Format JSON toru: lista zakrętów z numerem, dystansem wejścia i wyjścia. Pliki dla 3 torów z nagrań. (Format, model, `python -m boxbox.tracks.detect <nagranie> [--car rival]` gotowe; 1/3: `boxbox/tracks/data/3.json` Bahrajn, 8 stref hamowania z nagrania.)
 - [x] Dzielenie okrążenia na zakręty; dla każdego: minimalna prędkość, bieg w apexie, punkt hamowania, punkt pełnego gazu. (`boxbox/coach/laps.py`, `corners.py`, tabela: `python -m boxbox.coach.analyze <nagranie>`; sprawdzone na danych syntetycznych.)
 - [x] Zapis okrążeń do SQLite; najlepsze ważne okrążenie gracza staje się referencją. (`boxbox/storage/db.py`, domyślnie `data/boxbox.sqlite`.)
-- [ ] Kryterium: po odtworzeniu nagrania aplikacja wypisuje tabelę zakrętów z różnicą do referencji. (Działa na nagraniu syntetycznym: `python -m boxbox.app --replay <plik>`; do potwierdzenia na prawdziwym nagraniu z plikiem toru.)
+- [x] Kryterium: po odtworzeniu nagrania aplikacja wypisuje tabelę zakrętów z różnicą do referencji. (`python -m boxbox.app --replay recordings/bahrajn-tt_...bin.xz [--reference rival]`: różnica do własnego najlepszego albo do ducha rywala.)
 
 **Etap 3 – Trener gaz/hamulec (2–3 sesje)**
 

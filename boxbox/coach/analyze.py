@@ -8,6 +8,7 @@ from pathlib import Path
 
 from boxbox.coach.compare import compare_to_reference
 from boxbox.coach.corners import LapAnalysis, analyze_lap
+from boxbox.coach.ghost import extract_ghost_laps
 from boxbox.coach.laps import Lap, LapRecorder
 from boxbox.telemetry.replay import replay
 from boxbox.storage.db import Database
@@ -66,10 +67,17 @@ def render_table(analysis: LapAnalysis, lap: Lap, reference: LapAnalysis | None 
 
 
 def report_laps(
-    recorder: LapRecorder, track_file: Path | None, db_path: Path | None, source: str
+    recorder: LapRecorder,
+    track_file: Path | None,
+    db_path: Path | None,
+    source: str,
+    reference: str = "best",
+    recording: Path | None = None,
 ) -> str:
     """Zapisuje pełne okrążenia do bazy i zwraca tabele zakrętów z różnicą do referencji.
 
+    reference: "best" = najlepsze własne okrążenie z bazy; "rival"/"pb" = duch z Time Trial
+    (wymaga `recording`, bo ducha czytamy z pliku osobno).
     Bez pliku toru zwraca jedną linię z powodem; aplikacja ma wtedy działać dalej.
     """
     session = recorder.state.session
@@ -86,7 +94,16 @@ def report_laps(
     if not laps:
         return "Brak pełnych okrążeń."
     analyses = {lap.number: analyze_lap(lap, track) for lap in laps}
-    reference: LapAnalysis | None = None
+    ref_analysis: LapAnalysis | None = None
+    ref_label = ""
+    if reference in ("rival", "pb") and recording is not None:
+        ghost = extract_ghost_laps(recording, reference)  # type: ignore[arg-type]
+        best = ghost.best_lap(track.length_m) if ghost else None
+        if ghost is None or best is None:
+            ref_label = f"brak ducha ({reference}) w nagraniu, porównanie do własnego najlepszego"
+        else:
+            ref_analysis = analyze_lap(best, track)
+            ref_label = f"referencja: duch {ghost.name or reference} ({format_time(best.lap_time_ms)})"
     if db_path is not None:
         db = Database(db_path)
         session_id = db.save_session(session, source=source)
@@ -98,12 +115,14 @@ def report_laps(
                 traction_control=status.traction_control if status else None,
                 abs_on=status.anti_lock_brakes if status else None,
             )
-        ref = db.reference(track.track_id)
-        reference = ref.analysis if ref else None
+        if ref_analysis is None:
+            ref = db.reference(track.track_id)
+            ref_analysis = ref.analysis if ref else None
         db.close()
-    lines = [f"{track.name}, {len(track.corners)} zakrętów, {len(laps)} pełnych okrążeń", ""]
+    head = f"{track.name}, {len(track.corners)} zakrętów, {len(laps)} pełnych okrążeń"
+    lines = [head + (f"; {ref_label}" if ref_label else ""), ""]
     for lap in laps:
-        lines += [render_table(analyses[lap.number], lap, reference), ""]
+        lines += [render_table(analyses[lap.number], lap, ref_analysis), ""]
     return "\n".join(lines)
 
 
@@ -112,10 +131,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("recording", type=Path)
     parser.add_argument("--track", type=Path, help="plik JSON toru; domyślnie wg track_id z nagrania")
     parser.add_argument("--db", type=Path, help="baza SQLite; bez niej tylko tabela, bez zapisu i referencji")
+    parser.add_argument("--reference", choices=["best", "rival", "pb"], default="best", help="z czym porównywać")
     args = parser.parse_args(argv)
 
     recorder = record_laps(args.recording)
-    text = report_laps(recorder, args.track, args.db, str(args.recording))
+    text = report_laps(recorder, args.track, args.db, str(args.recording), args.reference, args.recording)
     print(text)
     return 0 if "Okrążenie" in text else 1
 

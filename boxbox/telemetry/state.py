@@ -11,6 +11,7 @@ from boxbox.telemetry.car_telemetry2 import CarTelemetry2Packet, parse_car_telem
 from boxbox.telemetry.event import EventPacket, parse_event
 from boxbox.telemetry.header import SUPPORTED_FORMATS, PacketId, parse_header
 from boxbox.telemetry.lap_data import LapDataPacket, parse_lap_data
+from boxbox.telemetry.participants import ParticipantsPacket, parse_participants
 from boxbox.telemetry.session import SessionPacket, parse_session
 
 # id pakietu -> (nazwa pola w TelemetryState, parser)
@@ -21,6 +22,7 @@ _PARSERS: dict[PacketId, tuple[str, Callable[[bytes], Any]]] = {
     PacketId.CAR_STATUS: ("status", parse_car_status),
     PacketId.CAR_DAMAGE: ("damage", parse_car_damage),
     PacketId.CAR_TELEMETRY_2: ("telemetry2", parse_car_telemetry2),
+    PacketId.PARTICIPANTS: ("participants", parse_participants),
 }
 
 
@@ -32,6 +34,7 @@ class TelemetryState:
     status: CarStatusPacket | None = None
     damage: CarDamagePacket | None = None
     telemetry2: CarTelemetry2Packet | None = None  # tylko format 2026
+    participants: ParticipantsPacket | None = None
     events: list[EventPacket] = field(default_factory=list)  # wszystkie zdarzenia po kolei
     packets: Counter[str] = field(default_factory=Counter)  # ile pakietów każdego typu
     errors: Counter[str] = field(default_factory=Counter)  # ile się nie sparsowało

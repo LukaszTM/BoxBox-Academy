@@ -17,6 +17,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from boxbox.coach.ghost import extract_ghost_laps
 from boxbox.telemetry.replay import replay
 from boxbox.telemetry.state import TelemetryState
 from boxbox.tracks.model import Corner, Track, save_track, track_path
@@ -50,6 +51,7 @@ def detect_corners(
     window: int = 9,
     edge_fraction: float = 0.9,
     max_reach_m: float = 400.0,
+    brake_reach_m: float = 150.0,
 ) -> tuple[Corner, ...]:
     """Zwraca zakręty ponumerowane od 1 w kolejności dystansu."""
     if len(samples) < window:
@@ -81,6 +83,27 @@ def detect_corners(
 
     brake = [s.brake for s in ordered]
     throttle = [s.throttle for s in ordered]
+
+    has_pedals = any(b is not None for b in brake)
+    if has_pedals:
+        # Minimum bez hamowania w `brake_reach_m` przed nim to szum (np. z prędkości ducha), nie zakręt.
+        # Oceniamy tylko tam, gdzie okno ma dane hamulca; bez nich minimum zostaje.
+        def braked_before(i: int) -> bool:
+            window = [brake[j] for j in range(i, -1, -1) if dist[i] - dist[j] <= brake_reach_m]
+            known = [b for b in window if b is not None]
+            return not known or any(b >= BRAKE_ON for b in known)
+
+        minima = [i for i in minima if braked_before(i)]
+        # Dwa minima bez pełnego gazu pomiędzy to jedna strefa hamowania (zostaje niższe).
+        merged: list[int] = []
+        for i in minima:
+            between = [throttle[j] for j in range(merged[-1], i) if throttle[j] is not None] if merged else []
+            if between and not any(th >= FULL_THROTTLE for th in between):  # type: ignore[operator]
+                if speed[i] < speed[merged[-1]]:
+                    merged[-1] = i
+                continue
+            merged.append(i)
+        minima = merged
 
     def entry_from_brake(i: int) -> int | None:
         j = i
@@ -115,7 +138,14 @@ def detect_corners(
             while exit_ < n - 1 and speed[exit_] < v_min + edge_fraction * (right - v_min):
                 exit_ += 1
         corners.append(Corner(k + 1, round(dist[entry], 1), round(dist[i], 1), round(dist[exit_], 1)))
-    return tuple(corners)
+    # Granice nie mogą na siebie nachodzić: wyjście kończy się najpóźniej metr przed następnym wejściem.
+    clipped = []
+    for k, c in enumerate(corners):
+        exit_m = c.exit_m
+        if k + 1 < len(corners) and exit_m >= corners[k + 1].entry_m:
+            exit_m = max(c.apex_m, corners[k + 1].entry_m - 1.0)
+        clipped.append(Corner(c.number, c.entry_m, c.apex_m, exit_m, c.name))
+    return tuple(clipped)
 
 
 @dataclass
@@ -165,9 +195,24 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, help="domyślnie boxbox/tracks/data/<track_id>.json")
     parser.add_argument("--min-drop", type=float, default=25.0, help="min. spadek prędkości w zakręcie (km/h)")
     parser.add_argument("--track-length", type=float, help="długość toru w m, jeśli brak pakietu Session")
+    parser.add_argument(
+        "--car", choices=["player", "rival", "pb"], default="player",
+        help="czyj przejazd: gracz albo duch z Time Trial (rywal / rekord osobisty)",
+    )
     args = parser.parse_args(argv)
 
     state, laps = collect_laps(args.recording)
+    source_note = ""
+    if args.car != "player":
+        ghost = extract_ghost_laps(args.recording, args.car)
+        if ghost is None:
+            print(f"Brak ducha ({args.car}) w nagraniu.")
+            return 1
+        laps = {
+            lap.number: LapSamples([SpeedSample(s.distance_m, s.speed_kmh, s.throttle, s.brake) for s in lap.samples])
+            for lap in ghost.laps
+        }
+        source_note = f" (duch: {ghost.name or args.car}, auto {ghost.car_index})"
     if state.session is None and args.track_length is None:
         print("Nagranie nie ma pakietu Session - podaj --track-length i --out.")
         return 1
@@ -182,10 +227,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"  okrążenie {num}: {lo:.0f}-{hi:.0f} m, {len(lap.samples)} próbek")
         return 1
     corners = detect_corners(laps[lap_num].samples, length, min_drop_kmh=args.min_drop)
-    track = Track(track_id=track_id, name=name, length_m=length, corners=corners, source=str(args.recording))
+    track = Track(
+        track_id=track_id, name=name, length_m=length, corners=corners, source=str(args.recording) + source_note
+    )
     out = args.out or track_path(track_id)
     save_track(track, out)
-    print(f"{name} ({length:.0f} m), okrążenie {lap_num}, {len(corners)} zakręty -> {out}")
+    print(f"{name} ({length:.0f} m), okrążenie {lap_num}{source_note}, {len(corners)} zakręty -> {out}")
     for c in corners:
         print(f"  Z{c.number}: wejście {c.entry_m:.0f} m, apex {c.apex_m:.0f} m, wyjście {c.exit_m:.0f} m")
     return 0

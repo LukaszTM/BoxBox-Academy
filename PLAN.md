@@ -102,7 +102,7 @@ Siedem etapów, każdy z kryterium ukończenia, które da się sprawdzić bez dy
 
 **Etap 1 – Telemetria (2–3 sesje)**
 
-- [ ] Odbiór UDP na porcie 20777, parser nagłówka pakietu i pakietów: Session, Lap Data, Car Telemetry, Car Status, Event, Car Damage.
+- [x] Odbiór UDP na porcie 20777, parser nagłówka pakietu i pakietów: Session, Lap Data, Car Telemetry, Car Status, Event, Car Damage. (Układy pól z pamięci, do potwierdzenia ze specyfikacją EA i pierwszym nagraniem.)
 - [x] Narzędzie `record` (`python -m boxbox.telemetry.record --name <tor>`) zapisujące surowe pakiety do pliku i `replay` (`python -m boxbox.app --replay <plik> [--speed N]`) odtwarzający je z zachowaniem czasu.
 - [x] Konsola pokazująca na żywo: prędkość, bieg, gaz %, hamulec %, baterię %, dystans okrążenia, aktualne asysty.
 - [ ] Kryterium: 3 nagrania (trening na 3 torach) w `recordings/`, test parsera na każdym z nich przechodzi.
@@ -168,7 +168,7 @@ Jedna sesja = jedno zadanie z listy etapu, zaczynane od testu, kończone commite
 
 Pytania otwarte:
 
-- [ ] Skąd okrążenie referencyjne dla kogoś, kto dopiero zaczyna: własne najlepsze, czy dołączone wzorcowe okrążenia z gry?
+- [ ] Skąd okrążenie referencyjne dla kogoś, kto dopiero zaczyna: własne najlepsze, czy dołączone wzorcowe okrążenia z gry? Kandydaci do sprawdzenia na nagraniach: (a) auto AI z tej samej sesji na wysokim poziomie trudności (gra wysyła telemetrię wszystkich 22 aut), (b) duch rywala w Time Trial, jeśli jego telemetria leci po UDP (Lap Data ma `time_trial_rival_car_idx`), (c) nagranie od szybkiego gracza przez `record`.
 - [ ] Czy w trybie nauki mechanik ma w ogóle mówić podczas okrążenia, czy tylko po nim?
 - [ ] Jaki język komunikatów domyślnie: polski, angielski, oba?
 - [ ] Czy rozwijać projekt publicznie na GitHubie od początku (dla CV i kanału), czy po MVP?

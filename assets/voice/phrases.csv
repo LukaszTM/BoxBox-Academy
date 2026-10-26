@@ -1,0 +1,94 @@
+id,text
+corner_t1,Zakręt pierwszy.
+corner_t2,Zakręt drugi.
+corner_t3,Zakręt trzeci.
+corner_t4,Zakręt czwarty.
+corner_t5,Zakręt piąty.
+corner_t6,Zakręt szósty.
+corner_t7,Zakręt siódmy.
+corner_t8,Zakręt ósmy.
+corner_t9,Zakręt dziewiąty.
+corner_t10,Zakręt dziesiąty.
+corner_t11,Zakręt jedenasty.
+corner_t12,Zakręt dwunasty.
+corner_t13,Zakręt trzynasty.
+corner_t14,Zakręt czternasty.
+corner_t15,Zakręt piętnasty.
+corner_t16,Zakręt szesnasty.
+corner_t17,Zakręt siedemnasty.
+corner_t18,Zakręt osiemnasty.
+corner_t19,Zakręt dziewiętnasty.
+corner_t20,Zakręt dwudziesty.
+corner_t1_2,Zakręty pierwszy i drugi.
+corner_t4_5,Zakręty czwarty i piąty.
+corner_t8_10,Zakręty od ósmego do dziesiątego.
+corner_t9_10,Zakręty dziewiąty i dziesiąty.
+corner_t13_14,Zakręty trzynasty i czternasty.
+corner_t16_18,Zakręty od szesnastego do osiemnastego.
+corner_t1_3,Zakręty od pierwszego do trzeciego.
+corner_t6_7,Zakręty szósty i siódmy.
+rule_brake_late_a,"Hamowanie za późno, o jakieś"
+rule_brake_late_b,Zacznij hamować wcześniej i puszczaj pedał stopniowo.
+rule_brake_late_big_a,"Hamowanie dużo za późno, musiałeś mocno zwolnić, o jakieś"
+rule_brake_late_big_b,Następnym razem zacznij hamować dużo wcześniej.
+rule_brake_early_a,"Hamowanie za wcześnie, o jakieś"
+rule_brake_early_b,"Do apeksu dojeżdżasz z zapasem, możesz hamować później."
+rule_brake_release_a,Hamulec puszczony naraz.
+rule_brake_release_b,"Zwalniaj go stopniowo, aż do apeksu."
+rule_trail_missing_a,Hamowanie kończy się za wcześnie.
+rule_trail_missing_b,"Trzymaj lekki hamulec do apeksu, auto lepiej skręci."
+rule_throttle_late_a,"Pełny gaz za późno na wyjściu, o jakieś"
+rule_throttle_late_b,"Gdy kierownica się prostuje, dodawaj gaz pewniej."
+rule_throttle_early_a,"Gaz za wcześnie na wyjściu, koła ślizgają się zamiast przyspieszać."
+rule_throttle_early_b,"Poczekaj z pełnym gazem, aż auto się wyprostuje."
+rule_grip_lost_throttle_a,Utrata przyczepności.
+rule_grip_lost_throttle_b,"Łagodniej z gazem na wyjściu, zwłaszcza bez kontroli trakcji."
+rule_grip_lost_entry_a,Utrata przyczepności.
+rule_grip_lost_entry_b,"Wolniej na wejściu i mniej kierownicy, zanim dodasz gaz."
+rule_gear_low_a,Za niski bieg.
+rule_gear_high_a,"Za wysoki bieg, silnik nie ma siły."
+num_10,dziesięć metrów.
+num_20,dwadzieścia metrów.
+num_30,trzydzieści metrów.
+num_40,czterdzieści metrów.
+num_50,pięćdziesiąt metrów.
+num_60,sześćdziesiąt metrów.
+num_70,siedemdziesiąt metrów.
+num_80,osiemdziesiąt metrów.
+num_90,dziewięćdziesiąt metrów.
+num_100,sto metrów.
+num_110,sto dziesięć metrów.
+num_120,sto dwadzieścia metrów.
+num_130,sto trzydzieści metrów.
+num_140,sto czterdzieści metrów.
+num_150,sto pięćdziesiąt metrów.
+num_160,sto sześćdziesiąt metrów.
+num_170,sto siedemdziesiąt metrów.
+num_180,sto osiemdziesiąt metrów.
+num_190,sto dziewięćdziesiąt metrów.
+num_200,dwieście metrów.
+num_210,dwieście dziesięć metrów.
+num_220,dwieście dwadzieścia metrów.
+num_230,dwieście trzydzieści metrów.
+num_240,dwieście czterdzieści metrów.
+num_250,dwieście pięćdziesiąt metrów.
+num_260,dwieście sześćdziesiąt metrów.
+num_270,dwieście siedemdziesiąt metrów.
+num_280,dwieście osiemdziesiąt metrów.
+num_290,dwieście dziewięćdziesiąt metrów.
+num_300,trzysta metrów.
+gear_1,W apeksie pierwszy bieg.
+gear_2,W apeksie drugi bieg.
+gear_3,W apeksie trzeci bieg.
+gear_4,W apeksie czwarty bieg.
+gear_5,W apeksie piąty bieg.
+gear_6,W apeksie szósty bieg.
+gear_7,W apeksie siódmy bieg.
+gear_8,W apeksie ósmy bieg.
+misc_hello,"Mechanik na radiu, słyszę cię. Jedź spokojnie, najpierw czyste okrążenie."
+misc_lap_summary,Podsumowanie okrążenia.
+misc_lap_clean,"Czyste okrążenie, nic do poprawy. Tak trzymaj."
+misc_lap_best,Nowe najlepsze okrążenie.
+misc_lap_invalid,"Okrążenie nieważne, wyjazd poza tor."
+misc_no_reference,Pierwsze okrążenie zapisane jako odniesienie. Teraz spróbuj je poprawić.
+misc_session_end,Koniec sesji. Dobra robota.

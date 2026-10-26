@@ -37,9 +37,16 @@ class Message:
     problem: str  # co się stało, jedno zdanie
     hint: str  # co zrobić następnym razem
     weight: float  # im większa, tym ważniejsze; zwykle strata czasu w sekundach
+    value_m: int | None = None  # metry do wypowiedzenia (np. o ile za późno), zaokrąglone do 10
+    gear: int | None = None  # bieg do wypowiedzenia (reguły biegu)
+    variant: str = ""  # odmiana komunikatu w głosie, np. "big" dla hamowania dużo za późno
 
     def spoken(self) -> str:
         return f"{self.problem} {self.hint}"
+
+
+def _round_m(value: float, lo: int = 10, hi: int = 300) -> int:
+    return int(min(hi, max(lo, round(value / 10) * 10)))
 
 
 def _label(track: Track, corner: int) -> str:
@@ -55,8 +62,12 @@ def evaluate_corner(
     loss_s = (m.time_ms - ref.time_ms) / 1000
     out: list[Message] = []
 
-    def msg(rule: str, problem: str, hint: str, weight: float) -> None:
-        out.append(Message(lap_number, m.corner, name, rule, problem, hint, round(weight, 2)))
+    def msg(rule: str, problem: str, hint: str, weight: float, value_m: float | None = None,
+            gear: int | None = None, variant: str = "") -> None:
+        out.append(Message(
+            lap_number, m.corner, name, rule, problem, hint, round(weight, 2),
+            _round_m(value_m) if value_m is not None else None, gear, variant,
+        ))
 
     brake_delta = (m.brake_point_m - ref.brake_point_m) if (m.brake_point_m is not None and ref.brake_point_m is not None) else None
     loss = max(loss_s, 0.0)
@@ -65,22 +76,23 @@ def evaluate_corner(
     if ref.min_speed_kmh > 0 and m.min_speed_kmh < GRIP_LOST_RATIO * ref.min_speed_kmh:
         if brake_delta is not None and brake_delta >= BRAKE_LATE_M:
             msg("brake_late", f"Hamowanie za późno w {name}, o {brake_delta:.0f} m; musiałeś mocno zwolnić.",
-                f"Zacznij hamować ok. {brake_delta:.0f} m wcześniej.", max(loss, 2.0) + 0.5)
+                f"Zacznij hamować ok. {brake_delta:.0f} m wcześniej.", max(loss, 2.0) + 0.5, brake_delta, variant="big")
         else:
             on_exit = m.full_throttle_m is not None and ref.full_throttle_m is not None and m.full_throttle_m < ref.full_throttle_m
             cause = "Łagodniej z gazem na wyjściu, zwłaszcza bez kontroli trakcji." if (on_exit or assists_tc == 0) \
                 else "Wolniej na wejściu i mniej kierownicy, zanim dodasz gaz."
-            msg("grip_lost", f"Utrata przyczepności w {name}.", cause, max(loss, 2.0) + 1.0)
+            msg("grip_lost", f"Utrata przyczepności w {name}.", cause, max(loss, 2.0) + 1.0,
+                variant="throttle" if (on_exit or assists_tc == 0) else "entry")
         return out  # reszta reguł nie ma sensu, gdy auto prawie stanęło
 
     # 2. Punkt hamowania.
     if brake_delta is not None:
         if brake_delta >= BRAKE_LATE_M and (loss_s >= 0.2 or m.min_speed_kmh < ref.min_speed_kmh - 10):
             msg("brake_late", f"Hamowanie za późno w {name}, o {brake_delta:.0f} m.",
-                f"Zacznij hamować ok. {brake_delta:.0f} m wcześniej i puszczaj pedał stopniowo.", loss + 0.05)
+                f"Zacznij hamować ok. {brake_delta:.0f} m wcześniej i puszczaj pedał stopniowo.", loss + 0.05, brake_delta)
         elif brake_delta <= -BRAKE_EARLY_M and loss_s >= 0.2 and m.min_speed_kmh <= ref.min_speed_kmh + 5:
             msg("brake_early", f"Hamowanie za wcześnie w {name}, o {-brake_delta:.0f} m.",
-                f"Możesz hamować ok. {-brake_delta:.0f} m później; do apeksu dojeżdżasz z zapasem.", loss + 0.03)
+                f"Możesz hamować ok. {-brake_delta:.0f} m później; do apeksu dojeżdżasz z zapasem.", loss + 0.03, -brake_delta)
 
     # 3. Puszczanie hamulca, tylko względem referencji, która robi to stopniowo.
     if (
@@ -99,7 +111,7 @@ def evaluate_corner(
         delta = m.full_throttle_m - ref.full_throttle_m
         if delta >= THROTTLE_LATE_M and loss_s >= 0.2:
             msg("throttle_late", f"Pełny gaz za późno na wyjściu z {name}, o {delta:.0f} m.",
-                "Gdy kierownica się prostuje, dodawaj gaz pewniej.", loss + 0.01)
+                "Gdy kierownica się prostuje, dodawaj gaz pewniej.", loss + 0.01, delta)
         elif delta <= -THROTTLE_EARLY_M and m.exit_speed_kmh < ref.exit_speed_kmh - 5:
             msg("throttle_early", f"Gaz za wcześnie na wyjściu z {name}.",
                 "Poczekaj z pełnym gazem, aż auto się wyprostuje; koła ślizgają się zamiast przyspieszać.", loss + 0.04)
@@ -107,9 +119,9 @@ def evaluate_corner(
     # 5. Bieg w apeksie (niska waga: sam w sobie rzadko kosztuje czas).
     if m.gear_at_apex > 0 and ref.gear_at_apex > 0:
         if m.gear_at_apex < ref.gear_at_apex:
-            msg("gear_low", f"Za niski bieg w {name}.", f"W apeksie {ref.gear_at_apex}. bieg.", 0.1 * (ref.gear_at_apex - m.gear_at_apex))
+            msg("gear_low", f"Za niski bieg w {name}.", f"W apeksie {ref.gear_at_apex}. bieg.", 0.1 * (ref.gear_at_apex - m.gear_at_apex), gear=ref.gear_at_apex)
         elif m.gear_at_apex > ref.gear_at_apex:
-            msg("gear_high", f"Za wysoki bieg w {name}.", f"W apeksie {ref.gear_at_apex}. bieg, silnik ma wtedy siłę.", 0.1 * (m.gear_at_apex - ref.gear_at_apex))
+            msg("gear_high", f"Za wysoki bieg w {name}.", f"W apeksie {ref.gear_at_apex}. bieg, silnik ma wtedy siłę.", 0.1 * (m.gear_at_apex - ref.gear_at_apex), gear=ref.gear_at_apex)
     return out
 
 

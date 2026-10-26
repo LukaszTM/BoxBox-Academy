@@ -123,7 +123,7 @@ Siedem etapów, każdy z kryterium ukończenia, które da się sprawdzić bez dy
 
 **Etap 4 – Głos (2 sesje)**
 
-- [ ] Lista wszystkich zdań jako szablony: fragment stały + zakręt + wartość. Wygenerowanie klipów przez TTS (jeden głos), efekt radia nałożony skryptem.
+- [ ] Lista wszystkich zdań jako szablony: fragment stały + zakręt + wartość. Wygenerowanie klipów przez TTS (jeden głos), efekt radia nałożony skryptem. (Katalog: `boxbox/voice/phrases.py`, 93 frazy / 2573 znaki, `assets/voice/phrases.csv`; TTS: ElevenLabs, głos „Piotr – Neutral and Mature”, skrypt `tools/generate_voice_elevenlabs.py`, klucz ze zmiennej środowiskowej. Klipy i efekt radia: w toku.)
 - [ ] Składanie zdania z klipów i odtwarzanie bez blokowania odbioru telemetrii (osobny wątek).
 - [ ] Komunikat po zakręcie i podsumowanie po okrążeniu mówione głosem.
 - [ ] Kryterium: przejazd na żywo z włączoną grą, komunikat słychać do 2 s po wyjściu z zakrętu.
@@ -163,7 +163,7 @@ Jedna sesja = jedno zadanie z listy etapu, zaczynane od testu, kończone commite
 | Ręczne mapowanie zakrętów dla 24 torów | Dużo żmudnej pracy | MVP na 3 torach; zrobione: `boxbox/tracks/detect.py` wyznacza zakręty z profilu prędkości nagrania (do sprawdzenia na prawdziwych danych, progi mogą wymagać strojenia) |
 | Opóźnienie głosu | Komunikat przychodzi za późno i myli | Odtwarzanie w osobnym wątku, klipy w pamięci, limit 1 komunikat na zakręt |
 | Za dużo komunikatów | Gracz wyłącza aplikację | Progi wag, cisza na czystym okrążeniu, maks. 3 uwagi po okrążeniu |
-| Jeden głos TTS brzmi sztucznie | Spada klimat | Efekt radia maskuje dużo; docelowo nagranie prawdziwego lektora |
+| Jeden głos TTS brzmi sztucznie | Spada klimat | Decyzja: ElevenLabs (plan free: użytek niekomercyjny, wymagane podanie źródła), zdania składane tak, by sklejać tylko liczby; efekt radia; docelowo nagranie prawdziwego lektora |
 | Udostępnianie `.exe` | Antywirusy blokują nieznane pliki | Podpis kodu albo instrukcja dla użytkownika; wersja z GitHub Releases |
 
 Pytania otwarte:

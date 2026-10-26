@@ -31,6 +31,11 @@ def _print_summary(state: TelemetryState) -> None:
         print(f"  {name}: {n}{errors}")
     if state.errors["nagłówek"]:
         print(f"  pakiety bez poprawnego nagłówka: {state.errors['nagłówek']}")
+    for fmt, n in sorted(state.unsupported_formats.items()):
+        print(
+            f"  UWAGA: {n} pakietów w formacie {fmt} - obsługiwany jest tylko 2025. "
+            "Ustaw w grze UDP Format: 2025 (2026 Season Pack wysyła format 2026)."
+        )
 
 
 def run(args: argparse.Namespace) -> TelemetryState:

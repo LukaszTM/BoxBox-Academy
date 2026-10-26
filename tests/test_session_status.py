@@ -58,6 +58,12 @@ def test_parse_session() -> None:
     assert s.sector3_lap_distance_start == pytest.approx(3900.25)
 
 
+def test_reverse_track_name() -> None:
+    buf = bytearray(session_packet())
+    buf[ss.PREFIX_OFFSET + 7] = 41
+    assert ss.parse_session(bytes(buf)).track_name == "Zandvoort (odwrotny)"
+
+
 def test_unknown_track_has_fallback_name() -> None:
     buf = bytearray(session_packet())
     buf[ss.PREFIX_OFFSET + 7] = 99  # trackId: za weather, 2 temp., totalLaps i 2-bajtowym trackLength

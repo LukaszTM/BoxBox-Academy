@@ -1,8 +1,7 @@
 """Pakiet Car Damage (id 10): zużycie i uszkodzenia opon, skrzydeł, silnika.
 
-UWAGA: to jedyny pakiet, o którym wiem, że zmienił się w F1 25 - doszły
-pęcherze na oponach (tyreBlisters, 4 B na auto, 46 B zamiast 42 B).
-Układ zapisany z pamięci - do potwierdzenia ze specyfikacją EA w docs/.
+W F1 25 doszły pęcherze na oponach (tyreBlisters, 4 B na auto, 46 B zamiast 42 B w F1 24).
+Układ zgodny z docs/F1_25_Telemetry_Output_Structures.txt (format pakietu 2025).
 """
 import struct
 from dataclasses import dataclass

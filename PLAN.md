@@ -102,7 +102,7 @@ Siedem etapów, każdy z kryterium ukończenia, które da się sprawdzić bez dy
 
 **Etap 1 – Telemetria (2–3 sesje)**
 
-- [x] Odbiór UDP na porcie 20777, parser nagłówka pakietu i pakietów: Session, Lap Data, Car Telemetry, Car Status, Event, Car Damage. (Układy pól z pamięci, do potwierdzenia ze specyfikacją EA i pierwszym nagraniem.)
+- [x] Odbiór UDP na porcie 20777, parser nagłówka pakietu i pakietów: Session, Lap Data, Car Telemetry, Car Status, Event, Car Damage. (Układy pól sprawdzone ze specyfikacją EA w `docs/`; do potwierdzenia pierwszym nagraniem.)
 - [x] Narzędzie `record` (`python -m boxbox.telemetry.record --name <tor>`) zapisujące surowe pakiety do pliku i `replay` (`python -m boxbox.app --replay <plik> [--speed N]`) odtwarzający je z zachowaniem czasu.
 - [x] Konsola pokazująca na żywo: prędkość, bieg, gaz %, hamulec %, baterię %, dystans okrążenia, aktualne asysty.
 - [ ] Kryterium: 3 nagrania (trening na 3 torach) w `recordings/`, test parsera na każdym z nich przechodzi.
@@ -159,7 +159,7 @@ Jedna sesja = jedno zadanie z listy etapu, zaczynane od testu, kończone commite
 
 | Ryzyko | Skutek | Co zrobić |
 | --- | --- | --- |
-| Format pakietów UDP F1 25 różni się od F1 24 | Parser czyta śmieci | Przed etapem 1 pobrać oficjalną specyfikację telemetrii F1 25 z forum EA i trzymać ją w `docs/` |
+| Format pakietów UDP F1 25 różni się od F1 24 | Parser czyta śmieci | Zrobione: specyfikacja w `docs/`, parsery sprawdzone. Otwarte: 2026 Season Pack wysyła format 2026 (24 auta, inne układy) - aplikacja go rozpoznaje i odrzuca z komunikatem; obsługa do decyzji |
 | Ręczne mapowanie zakrętów dla 24 torów | Dużo żmudnej pracy | MVP na 3 torach; narzędzie, które wyznacza zakręty automatycznie z profilu prędkości na nagraniu |
 | Opóźnienie głosu | Komunikat przychodzi za późno i myli | Odtwarzanie w osobnym wątku, klipy w pamięci, limit 1 komunikat na zakręt |
 | Za dużo komunikatów | Gracz wyłącza aplikację | Progi wag, cisza na czystym okrążeniu, maks. 3 uwagi po okrążeniu |

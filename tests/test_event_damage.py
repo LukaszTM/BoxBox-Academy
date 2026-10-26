@@ -36,7 +36,10 @@ def test_unknown_event_code_is_kept() -> None:
     "code,details,expected",
     [
         ("FTLP", struct.pack("<Bf", 3, 83.456), ev.FastestLap(3, pytest.approx(83.456))),
-        ("RTMT", struct.pack("<B", 7), ev.VehicleEvent(7)),
+        ("RTMT", struct.pack("<BB", 7, 8), ev.Retirement(7, 8)),
+        ("DRSD", struct.pack("<B", 1), ev.DrsDisabled(1)),
+        ("TMPT", struct.pack("<B", 7), ev.VehicleEvent(7)),
+        ("SGSV", struct.pack("<Bf", 3, 10.0), ev.StopGoServed(3, 10.0)),
         ("PENA", struct.pack("<BBBBBBB", 5, 7, 3, 255, 3, 4, 0), ev.Penalty(5, 7, 3, 255, 3, 4, 0)),
         (
             "SPTP",
@@ -108,6 +111,15 @@ def test_wrong_packet_type_rejected(parse, data) -> None:
 def test_wrong_length_rejected(parse, data) -> None:
     with pytest.raises(ValueError, match="długość"):
         parse(data[:-1])
+
+
+def test_state_counts_unsupported_format() -> None:
+    state = TelemetryState()
+    packet = bytearray(damage_packet())
+    struct.pack_into("<H", packet, 0, 2026)  # packetFormat z 2026 Season Pack
+    state.feed(bytes(packet))
+    assert state.unsupported_formats == {2026: 1}
+    assert state.packets["CAR_DAMAGE"] == 1 and state.damage is None and not state.errors
 
 
 def test_state_collects_events_and_damage() -> None:

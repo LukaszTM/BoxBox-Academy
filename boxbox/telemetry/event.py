@@ -1,8 +1,7 @@
 """Pakiet Event (id 3): zdarzenia w sesji - flagi, kary, SC, kolizje, najszybsze okrążenie.
 
 Po nagłówku są 4 bajty kodu zdarzenia (np. b"PENA"), a dalej szczegóły,
-których układ zależy od kodu. Układ zapisany z pamięci - do potwierdzenia
-ze specyfikacją EA w docs/.
+których układ zależy od kodu. Układ zgodny z docs/F1_25_Telemetry_Output_Structures.txt.
 """
 import struct
 from dataclasses import dataclass
@@ -26,9 +25,26 @@ EVENT_NAMES: dict[str, str] = {
 
 @dataclass(frozen=True)
 class VehicleEvent:
-    """Zdarzenia dotyczące jednego auta: RTMT, TMPT, RCWN, DTSV, SGSV."""
+    """Zdarzenia dotyczące jednego auta: TMPT, RCWN, DTSV."""
 
     vehicle_index: int
+
+
+@dataclass(frozen=True)
+class Retirement:
+    vehicle_index: int
+    reason: int  # 1 wycofany, 3 uszkodzenia, 6 czarna flaga, 8 awaria mechaniczna (pełna lista w spec.)
+
+
+@dataclass(frozen=True)
+class DrsDisabled:
+    reason: int  # 0 mokry tor, 1 SC, 2 czerwona flaga, 3 za wcześnie (min. okrążenie)
+
+
+@dataclass(frozen=True)
+class StopGoServed:
+    vehicle_index: int
+    stop_time_s: float
 
 
 @dataclass(frozen=True)
@@ -93,18 +109,19 @@ class Collision:
 
 
 Details = (
-    VehicleEvent | FastestLap | Penalty | SpeedTrap | StartLights | Flashback
-    | Buttons | Overtake | SafetyCar | Collision | None
+    VehicleEvent | Retirement | DrsDisabled | StopGoServed | FastestLap | Penalty
+    | SpeedTrap | StartLights | Flashback | Buttons | Overtake | SafetyCar | Collision | None
 )
 
 # kod -> (format struct, klasa szczegółów)
 _DETAILS: dict[str, tuple[struct.Struct, type]] = {
     "FTLP": (struct.Struct("<Bf"), FastestLap),
-    "RTMT": (struct.Struct("<B"), VehicleEvent),
+    "RTMT": (struct.Struct("<BB"), Retirement),
+    "DRSD": (struct.Struct("<B"), DrsDisabled),
     "TMPT": (struct.Struct("<B"), VehicleEvent),
     "RCWN": (struct.Struct("<B"), VehicleEvent),
     "DTSV": (struct.Struct("<B"), VehicleEvent),
-    "SGSV": (struct.Struct("<B"), VehicleEvent),
+    "SGSV": (struct.Struct("<Bf"), StopGoServed),
     "PENA": (struct.Struct("<BBBBBBB"), Penalty),
     "SPTP": (struct.Struct("<BfBBBf"), SpeedTrap),
     "STLG": (struct.Struct("<B"), StartLights),

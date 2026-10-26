@@ -1,8 +1,7 @@
 """Pakiet Session (id 1): tor, typ sesji, pogoda, asysty, ustawienia gry.
 
-Układ pól zapisany z pamięci (format F1 24, bez zmian w F1 25 wg mojej wiedzy)
-- do potwierdzenia ze specyfikacją EA w docs/. Parsujemy tylko to, co jest
-potrzebne trenerowi i inżynierowi; strefy marshali i prognozę pogody pomijamy.
+Układ zgodny z docs/F1_25_Telemetry_Output_Structures.txt. Parsujemy tylko to,
+co jest potrzebne trenerowi i inżynierowi; strefy marshali i prognozę pogody pomijamy.
 """
 import struct
 from dataclasses import dataclass
@@ -37,14 +36,12 @@ MIDDLE_OFFSET = PREFIX_OFFSET + PREFIX.size + NUM_MARSHAL_ZONES * MARSHAL_ZONE.s
 REST_OFFSET = MIDDLE_OFFSET + MIDDLE.size + NUM_WEATHER_SAMPLES * WEATHER_SAMPLE.size
 PACKET_SIZE = REST_OFFSET + REST.size  # 753
 
-TRACK_NAMES: dict[int, str] = {
-    0: "Melbourne", 1: "Paul Ricard", 2: "Szanghaj", 3: "Bahrajn", 4: "Barcelona",
-    5: "Monako", 6: "Montreal", 7: "Silverstone", 8: "Hockenheim", 9: "Hungaroring",
-    10: "Spa", 11: "Monza", 12: "Singapur", 13: "Suzuka", 14: "Abu Zabi", 15: "Austin",
-    16: "Interlagos", 17: "Spielberg", 18: "Soczi", 19: "Meksyk", 20: "Baku",
-    21: "Bahrajn (krótki)", 22: "Silverstone (krótki)", 23: "Austin (krótki)",
-    24: "Suzuka (krótki)", 25: "Hanoi", 26: "Zandvoort", 27: "Imola", 28: "Portimão",
-    29: "Dżudda", 30: "Miami", 31: "Las Vegas", 32: "Losail",
+TRACK_NAMES: dict[int, str] = {  # załącznik "Track IDs" w docs/Data_Output_from_F1_25_v3.pdf
+    0: "Melbourne", 2: "Szanghaj", 3: "Bahrajn", 4: "Barcelona", 5: "Monako", 6: "Montreal",
+    7: "Silverstone", 9: "Hungaroring", 10: "Spa", 11: "Monza", 12: "Singapur", 13: "Suzuka",
+    14: "Abu Zabi", 15: "Austin", 16: "Interlagos", 17: "Spielberg", 19: "Meksyk", 20: "Baku",
+    26: "Zandvoort", 27: "Imola", 29: "Dżudda", 30: "Miami", 31: "Las Vegas", 32: "Losail",
+    39: "Silverstone (odwrotny)", 40: "Spielberg (odwrotny)", 41: "Zandvoort (odwrotny)",
 }
 
 SESSION_TYPE_NAMES: dict[int, str] = {

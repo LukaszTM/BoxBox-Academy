@@ -1,6 +1,6 @@
 """Nagłówek pakietu telemetrii F1 25 (29 bajtów, little endian).
 
-Układ pól zapisany z pamięci - do potwierdzenia ze specyfikacją EA w docs/.
+Układ zgodny z docs/F1_25_Telemetry_Output_Structures.txt (format pakietu 2025).
 """
 import struct
 from dataclasses import dataclass
@@ -25,6 +25,8 @@ class PacketId(IntEnum):
     TIME_TRIAL = 14
     LAP_POSITIONS = 15
 
+
+SUPPORTED_FORMAT = 2025  # 2026 Season Pack wysyła format 2026 (24 auta, inne układy) - nieobsługiwany
 
 _HEADER = struct.Struct("<HBBBBBQfIIBB")
 HEADER_SIZE = _HEADER.size  # 29

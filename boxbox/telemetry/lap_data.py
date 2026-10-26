@@ -1,6 +1,6 @@
 """Pakiet Lap Data (id 2): czasy, dystans okrążenia, pozycja, pit, kary.
 
-Układ pól zapisany z pamięci - do potwierdzenia ze specyfikacją EA w docs/.
+Układ zgodny z docs/F1_25_Telemetry_Output_Structures.txt (format pakietu 2025).
 """
 import struct
 from dataclasses import dataclass

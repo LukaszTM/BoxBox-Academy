@@ -8,7 +8,7 @@ from boxbox.telemetry.car_damage import CarDamagePacket, parse_car_damage
 from boxbox.telemetry.car_status import CarStatusPacket, parse_car_status
 from boxbox.telemetry.car_telemetry import CarTelemetryPacket, parse_car_telemetry
 from boxbox.telemetry.event import EventPacket, parse_event
-from boxbox.telemetry.header import PacketId, parse_header
+from boxbox.telemetry.header import SUPPORTED_FORMAT, PacketId, parse_header
 from boxbox.telemetry.lap_data import LapDataPacket, parse_lap_data
 from boxbox.telemetry.session import SessionPacket, parse_session
 
@@ -32,6 +32,7 @@ class TelemetryState:
     events: list[EventPacket] = field(default_factory=list)  # wszystkie zdarzenia po kolei
     packets: Counter[str] = field(default_factory=Counter)  # ile pakietów każdego typu
     errors: Counter[str] = field(default_factory=Counter)  # ile się nie sparsowało
+    unsupported_formats: Counter[int] = field(default_factory=Counter)  # np. {2026: 1200}
 
     @property
     def empty(self) -> bool:
@@ -47,6 +48,9 @@ class TelemetryState:
         kind = header.kind
         name = kind.name if kind else f"NIEZNANY_{header.packet_id}"
         self.packets[name] += 1
+        if header.packet_format != SUPPORTED_FORMAT:
+            self.unsupported_formats[header.packet_format] += 1
+            return
         if kind is PacketId.EVENT:
             try:
                 self.events.append(parse_event(data))

@@ -1,8 +1,13 @@
 """Wyznaczanie zakrętów z profilu prędkości jednego okrążenia.
 
 Zakręt to lokalne minimum prędkości o spadku co najmniej `min_drop_kmh` względem
-prostych po obu stronach. Wejście to miejsce, gdzie prędkość spadła o 10% różnicy
-między prostą a apeksem (początek hamowania), wyjście - gdzie odzyskała 90%.
+prostych po obu stronach. Granice z pedałów: wejście = początek ciągłego hamowania
+przed apeksem, wyjście = pierwszy pełny gaz po apeksie. Bez danych pedałów (lub gdy
+ich brak w oknie) zapasowo z prędkości: wejście tam, gdzie spadła o 10% różnicy
+między prostą a apeksem, wyjście tam, gdzie odzyskała 90%.
+
+Uwaga z nagrania Bahrajn TT: kompleksy zakrętów, w których prędkość po pierwszym
+zakręcie już tylko rośnie (np. Z1-Z3), dają jedno minimum, czyli jedną strefę.
 
 Użycie: python -m boxbox.tracks.detect recordings/<plik>.bin [--out boxbox/tracks/data/<id>.json]
 """
@@ -21,6 +26,12 @@ from boxbox.tracks.model import Corner, Track, save_track, track_path
 class SpeedSample:
     distance_m: float
     speed_kmh: float
+    throttle: float | None = None  # 0-1; None = brak danych pedałów
+    brake: float | None = None
+
+
+BRAKE_ON = 0.1
+FULL_THROTTLE = 0.95
 
 
 def _smooth(values: list[float], window: int) -> list[float]:
@@ -38,6 +49,7 @@ def detect_corners(
     min_drop_kmh: float = 25.0,
     window: int = 9,
     edge_fraction: float = 0.9,
+    max_reach_m: float = 400.0,
 ) -> tuple[Corner, ...]:
     """Zwraca zakręty ponumerowane od 1 w kolejności dystansu."""
     if len(samples) < window:
@@ -67,16 +79,41 @@ def detect_corners(
             break
         del minima[weakest]
 
+    brake = [s.brake for s in ordered]
+    throttle = [s.throttle for s in ordered]
+
+    def entry_from_brake(i: int) -> int | None:
+        j = i
+        while j > 0 and dist[i] - dist[j] <= max_reach_m and (brake[j] is None or brake[j] < BRAKE_ON):
+            j -= 1
+        if brake[j] is None or brake[j] < BRAKE_ON:
+            return None
+        while j > 0 and brake[j - 1] is not None and brake[j - 1] >= BRAKE_ON:  # type: ignore[operator]
+            j -= 1
+        return j
+
+    def exit_from_throttle(i: int) -> int | None:
+        for j in range(i, n):
+            if dist[j] - dist[i] > max_reach_m:
+                return None
+            if throttle[j] is not None and throttle[j] >= FULL_THROTTLE:  # type: ignore[operator]
+                return j
+        return None
+
     corners = []
     for k, i in enumerate(minima):
         left, right = bounds_max(minima, k)
         v_min = speed[i]
-        entry = i
-        while entry > 0 and speed[entry] < v_min + edge_fraction * (left - v_min):
-            entry -= 1
-        exit_ = i
-        while exit_ < n - 1 and speed[exit_] < v_min + edge_fraction * (right - v_min):
-            exit_ += 1
+        entry = entry_from_brake(i)
+        if entry is None:
+            entry = i
+            while entry > 0 and speed[entry] < v_min + edge_fraction * (left - v_min):
+                entry -= 1
+        exit_ = exit_from_throttle(i)
+        if exit_ is None:
+            exit_ = i
+            while exit_ < n - 1 and speed[exit_] < v_min + edge_fraction * (right - v_min):
+                exit_ += 1
         corners.append(Corner(k + 1, round(dist[entry], 1), round(dist[i], 1), round(dist[exit_], 1)))
     return tuple(corners)
 
@@ -103,7 +140,10 @@ def collect_laps(path: Path) -> tuple[TelemetryState, dict[int, LapSamples]]:
         lap = state.lap.player
         if lap.lap_distance < 0 or lap.pit_status != 0:
             return
-        laps[lap.current_lap_num].samples.append(SpeedSample(lap.lap_distance, float(state.telemetry.player.speed_kmh)))
+        car = state.telemetry.player
+        laps[lap.current_lap_num].samples.append(
+            SpeedSample(lap.lap_distance, float(car.speed_kmh), car.throttle, car.brake)
+        )
 
     replay(path, handle, speed=0)
     return state, dict(laps)

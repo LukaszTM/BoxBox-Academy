@@ -7,7 +7,7 @@ from boxbox.tracks.detect import SpeedSample, detect_corners, main
 from boxbox.telemetry.recording import RecordingWriter
 from tests.builders import lap_packet, session_packet, telemetry_packet
 
-from tests.synthetic import CORNERS, LENGTH, speed_at
+from tests.synthetic import CORNERS, LENGTH, gear_at, pedals_at, speed_at
 
 
 def synthetic_lap(step_m: float = 1.5) -> list[SpeedSample]:
@@ -25,6 +25,26 @@ def test_detects_all_corners_with_sensible_bounds() -> None:
         # 10% spadku prędkości na kosinusowej dolinie wypada 0,795 szerokości przed apeksem
         assert found.entry_m == pytest.approx(apex - half_width * 0.795, abs=15)
         assert found.exit_m == pytest.approx(apex + half_width * 0.795, abs=15)
+
+
+def test_pedals_define_bounds_when_available() -> None:
+    samples = [SpeedSample(s.distance_m, s.speed_kmh, *pedals_at(s.distance_m)) for s in synthetic_lap()]
+    corners = detect_corners(samples, LENGTH)
+    assert len(corners) == 4
+    for found, (apex, _, hw) in zip(corners, CORNERS):
+        assert found.entry_m == pytest.approx(apex - 0.8 * hw, abs=3)  # początek hamowania
+        assert found.exit_m == pytest.approx(apex + 0.5 * hw, abs=3)  # pełny gaz
+
+
+def test_speed_fallback_when_pedals_missing_in_window() -> None:
+    # pedały tylko w pierwszym zakręcie; reszta ma None -> granice z prędkości
+    samples = [
+        SpeedSample(s.distance_m, s.speed_kmh, *(pedals_at(s.distance_m) if s.distance_m < 1000 else (None, None)))
+        for s in synthetic_lap()
+    ]
+    corners = detect_corners(samples, LENGTH)
+    assert corners[0].entry_m == pytest.approx(600 - 0.8 * 120, abs=3)
+    assert corners[1].entry_m == pytest.approx(1500 - 0.795 * 150, abs=15)
 
 
 def test_small_dips_are_not_corners() -> None:
@@ -62,8 +82,9 @@ def make_recording(path: Path) -> None:
         for lap, (start, stop) in ((1, (3000.0, LENGTH)), (2, (0.0, LENGTH)), (3, (0.0, 1000.0))):
             d = start
             while d < stop:
+                throttle, brake = pedals_at(d)
                 w.write(t, lap_packet(lap_distance=d, lap_num=lap))
-                w.write(t, telemetry_packet(speed=int(speed_at(d))))
+                w.write(t, telemetry_packet(speed=int(speed_at(d)), throttle=throttle, brake=brake, gear=gear_at(d)))
                 d += 2.0
                 t += 1 / 60
 
@@ -77,6 +98,8 @@ def test_cli_writes_track_json(tmp_path: Path, capsys: pytest.CaptureFixture[str
     assert data["track_id"] == 3 and data["name"] == "Bahrajn" and data["length_m"] == LENGTH
     assert [c["number"] for c in data["corners"]] == [1, 2, 3, 4]
     assert data["corners"][2]["apex_m"] == pytest.approx(3200, abs=6)
+    assert data["corners"][2]["entry_m"] == pytest.approx(3200 - 80, abs=4)  # z hamulca
+    assert data["corners"][2]["exit_m"] == pytest.approx(3200 + 50, abs=4)  # z gazu
     assert data["source"].endswith("bahrajn.bin")
     out_text = capsys.readouterr().out
     assert "okrążenie 2" in out_text and "4 zakręty" in out_text

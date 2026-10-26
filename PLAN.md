@@ -111,8 +111,8 @@ Siedem etapów, każdy z kryterium ukończenia, które da się sprawdzić bez dy
 
 - [ ] Format JSON toru: lista zakrętów z numerem, dystansem wejścia i wyjścia. Pliki dla 3 torów z nagrań. (Format, model z walidacją i narzędzie `python -m boxbox.tracks.detect <nagranie>` gotowe; pliki torów czekają na nagrania.)
 - [x] Dzielenie okrążenia na zakręty; dla każdego: minimalna prędkość, bieg w apexie, punkt hamowania, punkt pełnego gazu. (`boxbox/coach/laps.py`, `corners.py`, tabela: `python -m boxbox.coach.analyze <nagranie>`; sprawdzone na danych syntetycznych.)
-- [ ] Zapis okrążeń do SQLite; najlepsze ważne okrążenie gracza staje się referencją.
-- [ ] Kryterium: po odtworzeniu nagrania aplikacja wypisuje tabelę zakrętów z różnicą do referencji.
+- [x] Zapis okrążeń do SQLite; najlepsze ważne okrążenie gracza staje się referencją. (`boxbox/storage/db.py`, domyślnie `data/boxbox.sqlite`.)
+- [ ] Kryterium: po odtworzeniu nagrania aplikacja wypisuje tabelę zakrętów z różnicą do referencji. (Działa na nagraniu syntetycznym: `python -m boxbox.app --replay <plik>`; do potwierdzenia na prawdziwym nagraniu z plikiem toru.)
 
 **Etap 3 – Trener gaz/hamulec (2–3 sesje)**
 

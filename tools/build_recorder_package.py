@@ -9,6 +9,8 @@ import shutil
 import zipfile
 from pathlib import Path
 
+from PIL import Image as PILImage
+
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT
 from reportlab.lib.pagesizes import A4
@@ -17,7 +19,8 @@ from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
-    CondPageBreak, ListFlowable, ListItem, Paragraph, Preformatted, SimpleDocTemplate, Spacer, Table, TableStyle,
+    CondPageBreak, Image, ListFlowable, ListItem, Paragraph, Preformatted, SimpleDocTemplate, Spacer, Table,
+    TableStyle,
 )
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -26,6 +29,7 @@ DIST = ROOT / "dist"
 PDF_NAME = "BoxBox_Academy_instrukcja_nagran.pdf"
 ZIP_NAME = "boxbox-recorder.zip"
 FONT_DIR = Path("/usr/share/fonts/truetype/dejavu")
+LOGO = ROOT / "assets" / "logo.png"
 
 
 def _register_fonts() -> None:
@@ -142,7 +146,16 @@ def build_pdf(target: Path) -> None:
         title="BoxBox Academy – instrukcja nagrywania telemetrii", author="BoxBox Academy",
     )
     width = A4[0] - doc.leftMargin - doc.rightMargin
-    doc.build(markdown_to_story(SOURCE.read_text(encoding="utf-8"), width))
+    story: list = []
+    if LOGO.exists():
+        logo_width = 70 * mm
+        small = DIST / "logo_small.png"  # pomniejszone do druku, żeby PDF nie ważył 2 MB
+        with PILImage.open(LOGO) as im:
+            im.convert("RGB").resize((600, 400), PILImage.LANCZOS).save(small, optimize=True)
+        logo = Image(str(small), width=logo_width, height=logo_width * 2 / 3)
+        logo.hAlign = "CENTER"
+        story += [logo, Spacer(1, 8)]
+    doc.build(story + markdown_to_story(SOURCE.read_text(encoding="utf-8"), width))
 
 
 def build_zip(pdf: Path, target: Path) -> None:

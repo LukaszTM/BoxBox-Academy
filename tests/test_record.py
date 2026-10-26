@@ -49,7 +49,7 @@ def test_record_captures_udp(tmp_path: Path) -> None:
     def send() -> None:
         time.sleep(0.3)
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            for i in range(3):
+            for i in range(1, 4):  # od 1: bajt 0 to id Motion, który recorder pomija
                 s.sendto(bytes([i]) * 10, ("127.0.0.1", port))
                 time.sleep(0.05)
 
@@ -59,7 +59,7 @@ def test_record_captures_udp(tmp_path: Path) -> None:
     t.join()
     assert (count, size) == (3, 30)
     packets = list(read_recording(path))
-    assert [p.data[0] for p in packets] == [0, 1, 2]
+    assert [p.data[0] for p in packets] == [1, 2, 3]
     assert packets[0].timestamp == pytest.approx(0, abs=0.01)
     assert packets[-1].timestamp > packets[0].timestamp
     assert path.read_bytes().startswith(MAGIC)

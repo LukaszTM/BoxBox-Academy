@@ -126,7 +126,9 @@ def report_laps(
     lines = [head + (f"; {ref_label}" if ref_label else ""), ""]
     for lap in laps:
         lines += [render_table(analyses[lap.number], lap, ref_analysis)]
-        if ref_analysis is not None and ref_analysis.lap_number != lap.number:
+        if lap.pitted:
+            lines += ["  Trener: okrążenie z pit lane, bez oceny."]
+        elif ref_analysis is not None and ref_analysis.lap_number != lap.number:
             top = pick_top(evaluate_lap(lap, analyses[lap.number], ref_analysis, track))
             lines += ["  Trener: " + (" | ".join(f"{m.corner_name}: {m.problem} {m.hint}" for m in top) if top else "czyste okrążenie, nic do poprawy.")]
         lines += [""]

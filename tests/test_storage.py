@@ -146,6 +146,7 @@ def test_app_replay_saves_laps_and_prints_reference_table(tmp_path: Path, capsys
     assert "Okrążenie 1" in out and "Okrążenie 2" in out
     assert "referencja: okrążenie 1" in out
     assert "Δczas" in out  # kolumny różnic
+    assert "Trener:" in out
     db = Database(db_file)
     assert [s.number for s in db.laps_for_track(3)] == [1, 2]
     assert db.best_lap(3).number == 1

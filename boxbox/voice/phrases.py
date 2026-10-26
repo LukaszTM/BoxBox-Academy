@@ -10,7 +10,7 @@ Eksport listy do CSV dla skryptu TTS: python -m boxbox.voice.phrases --csv asset
 import argparse
 import csv
 import re
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from boxbox.coach.rules import Message
@@ -25,8 +25,14 @@ ORDINAL_GEN = [
     "dziewiątego", "dziesiątego", "jedenastego", "dwunastego", "trzynastego", "czternastego",
     "piętnastego", "szesnastego", "siedemnastego", "osiemnastego", "dziewiętnastego", "dwudziestego",
 ]
+ORDINAL_LOC = [  # miejscownik/narzędnik: "w zakręcie czwartym", "przed zakrętem czwartym"
+    "", "pierwszym", "drugim", "trzecim", "czwartym", "piątym", "szóstym", "siódmym", "ósmym", "dziewiątym",
+    "dziesiątym", "jedenastym", "dwunastym", "trzynastym", "czternastym", "piętnastym", "szesnastym",
+    "siedemnastym", "osiemnastym", "dziewiętnastym", "dwudziestym",
+]
 TENS = ["", "dziesięć", "dwadzieścia", "trzydzieści", "czterdzieści", "pięćdziesiąt", "sześćdziesiąt",
         "siedemdziesiąt", "osiemdziesiąt", "dziewięćdziesiąt"]
+V2_BUCKETS = (20, 50, 100, 150, 200, 300)  # liczby w pełnych zdaniach v2 (mniej klipów)
 HUNDREDS = ["", "sto", "dwieście", "trzysta"]
 MAX_CORNER = 20
 METERS = tuple(range(10, 301, 10))
@@ -46,6 +52,22 @@ RULE_TEXTS: dict[str, tuple[str, str]] = {
     "grip_lost_entry": ("Utrata przyczepności.", "Wolniej na wejściu i mniej kierownicy, zanim dodasz gaz."),
     "gear_low": ("Za niski bieg.", ""),  # wskazówką jest klip biegu
     "gear_high": ("Za wysoki bieg, silnik nie ma siły.", ""),
+}
+
+# Katalog v2: pełne zdanie z nazwą zakrętu w poprawnym przypadku (bez sklejania w środku zdania).
+# {loc} = "zakręcie czwartym", {instr} = "zakrętem czwartym", {gen} = "zakrętu czwartego", {num} = liczba.
+V2_TEXTS: dict[str, str] = {
+    "brake_late": "Hamowanie za późno w {loc}, o jakieś {num}",
+    "brake_late_big": "Hamowanie dużo za późno w {loc}, o jakieś {num} Musiałeś mocno zwolnić.",
+    "brake_early": "Hamowanie za wcześnie w {loc}, o jakieś {num}",
+    "throttle_late": "Pełny gaz za późno na wyjściu z {gen}, o jakieś {num}",
+    "brake_release": "Hamulec puszczony naraz przed {instr}.",
+    "trail_missing": "Hamowanie kończy się za wcześnie przed {instr}.",
+    "throttle_early": "Gaz za wcześnie na wyjściu z {gen}, koła ślizgają się zamiast przyspieszać.",
+    "grip_lost_throttle": "Utrata przyczepności w {loc}.",
+    "grip_lost_entry": "Utrata przyczepności w {loc}.",
+    "gear_low": "Za niski bieg w {loc}.",
+    "gear_high": "Za wysoki bieg w {loc}, silnik nie ma siły.",
 }
 
 MISC_TEXTS: dict[str, str] = {
@@ -82,6 +104,48 @@ def corner_text(name: str) -> str:
     return f"Zakręty od {ORDINAL_GEN[a]} do {ORDINAL_GEN[b]}."
 
 
+def _corner_nums(name: str) -> list[int]:
+    nums = [int(n) for n in re.findall(r"\d+", name)]
+    if not nums or not name.upper().startswith("T") or max(nums) > MAX_CORNER:
+        return []
+    return nums
+
+
+def corner_case(name: str, case: str) -> str:
+    """Nazwa zakrętu w przypadku: 'loc' (w ...), 'instr' (przed ...), 'gen' (z ...)."""
+    nums = _corner_nums(name)
+    if not nums:
+        return {"loc": "tym zakręcie", "instr": "tym zakrętem", "gen": "tego zakrętu"}[case]
+    if len(nums) == 1:
+        n = nums[0]
+        return {"loc": f"zakręcie {ORDINAL_LOC[n]}", "instr": f"zakrętem {ORDINAL_LOC[n]}", "gen": f"zakrętu {ORDINAL_GEN[n]}"}[case]
+    a, b = nums[0], nums[-1]
+    plural = {"loc": "zakrętach", "instr": "zakrętami", "gen": "zakrętów"}[case]
+    if b - a == 1:
+        forms = ORDINAL_LOC if case in ("loc", "instr") else ORDINAL_GEN
+        return f"{plural} {forms[a]} i {forms[b]}"
+    return f"{plural} od {ORDINAL_GEN[a]} do {ORDINAL_GEN[b]}"
+
+
+def bucket_m(value: int | None) -> int:
+    v = value if value is not None else V2_BUCKETS[0]
+    return min(V2_BUCKETS, key=lambda b: abs(b - v))
+
+
+def v2_text(rule: str, corner_name: str, value_m: int | None = None) -> str:
+    template = V2_TEXTS[rule]
+    text = template.format(
+        loc=corner_case(corner_name, "loc"), instr=corner_case(corner_name, "instr"),
+        gen=corner_case(corner_name, "gen"), num=meters_text(bucket_m(value_m)) if "{num}" in template else "",
+    )
+    return text.strip()
+
+
+def v2_id(rule: str, corner_name: str, value_m: int | None = None) -> str:
+    base = f"v2_{rule}_{corner_key(corner_name)}"
+    return f"{base}_{bucket_m(value_m)}" if "{num}" in V2_TEXTS[rule] else base
+
+
 def meters_text(value: int) -> str:
     h, rest = divmod(value, 100)
     words = [w for w in (HUNDREDS[h], TENS[rest // 10]) if w]
@@ -109,7 +173,39 @@ def catalog(corner_names: Sequence[str] = ()) -> dict[str, str]:
         out[f"gear_{g}"] = gear_text(g)
     for key, text in MISC_TEXTS.items():
         out[f"misc_{key}"] = text
+    # v2: pełne zdania dla zakrętów z plików torów (+ ogólne "ten zakręt")
+    names = list(corner_names) + ["zone"]
+    for rule, template in V2_TEXTS.items():
+        for name in names:
+            if "{num}" in template:
+                for b in V2_BUCKETS:
+                    out[v2_id(rule, name, b)] = v2_text(rule, name, b)
+            else:
+                out[v2_id(rule, name)] = v2_text(rule, name)
     return out
+
+
+def utterance(message: Message, available: "Callable[[str], bool] | None" = None, short: bool = False) -> tuple[list[str], str]:
+    """(klipy, tekst) komunikatu: pełne zdanie v2, jeśli klip istnieje, inaczej składanie v1.
+
+    `available` mówi, czy klip o danym id jest w bibliotece; bez niego zakładamy v1.
+    """
+    rule = rule_variant(message)
+    head, hint = RULE_TEXTS[rule]
+    v2 = v2_id(rule, message.corner_name, message.value_m)
+    if available is not None and available(v2):
+        ids = [v2]
+        text = v2_text(rule, message.corner_name, message.value_m)
+        if message.gear is not None and rule.startswith("gear"):
+            g = min(8, max(1, message.gear))
+            ids.append(f"gear_{g}")
+            text += " " + gear_text(g)
+        elif hint and not short:
+            ids.append(f"rule_{rule}_b")
+            text += " " + hint
+        return ids, text
+    ids = compose_short(message) if short else compose(message)
+    return ids, spoken_text(message, short)
 
 
 def rule_variant(message: Message) -> str:

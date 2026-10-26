@@ -11,7 +11,7 @@ from boxbox.coach.corners import LapAnalysis, analyze_corner, analyze_lap
 from boxbox.coach.laps import Lap, LapRecorder
 from boxbox.coach.rules import MIN_TIME_LOSS_S, Message, biggest_loss, evaluate_corner, evaluate_lap, pick_top
 from boxbox.tracks.model import Track
-from boxbox.voice.phrases import MISC_TEXTS, compose, compose_short, spoken_text
+from boxbox.voice.phrases import MISC_TEXTS, utterance
 
 CORNER_EXIT_MARGIN_M = 25.0  # tyle metrów za wyjściem z zakrętu najwcześniej mówimy o nim
 CORNER_EXIT_DEADLINE_M = 150.0  # najpóźniej tu: gdy pełny gaz jeszcze nie przyszedł, czekamy do tego miejsca (~2 s)
@@ -29,6 +29,7 @@ class LiveCoach:
     best_time_ms: int | None = None
     said_hello: bool = False
     said_out_lap: bool = False
+    available: Callable[[str], bool] | None = None  # czy klip o id jest w bibliotece (wybór v2/v1)
 
     def _say_misc(self, key: str) -> None:
         self.speak([f"misc_{key}"], MISC_TEXTS[key])
@@ -73,7 +74,7 @@ class LiveCoach:
             msgs = evaluate_corner(lap.number, metrics, ref[corner.number], self.track, lap.traction_control)
             best = max(msgs, key=lambda m: m.weight, default=None)
             if best is not None and best.weight >= self.min_corner_weight:
-                self.speak(compose_short(best), spoken_text(best, short=True))
+                self.speak(*utterance(best, self.available, short=True))
                 out.append(best)
         return out
 
@@ -96,12 +97,13 @@ class LiveCoach:
         if top:
             self._say_misc("lap_summary")
             for m in top:
-                self.speak(compose(m), spoken_text(m))
+                self.speak(*utterance(m, self.available))
             out += top
         elif not lap.invalid:
             soft = biggest_loss(messages)
             if soft is not None:
-                self.speak(["misc_biggest_loss", *compose(soft)], f"{MISC_TEXTS['biggest_loss']} {spoken_text(soft)}")
+                ids, text = utterance(soft, self.available)
+                self.speak(["misc_biggest_loss", *ids], f"{MISC_TEXTS['biggest_loss']} {text}")
                 out.append(soft)
             else:
                 self._say_misc("lap_clean")

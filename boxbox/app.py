@@ -122,6 +122,7 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
         coach = LiveCoach(
             track, speak, reference, corner_messages=args.corner_messages == "on", best_time_ms=best_time,
             said_hello=player is not None,  # powitanie poszło już na starcie aplikacji
+            available=(lambda i: i in player.library) if player is not None else None,
         )
 
     writer: RecordingWriter | None = None

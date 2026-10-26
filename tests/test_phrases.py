@@ -32,8 +32,8 @@ def test_catalog_covers_rules_tracks_and_fits_free_plan() -> None:
         assert f"corner_{corner_key(name)}" in entries
     for rule in RULE_TEXTS:
         assert f"rule_{rule}_a" in entries
-    chars = sum(len(t) for t in entries.values())
-    assert chars < 5000, chars  # plan free ElevenLabs: 10 000 znaków miesięcznie, zostaje zapas na inżyniera
+    chars_v1 = sum(len(t) for k, t in entries.items() if not k.startswith("v2_"))
+    assert chars_v1 < 5000, chars_v1  # część składana (v1) mieściła się w planie free
     texts = list(entries.values())
     assert len(texts) - len(set(texts)) <= 1  # jedyny powtórzony tekst: "Utrata przyczepności." w dwóch wariantach
 
@@ -75,3 +75,39 @@ def test_spoken_text_matches_clips() -> None:
     assert spoken_text(late, short=True) == "Zakręty pierwszy i drugi. Hamowanie za późno, o jakieś dwieście osiemdziesiąt metrów."
     gear = Message(2, 3, "T6", "gear_low", "p", "h", 0.1, gear=4)
     assert spoken_text(gear) == "Zakręt szósty. Za niski bieg. W apeksie czwarty bieg."
+
+
+def test_corner_cases_and_v2_texts() -> None:
+    from boxbox.voice.phrases import V2_TEXTS, bucket_m, corner_case, utterance, v2_id, v2_text
+    assert corner_case("T4", "loc") == "zakręcie czwartym"
+    assert corner_case("T4", "instr") == "zakrętem czwartym"
+    assert corner_case("T4", "gen") == "zakrętu czwartego"
+    assert corner_case("T1-T2", "loc") == "zakrętach pierwszym i drugim"
+    assert corner_case("T1-T2", "gen") == "zakrętów pierwszego i drugiego"
+    assert corner_case("T8-T10", "instr") == "zakrętami od ósmego do dziesiątego"
+    assert corner_case("hamowanie 1", "loc") == "tym zakręcie"
+    assert bucket_m(277) == 300 and bucket_m(60) == 50 and bucket_m(None) == 20 and bucket_m(130) == 150
+    assert v2_text("brake_late", "T4", 55) == "Hamowanie za późno w zakręcie czwartym, o jakieś pięćdziesiąt metrów."
+    assert v2_text("throttle_late", "T1-T2", 277) == "Pełny gaz za późno na wyjściu z zakrętów pierwszego i drugiego, o jakieś trzysta metrów."
+    assert v2_text("brake_release", "T11") == "Hamulec puszczony naraz przed zakrętem jedenastym."
+    assert v2_text("grip_lost_throttle", "T13-T14") == "Utrata przyczepności w zakrętach trzynastym i czternastym."
+    assert v2_id("brake_late", "T4", 55) == "v2_brake_late_t4_50" and v2_id("brake_release", "T11") == "v2_brake_release_t11"
+    entries = catalog(track_corner_names())
+    v2 = {k: v for k, v in entries.items() if k.startswith("v2_")}
+    names = len(track_corner_names()) + 1
+    numbered = sum(1 for tpl in V2_TEXTS.values() if "{num}" in tpl)
+    assert len(v2) == numbered * names * 6 + (len(V2_TEXTS) - numbered) * names
+    total = sum(len(t) for t in entries.values())
+    assert total < 50_000, total  # Creator: 100 000 znaków/miesiąc, zostaje zapas na inżyniera
+    # utterance: v2 gdy klip jest, inaczej v1
+    late = Message(2, 1, "T4", "brake_late", "p", "h", 1.0, value_m=50)
+    ids, text = utterance(late, lambda i: i.startswith("v2_"))
+    assert ids == ["v2_brake_late_t4_50", "rule_brake_late_b"] and text.startswith("Hamowanie za późno w zakręcie czwartym")
+    ids, text = utterance(late, lambda i: i.startswith("v2_"), short=True)
+    assert ids == ["v2_brake_late_t4_50"] and text.endswith("pięćdziesiąt metrów.")
+    ids, text = utterance(late, None)
+    assert ids == ["corner_t4", "rule_brake_late_a", "num_50", "rule_brake_late_b"] and text.startswith("Zakręt czwarty.")
+    gear = Message(2, 3, "T6", "gear_low", "p", "h", 0.1, gear=4)
+    ids, text = utterance(gear, lambda i: True)
+    assert ids == ["v2_gear_low_t6", "gear_4"] and text == "Za niski bieg w zakręcie szóstym. W apeksie czwarty bieg."
+    assert all(i in entries for i in ids)

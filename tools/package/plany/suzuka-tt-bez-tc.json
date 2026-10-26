@@ -1,0 +1,17 @@
+{
+  "title": "Sesja 3: Suzuka, Time Trial, TC WYŁĄCZONA",
+  "laps": {
+    "1": "Wyjazdowe. Ostrożnie z gazem, nie ma TC.",
+    "2": "Czyste okrążenie.",
+    "3": "Czyste okrążenie.",
+    "4": "Celowe błędy w T1-T2, T13-T14, T11. Reszta normalnie.",
+    "5": "Celowe błędy w T1-T2, T13-T14, T11. Reszta normalnie.",
+    "6": "Zjazd do pit lane. Potem zamknij nakładkę."
+  },
+  "error_laps": [4, 5],
+  "tasks": {
+    "T1-T2": "HAMUJ ZA PÓŹNO",
+    "T13-T14": "GAZ DO DECHY W APEKSIE (może zatańczyć)",
+    "T11": "ZAHAMUJ I PUŚĆ HAMULEC NARAZ"
+  }
+}

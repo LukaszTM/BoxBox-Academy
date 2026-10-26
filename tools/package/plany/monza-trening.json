@@ -1,0 +1,17 @@
+{
+  "title": "Sesja 2: Monza, trening z AI (Grand Prix, Trening 1)",
+  "laps": {
+    "1": "Wyjazdowe. Spokojnie, przepuszczaj AI.",
+    "2": "Czyste okrążenie.",
+    "3": "Czyste okrążenie.",
+    "4": "Celowe błędy w T1-T2, T7, T11. Reszta normalnie.",
+    "5": "Celowe błędy w T1-T2, T7, T11. Reszta normalnie.",
+    "6": "Zjazd do pit lane. Potem zamknij nakładkę."
+  },
+  "error_laps": [4, 5],
+  "tasks": {
+    "T1-T2": "HAMUJ ZA PÓŹNO",
+    "T7": "GAZ DO DECHY W APEKSIE",
+    "T11": "ZAHAMUJ I PUŚĆ HAMULEC NARAZ"
+  }
+}

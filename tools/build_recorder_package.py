@@ -163,10 +163,12 @@ def build_zip(pdf: Path, target: Path) -> None:
     package_dir = ROOT / "tools" / "package"
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as z:
         z.write(pdf, pdf.name)
-        for extra in package_dir.iterdir():
-            z.write(extra, extra.name)
-        for path in sorted((ROOT / "boxbox").rglob("*.py")):
-            z.write(path, path.relative_to(ROOT).as_posix())
+        for extra in sorted(package_dir.rglob("*")):
+            if extra.is_file():
+                z.write(extra, extra.relative_to(package_dir).as_posix())
+        for pattern in ("*.py", "*.json"):
+            for path in sorted((ROOT / "boxbox").rglob(pattern)):
+                z.write(path, path.relative_to(ROOT).as_posix())
         z.writestr("recordings/.gitkeep", "")
 
 

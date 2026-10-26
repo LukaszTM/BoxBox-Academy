@@ -83,11 +83,28 @@ Jeśli auto się obróci albo wylądujesz na żwirze, nie cofaj czasu. Zjedź na
 
 Po zakupie 2026 Season Pack: jedna dodatkowa, dowolna sesja z Formatem UDP 2026, nazwa `pakiet2026-<tor>`.
 
-## 6. Jak nagrywać, krok po kroku
+## 6. Nakładka na grę (zalecane)
+
+Zamiast `nagraj.bat` możesz uruchomić nakładkę, która jednocześnie nagrywa i pokazuje nad grą:
+numer okrążenia i cel na nie, zbliżający się zakręt (numer jak w grze, odległość) oraz zadanie
+do zrobienia w tym zakręcie na okrążeniach z błędami.
+
+1. W grze: **Ustawienia graficzne → Tryb okna: Bez ramki** (w pełnym ekranie nakładka nie będzie widoczna).
+2. W terminalu: `nakladka.bat <nazwa-nagrania> <plan>`, np. `nakladka.bat bahrajn-tt bahrajn-tt`.
+   Plany: `bahrajn-tt`, `monza-trening`, `suzuka-tt-bez-tc`, `pakiet2026`.
+3. Okno pojawi się w lewym górnym rogu; przeciągnij je tam, gdzie nie zasłania toru. Nie klikaj w nie podczas jazdy, bo zabiera grze klawiaturę.
+4. Po sesji naciśnij **Esc** na nakładce (albo zamknij okno). Nagranie zostaje zapisane jak przy `nagraj.bat`.
+
+Pozycje zakrętów dla Bahrajnu są z nagrania. Dla Monzy i Suzuki są orientacyjne, więc **pierwsze (wyjazdowe)
+okrążenie służy do kalibracji**: nakładka wykrywa, gdzie hamujesz, i od drugiego okrążenia pokazuje
+zakręty w prawdziwych miejscach. Skalibrowany przewodnik zapisuje się obok nagrania jako `.guide.json`;
+prześlij go razem z nagraniem.
+
+## 7. Jak nagrywać, krok po kroku
 
 1. Uruchom grę i wejdź do garażu wybranej sesji, ale jeszcze nie wyjeżdżaj.
 2. W terminalu wpisz `nagraj.bat bahrajn-tt` (nazwa z sekcji 5). Zobaczysz „Nasłuchuję na porcie 20777”.
-3. Wyjedź na tor. W terminalu pojawi się „Odbieram dane z gry, nagrywam...”. Jeśli nie pojawi się w ciągu kilku sekund, patrz sekcja 8.
+3. Wyjedź na tor. W terminalu pojawi się „Odbieram dane z gry, nagrywam...”. Jeśli nie pojawi się w ciągu kilku sekund, patrz sekcja 9.
 4. Przejedź 6 okrążeń według schematu.
 5. Po zjeździe do pit lane przejdź do terminala i naciśnij **Ctrl+C**. Zobaczysz „Zapisano N pakietów”.
 6. Od razu uzupełnij notatki: w folderze `recordings` jest plik `.txt` o tej samej nazwie co nagranie. Wpisz tor, asysty i listę błędów: numer okrążenia, numer zakrętu, rodzaj błędu. Wpisz też, jeśli coś poszło nie tak (obrót, żwir, kolizja).
@@ -108,16 +125,18 @@ Okrążenia i błędy:
 Uwagi: na okrążeniu 3 lekko ściąłem Z2, okrążenie mogło być nieważne
 ```
 
-## 7. Co zrobić z plikami
+## 8. Co zrobić z plikami
 
-Z folderu `recordings` weź pary plików `.bin` i `.txt` (trzy nagrania to sześć plików, razem kilkadziesiąt MB)
-i wgraj je do repozytorium `boxbox-academy` do katalogu `recordings/`, na gałąź, na której pracuje Claude.
-Jeśli wolisz, prześlij je w sesji Claude Code jako załączniki.
+Z folderu `recordings` weź pliki `.bin`, `.txt` i (z nakładki) `.guide.json`. Plik `.bin` ma ok. 170 MB;
+spakuj go do ZIP lub RAR (zostaje ok. 12 MB) i prześlij w sesji Claude Code jako załącznik razem z `.txt`
+i `.guide.json`. Do repozytorium trafia skompresowana wersja `.bin.xz`, to już robi Claude.
 
-## 8. Gdy coś nie działa
+## 9. Gdy coś nie działa
 
 | Objaw | Co sprawdzić |
 | --- | --- |
+| Nakładki nie widać nad grą | Gra w pełnym ekranie. Ustawienia graficzne → Tryb okna: Bez ramki. |
+| Nakładka pokazuje „brak przewodnika toru” | Dla tego toru nie ma pliku z zakrętami; nagranie i tak jest poprawne. |
 | „Nie odebrano żadnego pakietu” | Telemetria UDP włączona? IP 127.0.0.1 i port 20777? Czy inny program (np. SimHub) nie zajmuje portu 20777? Zamknij go na czas nagrania. |
 | Zapora Windows pyta o Pythona | Zezwól na sieci prywatne. |
 | „Nieobsługiwany format pakietu” w podsumowaniu | Format UDP w grze ustaw na 2025 (lub 2026 z Season Pack). |

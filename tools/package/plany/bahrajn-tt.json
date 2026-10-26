@@ -1,0 +1,17 @@
+{
+  "title": "Sesja 1: Bahrajn, Time Trial, duch rywala",
+  "laps": {
+    "1": "Wyjazdowe. Spokojnie, bez pośpiechu.",
+    "2": "Czyste okrążenie. Bez ścinania, bez wyjazdów.",
+    "3": "Czyste okrążenie. Jak poprzednie.",
+    "4": "Celowe błędy w T1, T4, T9-T10. Reszta normalnie.",
+    "5": "Celowe błędy w T1, T4, T9-T10. Reszta normalnie.",
+    "6": "Zjazd do pit lane. Potem Ctrl+C / zamknij nakładkę."
+  },
+  "error_laps": [4, 5],
+  "tasks": {
+    "T1": "HAMUJ ZA PÓŹNO",
+    "T4": "GAZ DO DECHY W APEKSIE",
+    "T9-T10": "ZAHAMUJ I PUŚĆ HAMULEC NARAZ"
+  }
+}

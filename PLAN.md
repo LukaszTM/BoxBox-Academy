@@ -19,7 +19,7 @@ BoxBox Academy to aplikacja na PC, która podłącza się do telemetrii F1 25 i 
 - Tempo rywali, zużycie opon, bateria, pit-stop, flagi, uszkodzenia.
 - Reaguje na zdarzenia w wyścigu, nie poprawia techniki.
 
-**Poza zakresem MVP** (do dopisania później): swobodna rozmowa z mechanikiem przez model językowy i klucz API, wersja mobilna, nakładka na ekranie gry, konta użytkowników i chmura.
+**Poza zakresem MVP** (do dopisania później): swobodna rozmowa z mechanikiem przez model językowy i klucz API, wersja mobilna, nakładka na ekranie gry (jest tylko prosta nakładka pomocnicza do nagrań: `boxbox/ui/overlay.py`, tkinter), konta użytkowników i chmura.
 
 ## Stack i architektura
 

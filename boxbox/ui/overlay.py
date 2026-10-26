@@ -69,7 +69,7 @@ class Receiver(threading.Thread):
 class OverlayWindow:
     def __init__(
         self, receiver: Receiver, plan: SessionPlan, guide_dir: Path, recording_name: str | None,
-        guide_out: Path | None = None,
+        guide_out: Path | None = None, scale: float = 1.0, alpha: float = 0.97,
     ) -> None:
         self.receiver = receiver
         self.plan = plan
@@ -84,22 +84,29 @@ class OverlayWindow:
         self.root.overrideredirect(True)
         self.root.attributes("-topmost", True)
         try:
-            self.root.attributes("-alpha", 0.88)
+            self.root.attributes("-alpha", alpha)
         except tk.TclError:
             pass
-        self.root.configure(bg=BG)
+        self.root.configure(bg=ACCENT)  # czerwona ramka: wnętrze to osobna ramka z czarnym tłem
         self.root.geometry("+40+40")
-        pad = {"padx": 14, "pady": 2, "anchor": "w"}
-        self.l_title = tk.Label(self.root, text=plan.title, fg=CYAN, bg=BG, font=("Segoe UI", 11, "bold"))
-        self.l_lap = tk.Label(self.root, text="", fg=FG, bg=BG, font=("Segoe UI", 22, "bold"))
-        self.l_goal = tk.Label(self.root, text="", fg=FG, bg=BG, font=("Segoe UI", 12), wraplength=420, justify="left")
-        self.l_corner = tk.Label(self.root, text="", fg=CYAN, bg=BG, font=("Segoe UI", 26, "bold"))
-        self.l_task = tk.Label(self.root, text="", fg=ACCENT, bg=BG, font=("Segoe UI", 18, "bold"), wraplength=420, justify="left")
-        self.l_note = tk.Label(self.root, text="", fg="#bbbbbb", bg=BG, font=("Segoe UI", 10), wraplength=420, justify="left")
-        self.l_status = tk.Label(self.root, text="", fg="#9a9a9a", bg=BG, font=("Segoe UI", 9), wraplength=420, justify="left")
+        inner = tk.Frame(self.root, bg=BG)
+        inner.pack(padx=3, pady=3, fill="both", expand=True)
+        wrap = int(520 * scale)
+
+        def font(size: int, bold: bool = False) -> tuple:
+            return ("Segoe UI", int(size * scale), "bold") if bold else ("Segoe UI", int(size * scale))
+
+        pad = {"padx": 16, "pady": 3, "anchor": "w"}
+        self.l_title = tk.Label(inner, text=plan.title, fg=CYAN, bg=BG, font=font(13, True), wraplength=wrap, justify="left")
+        self.l_lap = tk.Label(inner, text="", fg=FG, bg=BG, font=font(30, True))
+        self.l_goal = tk.Label(inner, text="", fg=FG, bg=BG, font=font(16), wraplength=wrap, justify="left")
+        self.l_corner = tk.Label(inner, text="", fg=CYAN, bg=BG, font=font(38, True))
+        self.l_task = tk.Label(inner, text="", fg=ACCENT, bg=BG, font=font(24, True), wraplength=wrap, justify="left")
+        self.l_note = tk.Label(inner, text="", fg="#cfcfcf", bg=BG, font=font(13), wraplength=wrap, justify="left")
+        self.l_status = tk.Label(inner, text="", fg="#b0b0b0", bg=BG, font=font(11), wraplength=wrap, justify="left")
         for w in (self.l_title, self.l_lap, self.l_goal, self.l_corner, self.l_task, self.l_note, self.l_status):
             w.pack(fill="x", **pad)
-        tk.Label(self.root, text="przeciągnij, aby przesunąć | Esc zamyka i kończy nagranie", fg="#666666", bg=BG, font=("Segoe UI", 8)).pack(fill="x", padx=14, pady=(2, 8), anchor="w")
+        tk.Label(inner, text="przeciągnij, aby przesunąć | Esc zamyka i kończy nagranie", fg="#808080", bg=BG, font=font(9)).pack(fill="x", padx=16, pady=(2, 8), anchor="w")
         self._drag: tuple[int, int] | None = None
         self.root.bind("<ButtonPress-1>", self._drag_start)
         self.root.bind("<B1-Motion>", self._drag_move)
@@ -206,6 +213,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--port", type=int, default=DEFAULT_PORT)
     parser.add_argument("--dir", type=Path, default=Path("recordings"))
     parser.add_argument("--guide-dir", type=Path, default=GUIDE_DIR)
+    parser.add_argument("--scale", type=float, default=1.0, help="mnożnik wielkości napisów, np. 1.3")
+    parser.add_argument("--alpha", type=float, default=0.97, help="krycie okna 0.5-1.0 (1.0 = bez przezroczystości)")
     args = parser.parse_args(argv)
 
     name = "-".join(args.name) if args.name else None
@@ -227,7 +236,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     receiver = Receiver(args.port, writer)
     receiver.start()
     guide_out = path.with_suffix(".guide.json") if path else None
-    window = OverlayWindow(receiver, plan, args.guide_dir, path.name if path else None, guide_out)
+    window = OverlayWindow(
+        receiver, plan, args.guide_dir, path.name if path else None, guide_out,
+        scale=max(0.5, args.scale), alpha=min(1.0, max(0.5, args.alpha)),
+    )
     window.run()
     receiver.stop.set()
     receiver.join(timeout=3)

@@ -91,4 +91,7 @@ misc_lap_clean,"Czyste okrążenie, nic do poprawy. Tak trzymaj."
 misc_lap_best,Nowe najlepsze okrążenie.
 misc_lap_invalid,"Okrążenie nieważne, wyjazd poza tor."
 misc_no_reference,Pierwsze okrążenie zapisane jako odniesienie. Teraz spróbuj je poprawić.
+misc_reference_loaded,Mam twoje najlepsze okrążenie z poprzednich sesji. Porównuję do niego.
+misc_out_lap,"Okrążenie wyjazdowe. Rozgrzej opony, ocena od następnego."
+misc_biggest_loss,Czyste okrążenie. Najwięcej do zyskania:
 misc_session_end,Koniec sesji. Dobra robota.

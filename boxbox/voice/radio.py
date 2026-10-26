@@ -56,11 +56,11 @@ class RadioSettings:
     trim_keep_ms: int = 40  # tyle ciszy zostaje z każdej strony
     low_hz: float = 300.0
     high_hz: float = 3400.0
-    drive: float = 3.0  # wzmocnienie przed miękkim ograniczeniem (kompresja "radiowa")
+    drive: float = 4.5  # wzmocnienie przed miękkim ograniczeniem (kompresja "radiowa"); wyżej = głośniej na tle gry
     noise_db: float = -48.0  # szum tła
     click_ms: int = 25  # klik PTT na początku i końcu (0 = bez)
     click_db: float = -18.0
-    peak: float = 0.9  # normalizacja szczytu
+    peak: float = 0.98  # normalizacja szczytu
 
 
 def read_wav(path: Path) -> tuple[int, list[float]]:

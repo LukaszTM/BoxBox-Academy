@@ -46,6 +46,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--record", help="na żywo: zapisz też nagranie sesji pod tą nazwą do recordings/")
     parser.add_argument("--voice", type=Path, default=DEFAULT_VOICE, help="folder z klipami WAV mechanika")
     parser.add_argument("--no-voice", action="store_true", help="bez dźwięku (komunikaty tylko w konsoli)")
+    parser.add_argument("--volume", type=float, default=1.0, help="głośność mechanika, np. 1.5 (ponad 1 = wzmocnienie)")
     parser.add_argument(
         "--corner-messages", choices=["on", "off"], default="on", help="krótki komunikat tuż po zakręcie"
     )
@@ -78,7 +79,7 @@ def _make_player(args: argparse.Namespace) -> VoicePlayer | None:
     if len(library) == 0:
         print(f"Brak klipów głosu w {args.voice}; komunikaty tylko w konsoli.")
         return None
-    player = VoicePlayer(library).start()
+    player = VoicePlayer(library, volume=max(0.1, args.volume)).start()
     player.say(["misc_hello"], "test dźwięku")  # od razu po starcie: słychać, zanim wyjedziesz na tor
     print(f"Głos: {len(library)} klipów, backend {player.backend.name}. Powinieneś teraz słyszeć powitanie.")
     return player

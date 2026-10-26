@@ -6,4 +6,5 @@ cd /d "%~dp0"
 set "NAZWA=%*"
 if "%NAZWA%"=="" set "NAZWA=sesja"
 set "NAZWA=%NAZWA: =-%"
-py -3 -m boxbox.app --mode coach --record %NAZWA%
+set VOLUME=1.5
+py -3 -m boxbox.app --mode coach --record %NAZWA% --volume %VOLUME%

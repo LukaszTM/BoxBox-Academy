@@ -123,9 +123,9 @@ Siedem etapów, każdy z kryterium ukończenia, które da się sprawdzić bez dy
 
 **Etap 4 – Głos (2 sesje)**
 
-- [ ] Lista wszystkich zdań jako szablony: fragment stały + zakręt + wartość. Wygenerowanie klipów przez TTS (jeden głos), efekt radia nałożony skryptem. (Katalog: `boxbox/voice/phrases.py`, 93 frazy / 2573 znaki, `assets/voice/phrases.csv`; TTS: ElevenLabs, głos „Piotr – Neutral and Mature”, skrypt `tools/generate_voice_elevenlabs.py`, klucz ze zmiennej środowiskowej. Klipy i efekt radia: w toku.)
+- [x] Lista wszystkich zdań jako szablony: fragment stały + zakręt + wartość. Wygenerowanie klipów przez TTS (jeden głos), efekt radia nałożony skryptem. (Katalog: `boxbox/voice/phrases.py`, 96 fraz, `assets/voice/phrases.csv`; ElevenLabs Creator, głos „Piotr – Neutral and Mature Bard”, `tools/generate_voice_elevenlabs.py`; klipy w `assets/voice/raw`, z efektem radia w `assets/voice`.)
 - [x] Składanie zdania z klipów i odtwarzanie bez blokowania odbioru telemetrii (osobny wątek). (`boxbox/voice/player.py`: biblioteka klipów w pamięci, kolejka maks. 3, wątek; Windows `winsound`, Linux/macOS `aplay`/`afplay`. Efekt radia: `boxbox/voice/radio.py`, czysty Python.)
-- [ ] Komunikat po zakręcie i podsumowanie po okrążeniu mówione głosem. (Silnik `boxbox/coach/live.py` gotowy i przetestowany na nagraniu Monzy; w aplikacji `--voice`, `--no-voice`, `--corner-messages`. Czeka na klipy z ElevenLabs i test na żywo.)
+- [x] Komunikat po zakręcie i podsumowanie po okrążeniu mówione głosem. (`boxbox/coach/live.py`; w aplikacji `--voice`, `--volume`, `--corner-messages`; `trener.bat`. Po 1. teście na żywo: głos działa, dodane komunikaty startowe, okrążenie wyjazdowe, „najwięcej do zyskania” na czystym okrążeniu, progi 0,3 s, głośniejsze klipy.)
 - [ ] Kryterium: przejazd na żywo z włączoną grą, komunikat słychać do 2 s po wyjściu z zakrętu.
 
 **Etap 5 – Bateria, asysty, postęp (2 sesje)**

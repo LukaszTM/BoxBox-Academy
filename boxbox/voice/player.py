@@ -52,13 +52,23 @@ class ClipLibrary:
     def missing(self, ids: Sequence[str]) -> list[str]:
         return [i for i in ids if i not in self.clips]
 
-    def compose(self, ids: Sequence[str], gap_ms: int = SILENCE_BETWEEN_CLIPS_MS) -> Clip | None:
-        """Skleja klipy z krótką ciszą między nimi; brakujące pomija. None gdy nic nie ma."""
+    def compose(self, ids: Sequence[str], gap_ms: int = SILENCE_BETWEEN_CLIPS_MS, volume: float = 1.0) -> Clip | None:
+        """Skleja klipy z krótką ciszą między nimi; brakujące pomija. None gdy nic nie ma.
+
+        volume > 1 wzmacnia (z miękkim ograniczeniem), < 1 ścisza.
+        """
         parts = [self.clips[i].pcm for i in ids if i in self.clips]
         if not parts:
             return None
         gap = bytes(2 * int(self.rate * gap_ms / 1000))
-        return Clip(self.rate, gap.join(parts))
+        pcm = gap.join(parts)
+        if abs(volume - 1.0) > 1e-3:
+            import array
+            import math
+            data = array.array("h", pcm)
+            data = array.array("h", (int(max(-1.0, min(1.0, math.tanh(s * volume / 32767))) * 32767) for s in data))
+            pcm = data.tobytes()
+        return Clip(self.rate, pcm)
 
 
 def wav_bytes(clip: Clip) -> bytes:
@@ -165,6 +175,7 @@ class VoicePlayer:
     backend: Backend = field(default_factory=default_backend)
     max_queue: int = 3
     on_speak: Callable[[Spoken], None] | None = None  # np. wypisanie tekstu w konsoli
+    volume: float = 1.0
     _queue: "queue.Queue[Spoken | None]" = field(default_factory=queue.Queue, init=False)
     _thread: threading.Thread | None = field(default=None, init=False)
     _lock: threading.Lock = field(default_factory=threading.Lock, init=False)
@@ -202,7 +213,7 @@ class VoicePlayer:
             item = self._queue.get()
             if item is None:
                 return
-            clip = self.library.compose(item.ids)
+            clip = self.library.compose(item.ids, volume=self.volume)
             if clip is None:
                 continue
             self.spoken.append(item)
@@ -231,6 +242,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Odtwórz klipy mechanika (test dźwięku)")
     parser.add_argument("voice_dir", type=Path)
     parser.add_argument("ids", nargs="*", default=["misc_hello"])
+    parser.add_argument("--volume", type=float, default=1.0)
     args = parser.parse_args(argv)
     library = ClipLibrary(args.voice_dir)
     if len(library) == 0:
@@ -240,7 +252,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     missing = library.missing(args.ids)
     if missing:
         print(f"Nie ma klipów: {missing}")
-    clip = library.compose(args.ids)
+    clip = library.compose(args.ids, volume=args.volume)
     if clip is None:
         return 1
     print(f"Backend: {backend.name}, klipów w bibliotece: {len(library)}, gram {clip.seconds:.1f} s...")

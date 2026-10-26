@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 
 from boxbox.coach.corners import LapAnalysis, analyze_corner, analyze_lap
 from boxbox.coach.laps import Lap, LapRecorder
-from boxbox.coach.rules import MIN_TIME_LOSS_S, Message, evaluate_corner, evaluate_lap, pick_top
+from boxbox.coach.rules import MIN_TIME_LOSS_S, Message, biggest_loss, evaluate_corner, evaluate_lap, pick_top
 from boxbox.tracks.model import Track
 from boxbox.voice.phrases import MISC_TEXTS, compose, compose_short
 
@@ -27,6 +27,7 @@ class LiveCoach:
     announced: set[tuple[int, int]] = field(default_factory=set)  # (okrążenie, zakręt) już skomentowane
     best_time_ms: int | None = None
     said_hello: bool = False
+    said_out_lap: bool = False
 
     def _say_misc(self, key: str) -> None:
         self.speak([f"misc_{key}"], MISC_TEXTS[key])
@@ -37,6 +38,11 @@ class LiveCoach:
         if not self.said_hello and recorder.state.lap is not None:
             self.said_hello = True
             self._say_misc("hello")
+            if self.reference is not None:
+                self._say_misc("reference_loaded")
+        if not self.said_out_lap and recorder.current is not None and recorder.current.pitted:
+            self.said_out_lap = True
+            self._say_misc("out_lap")
         if finished is not None:
             out += self._on_lap_finished(finished)
         if self.corner_messages and self.reference is not None and recorder.current is not None:
@@ -80,14 +86,20 @@ class LiveCoach:
             return []
         if lap.invalid:
             self._say_misc("lap_invalid")
-        top = pick_top(evaluate_lap(lap, analysis, self.reference, self.track))
+        messages = evaluate_lap(lap, analysis, self.reference, self.track)
+        top = pick_top(messages)
         if top:
             self._say_misc("lap_summary")
             for m in top:
                 self.speak(compose(m), f"{m.corner_name}: {m.problem} {m.hint}")
             out += top
         elif not lap.invalid:
-            self._say_misc("lap_clean")
+            soft = biggest_loss(messages)
+            if soft is not None:
+                self.speak(["misc_biggest_loss", *compose(soft)], f"{MISC_TEXTS['biggest_loss']} {soft.corner_name}: {soft.problem} {soft.hint}")
+                out.append(soft)
+            else:
+                self._say_misc("lap_clean")
         if usable and (self.best_time_ms is None or lap.lap_time_ms < self.best_time_ms):  # type: ignore[operator]
             self.best_time_ms = lap.lap_time_ms
             self.reference = analysis

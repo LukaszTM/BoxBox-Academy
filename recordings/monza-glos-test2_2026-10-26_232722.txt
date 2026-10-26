@@ -1,0 +1,3 @@
+Tor: Monza, Time Trial, format UDP 2026, test trenera z głosem (2. próba, głos działał, za cicho)
+Okrążenia: 3: 1:28,8 (wyjazdowe, pit)  4: 1:25,7  5: 1:24,3  6: urwane
+Uwagi: trener cichy przez dwa okrążenia (pit + strata <0,5 s na zakręt); po tej sesji progi 0,3 s i komunikaty startowe.

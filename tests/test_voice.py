@@ -33,7 +33,7 @@ def test_radio_bandpass_and_level() -> None:
         return out
     assert rms(band(tone(1000))) > 10 * rms(band(tone(80)))
     assert rms(band(tone(1000))) > 10 * rms(band(tone(9000)))
-    assert max(abs(s) for s in mid) <= 0.95
+    assert max(abs(s) for s in mid) <= 0.99
 
 
 def test_trim_silence() -> None:
@@ -92,3 +92,12 @@ def test_player_drops_when_queue_full_but_urgent_clears() -> None:
     assert player.say(["a"]) is False  # pełna
     assert player.say(["a"], urgent=True) is True  # pilny czyści i wchodzi
     assert player._queue.qsize() == 1
+
+
+def test_compose_volume_gain(tmp_path: Path) -> None:
+    write_wav(tmp_path / "a.wav", RATE, tone(440, 0.2, amp=0.3))
+    lib = ClipLibrary(tmp_path)
+    quiet = lib.compose(["a"]); loud = lib.compose(["a"], volume=2.0)
+    import array
+    assert max(abs(s) for s in array.array("h", loud.pcm)) > 1.5 * max(abs(s) for s in array.array("h", quiet.pcm))
+    assert max(abs(s) for s in array.array("h", lib.compose(["a"], volume=50.0).pcm)) <= 32767  # miękkie ograniczenie

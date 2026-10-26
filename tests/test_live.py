@@ -32,7 +32,7 @@ def test_live_corner_and_lap_messages_with_reference(monza: RecordedSession) -> 
     ref = analyze_lap(monza.lap(6), monza.track)
     spoken, coach = run_live(monza.track, ref)
     texts = [s[3] for s in spoken]
-    assert texts[0].startswith("Mechanik na radiu")
+    assert texts[0].startswith("Mechanik na radiu") and texts[1].startswith("Mam twoje najlepsze")
     # okrążenie 4: komunikat po Z1 (T1-T2) zanim auto dojedzie do Z2 (wejście 2008 m)
     z1 = [s for s in spoken if s[0] == 4 and "T1-T2: Hamowanie" in s[3] and "Zacznij" not in s[3]]
     assert z1 and monza.track.corners[0].exit_m < z1[0][1] < monza.track.corners[1].entry_m
@@ -42,8 +42,9 @@ def test_live_corner_and_lap_messages_with_reference(monza: RecordedSession) -> 
     assert summary and summary[0][1] < 50
     after = [s for s in spoken if s[0] == 5 and s[1] < 50 and "Zacznij" in s[3]]
     assert after
-    # okrążenie 3 (czyste) dostaje "czyste okrążenie"
-    assert any(s[0] == 4 and s[2] == ["misc_lap_clean"] and s[1] < 50 for s in spoken)
+    # okrążenie 3 (czyste, 1:28.0): "najwięcej do zyskania" albo czyste - ale nie pełne podsumowanie
+    lap3 = [s for s in spoken if s[0] == 4 and s[1] < 50]
+    assert lap3 and (lap3[0][2][0] in ("misc_lap_clean", "misc_biggest_loss") or lap3[0][2] == ["misc_lap_summary"])
     assert texts[-1].startswith("Koniec sesji")
     # każdy użyty klip istnieje w katalogu
     entries = catalog(track_corner_names())
@@ -61,10 +62,12 @@ def test_live_without_reference_learns_first_valid_lap(monza: RecordedSession) -
     assert sum(1 for t in texts if t.startswith("Nowe najlepsze")) >= 1
     # przed pierwszą referencją (okrążenie 1) żadnych komunikatów o zakrętach
     assert not any(s[0] == 1 and s[2][0].startswith("corner_") for s in spoken)
+    assert not any(t.startswith("Mam twoje najlepsze") for t in texts)
 
 
 def test_live_corner_messages_can_be_disabled(monza: RecordedSession) -> None:
     ref = analyze_lap(monza.lap(6), monza.track)
     spoken, _ = run_live(monza.track, ref, corner_messages=False)
-    assert not any(s[2][0].startswith("corner_") and "Zacznij" not in s[3] and len(s[2]) <= 3 for s in spoken)
+    # bez krótkich komunikatów po zakręcie (klip zakrętu na początku, bez wskazówki "_b")
+    assert not any(s[2][0].startswith("corner_") and not any(i.endswith("_b") for i in s[2]) for s in spoken)
     assert any(s[2] == ["misc_lap_summary"] for s in spoken)

@@ -14,7 +14,8 @@ from boxbox.coach.laps import Lap
 from boxbox.tracks.model import Track
 
 # progi
-MIN_TIME_LOSS_S = 0.5  # poniżej tej straty na zakręt trener milczy (szum między czystymi okrążeniami)
+MIN_TIME_LOSS_S = 0.3  # poniżej tej straty na zakręt trener milczy (szum między czystymi okrążeniami ~0,3 s)
+SOFT_HINT_MIN_S = 0.15  # na czystym okrążeniu: "najwięcej do zyskania" tylko gdy coś w ogóle widać
 BRAKE_LATE_M = 20.0  # hamowanie później niż referencja o tyle metrów
 BRAKE_EARLY_M = 25.0
 THROTTLE_LATE_M = 30.0  # pełny gaz później niż referencja
@@ -144,3 +145,9 @@ def pick_top(messages: list[Message], limit: int = TOP_MESSAGES, min_weight: flo
         if m.weight >= min_weight and (m.corner not in best or m.weight > best[m.corner].weight):
             best[m.corner] = m
     return sorted(best.values(), key=lambda m: m.weight, reverse=True)[:limit]
+
+
+def biggest_loss(messages: list[Message], min_weight: float = SOFT_HINT_MIN_S) -> Message | None:
+    """Na czystym okrążeniu: jeden komunikat o największej stracie, jeśli jest co mówić."""
+    best = max(messages, key=lambda m: m.weight, default=None)
+    return best if best is not None and best.weight >= min_weight and not best.rule.startswith("gear") else None

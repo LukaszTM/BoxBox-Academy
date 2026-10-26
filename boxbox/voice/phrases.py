@@ -55,6 +55,9 @@ MISC_TEXTS: dict[str, str] = {
     "lap_best": "Nowe najlepsze okrążenie.",
     "lap_invalid": "Okrążenie nieważne, wyjazd poza tor.",
     "no_reference": "Pierwsze okrążenie zapisane jako odniesienie. Teraz spróbuj je poprawić.",
+    "reference_loaded": "Mam twoje najlepsze okrążenie z poprzednich sesji. Porównuję do niego.",
+    "out_lap": "Okrążenie wyjazdowe. Rozgrzej opony, ocena od następnego.",
+    "biggest_loss": "Czyste okrążenie. Najwięcej do zyskania:",
     "session_end": "Koniec sesji. Dobra robota.",
 }
 

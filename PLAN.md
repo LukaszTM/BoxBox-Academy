@@ -109,7 +109,7 @@ Siedem etapów, każdy z kryterium ukończenia, które da się sprawdzić bez dy
 
 **Etap 2 – Zakręty i okrążenie referencyjne (2 sesje)**
 
-- [ ] Format JSON toru: lista zakrętów z numerem, dystansem wejścia i wyjścia. Pliki dla 3 torów z nagrań.
+- [ ] Format JSON toru: lista zakrętów z numerem, dystansem wejścia i wyjścia. Pliki dla 3 torów z nagrań. (Format, model z walidacją i narzędzie `python -m boxbox.tracks.detect <nagranie>` gotowe; pliki torów czekają na nagrania.)
 - [ ] Dzielenie okrążenia na zakręty; dla każdego: minimalna prędkość, bieg w apexie, punkt hamowania, punkt pełnego gazu.
 - [ ] Zapis okrążeń do SQLite; najlepsze ważne okrążenie gracza staje się referencją.
 - [ ] Kryterium: po odtworzeniu nagrania aplikacja wypisuje tabelę zakrętów z różnicą do referencji.
@@ -160,7 +160,7 @@ Jedna sesja = jedno zadanie z listy etapu, zaczynane od testu, kończone commite
 | Ryzyko | Skutek | Co zrobić |
 | --- | --- | --- |
 | Format pakietów UDP F1 25 różni się od F1 24 | Parser czyta śmieci | Zrobione: specyfikacja w `docs/`, parsery sprawdzone z nią. Obsługiwane oba formaty: 2025 (gra) i 2026 (2026 Season Pack, 24 auta, pakiet Car Telemetry 2); wybór po polu `packetFormat` w nagłówku. Do potwierdzenia na nagraniach z obu wersji |
-| Ręczne mapowanie zakrętów dla 24 torów | Dużo żmudnej pracy | MVP na 3 torach; narzędzie, które wyznacza zakręty automatycznie z profilu prędkości na nagraniu |
+| Ręczne mapowanie zakrętów dla 24 torów | Dużo żmudnej pracy | MVP na 3 torach; zrobione: `boxbox/tracks/detect.py` wyznacza zakręty z profilu prędkości nagrania (do sprawdzenia na prawdziwych danych, progi mogą wymagać strojenia) |
 | Opóźnienie głosu | Komunikat przychodzi za późno i myli | Odtwarzanie w osobnym wątku, klipy w pamięci, limit 1 komunikat na zakręt |
 | Za dużo komunikatów | Gracz wyłącza aplikację | Progi wag, cisza na czystym okrążeniu, maks. 3 uwagi po okrążeniu |
 | Jeden głos TTS brzmi sztucznie | Spada klimat | Efekt radia maskuje dużo; docelowo nagranie prawdziwego lektora |

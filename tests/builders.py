@@ -26,23 +26,28 @@ def _cars_packet(packet_id: PacketId, fmt: int, car_size: int, player_car: bytes
     return header_bytes(packet_id, fmt) + b"".join(cars) + tail
 
 
-def telemetry_packet(fmt: int = 2025) -> bytes:
+def telemetry_packet(
+    fmt: int = 2025, speed: int = 287, throttle: float = 0.75, brake: float = 0.25, gear: int = 6
+) -> bytes:
     engine_temp = "H" if fmt == 2025 else "B"
     player = struct.pack(
         "<HfffBbHBBH4H4B4B" + engine_temp + "4f4B",
-        287, 0.75, -0.5, 0.25, 10, 6, 11500, 1, 80, 0x7FFF,
+        speed, throttle, -0.5, brake, 10, gear, 11500, 1, 80, 0x7FFF,
         400, 410, 420, 430, 90, 91, 92, 93, 100, 101, 102, 103, 105,
         23.5, 23.6, 22.0, 22.1, 0, 0, 1, 1,
     )
     return _cars_packet(PacketId.CAR_TELEMETRY, fmt, len(player), player, struct.pack("<BBb", 0, 255, 7))
 
 
-def lap_packet(fmt: int = 2025) -> bytes:
+def lap_packet(
+    fmt: int = 2025, lap_distance: float = 1234.5, lap_num: int = 3, pit_status: int = 0,
+    lap_invalid: bool = True, current_lap_time_ms: int = 45_678,
+) -> bytes:
     player = struct.pack(
         "<IIHBHBHBHBfffBBBBBBBBBBBBBBBHHBfB",
-        83_123, 45_678, 1_234, 0, 20_000, 1, 300, 0, 1_500, 0,
-        1234.5, 9999.0, 0.0,
-        5, 3, 0, 1, 2, 1, 0, 0, 0, 0, 0, 7, 4, 2, 0,
+        83_123, current_lap_time_ms, 1_234, 0, 20_000, 1, 300, 0, 1_500, 0,
+        lap_distance, 9999.0, 0.0,
+        5, lap_num, pit_status, 1, 2, int(lap_invalid), 0, 0, 0, 0, 0, 7, 4, 2, 0,
         0, 0, 0, 312.5, 2,
     )
     return _cars_packet(PacketId.LAP_DATA, fmt, ld.CAR_SIZE, player, struct.pack("<BB", 255, 255))

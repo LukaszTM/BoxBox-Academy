@@ -1,0 +1,43 @@
+{
+  "track_id": 11,
+  "name": "Monza",
+  "length_m": 5793.0,
+  "accuracy": "skalibrowane z okrążenia (strefy hamowania)",
+  "corners": [
+    {
+      "name": "T1-T2",
+      "apex_m": 640.0,
+      "note": "Rettifilo: pierwsza szykana, najmocniejsze hamowanie"
+    },
+    {
+      "name": "T3",
+      "apex_m": 1000.3,
+      "note": "Curva Grande, pełny gaz"
+    },
+    {
+      "name": "T4-T5",
+      "apex_m": 2156.7,
+      "note": "Roggia: druga szykana"
+    },
+    {
+      "name": "T6",
+      "apex_m": 2596.4,
+      "note": "Lesmo 1"
+    },
+    {
+      "name": "T7",
+      "apex_m": 2901.2,
+      "note": "Lesmo 2"
+    },
+    {
+      "name": "T8-T10",
+      "apex_m": 3983.4,
+      "note": "Ascari: szykana w trzech"
+    },
+    {
+      "name": "T11",
+      "apex_m": 5207.1,
+      "note": "Parabolica, długi prawy na metę"
+    }
+  ]
+}

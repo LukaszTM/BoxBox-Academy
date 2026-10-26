@@ -36,7 +36,7 @@ def test_live_corner_and_lap_messages_with_reference(monza: RecordedSession) -> 
     # okrążenie 4: komunikat po Z1 (T1-T2) zanim auto dojedzie do Z2 (wejście 2008 m)
     z1 = [s for s in spoken if s[0] == 4 and s[3].startswith("Zakręty pierwszy i drugi. Hamowanie") and "Zacznij" not in s[3]]
     assert z1 and monza.track.corners[0].exit_m < z1[0][1] < monza.track.corners[1].entry_m
-    assert "dziewięćdziesiąt metrów" in z1[0][3]  # tekst = to, co mówi głos (liczba zaokrąglona do 10)
+    assert z1[0][3].endswith("metrów.")  # tekst = to, co mówi głos (liczba zaokrąglona do 10, maks. 300)
     assert z1[0][2][0] == "corner_t1_2" and z1[0][2][1].startswith("rule_brake_late")
     # podsumowanie okrążenia 4 po mecie (na początku okrążenia 5), ze wskazówkami
     summary = [s for s in spoken if s[0] == 5 and s[2] == ["misc_lap_summary"]]
@@ -86,9 +86,12 @@ def test_corner_message_waits_for_full_throttle(monza: RecordedSession) -> None:
     samples = []
     for s in lap6.samples:
         thr = s.throttle
+        t_ms = s.lap_time_ms
         if z1.apex_m < s.distance_m < z1.exit_m + 120:
             thr = min(thr, 0.6)
-        samples.append(Sample(s.distance_m, s.lap_time_ms, s.speed_kmh, thr, s.brake, s.gear, s.steer))
+        if s.distance_m > z1.apex_m:
+            t_ms += 400  # późny gaz kosztuje czas
+        samples.append(Sample(s.distance_m, t_ms, s.speed_kmh, thr, s.brake, s.gear, s.steer))
     late = Lap(7, samples, 90_000)
     recorder = LapRecorder()
     recorder.current = late_partial = Lap(7, [], None)

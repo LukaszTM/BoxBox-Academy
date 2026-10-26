@@ -1,13 +1,14 @@
 """Punkt wejścia aplikacji: wybór trybu i spięcie warstw."""
 import argparse
-from collections import Counter
 from collections.abc import Sequence
 from pathlib import Path
 
-from boxbox.telemetry.header import parse_header
 from boxbox.telemetry.replay import replay
+from boxbox.telemetry.state import TelemetryState
+from boxbox.telemetry.udp import DEFAULT_PORT, listen
+from boxbox.ui.console import NO_DATA_MESSAGE, Console
 
-NO_DATA_MESSAGE = "brak danych"
+__all__ = ["NO_DATA_MESSAGE", "main"]
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -17,28 +18,46 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--speed", type=float, default=1.0, help="prędkość odtwarzania, 0 = bez czekania"
     )
+    parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="port UDP z gry")
+    parser.add_argument("--duration", type=float, help="limit nasłuchu w sekundach")
     return parser
 
 
-def _replay_summary(path: Path, speed: float) -> None:
-    kinds: Counter[str] = Counter()
+def _print_summary(state: TelemetryState) -> None:
+    total = sum(state.packets.values())
+    print(f"Odebrano {total} pakietów:")
+    for name, n in sorted(state.packets.items()):
+        errors = f" (błędy parsera: {state.errors[name]})" if state.errors[name] else ""
+        print(f"  {name}: {n}{errors}")
+    if state.errors["nagłówek"]:
+        print(f"  pakiety bez poprawnego nagłówka: {state.errors['nagłówek']}")
+
+
+def run(args: argparse.Namespace) -> TelemetryState:
+    state = TelemetryState()
+    console = Console()
+    console.update(state, force=True)  # od razu "brak danych", dopóki nic nie przyjdzie
 
     def handle(data: bytes) -> None:
-        header = parse_header(data)
-        kinds[header.kind.name if header.kind else f"NIEZNANY_{header.packet_id}"] += 1
+        state.feed(data)
+        console.update(state)
 
-    total = replay(path, handle, speed=speed)
-    print(f"Odtworzono {total} pakietów:")
-    for name, n in sorted(kinds.items()):
-        print(f"  {name}: {n}")
+    if args.replay:
+        replay(args.replay, handle, speed=args.speed)
+    else:
+        for data in listen(args.port, duration=args.duration):
+            handle(data)
+    console.update(state, force=True)
+    console.finish()
+    return state
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    if args.replay:
-        _replay_summary(args.replay, args.speed)
+    state = run(args)
+    if state.empty:
         return 0
-    print(NO_DATA_MESSAGE)
+    _print_summary(state)
     return 0
 
 

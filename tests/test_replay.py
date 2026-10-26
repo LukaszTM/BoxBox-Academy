@@ -42,5 +42,7 @@ def test_app_replay_summary(tmp_path: Path, capsys) -> None:
     make_recording(path)
     assert main(["--replay", str(path), "--speed", "0"]) == 0
     out = capsys.readouterr().out
-    assert "Odtworzono 3 pakietów" in out
-    assert "CAR_TELEMETRY: 2" in out and "LAP_DATA: 1" in out
+    assert "Odebrano 3 pakietów" in out
+    # nagranie ma same nagłówki, więc parsery pakietów zgłaszają złą długość
+    assert "CAR_TELEMETRY: 2 (błędy parsera: 2)" in out
+    assert "LAP_DATA: 1 (błędy parsera: 1)" in out

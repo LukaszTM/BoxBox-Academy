@@ -104,7 +104,7 @@ Siedem etapów, każdy z kryterium ukończenia, które da się sprawdzić bez dy
 
 - [ ] Odbiór UDP na porcie 20777, parser nagłówka pakietu i pakietów: Session, Lap Data, Car Telemetry, Car Status, Event, Car Damage.
 - [x] Narzędzie `record` (`python -m boxbox.telemetry.record --name <tor>`) zapisujące surowe pakiety do pliku i `replay` (`python -m boxbox.app --replay <plik> [--speed N]`) odtwarzający je z zachowaniem czasu.
-- [ ] Konsola pokazująca na żywo: prędkość, bieg, gaz %, hamulec %, baterię %, dystans okrążenia, aktualne asysty.
+- [x] Konsola pokazująca na żywo: prędkość, bieg, gaz %, hamulec %, baterię %, dystans okrążenia, aktualne asysty.
 - [ ] Kryterium: 3 nagrania (trening na 3 torach) w `recordings/`, test parsera na każdym z nich przechodzi.
 
 **Etap 2 – Zakręty i okrążenie referencyjne (2 sesje)**

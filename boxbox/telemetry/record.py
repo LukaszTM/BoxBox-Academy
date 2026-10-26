@@ -3,16 +3,13 @@
 Użycie: python -m boxbox.telemetry.record --name bahrain
 """
 import argparse
-import socket
 import time
 from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
 
 from boxbox.telemetry.recording import RecordingWriter
-
-DEFAULT_PORT = 20777
-MAX_PACKET = 2048
+from boxbox.telemetry.udp import DEFAULT_PORT, listen
 
 
 def recording_path(directory: Path, name: str, now: datetime) -> Path:
@@ -26,25 +23,13 @@ def record(
     duration: float | None = None,
 ) -> tuple[int, int]:
     """Nagrywa do `path` do Ctrl+C lub upływu `duration`. Zwraca (pakiety, bajty)."""
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind((host, port))
-    sock.settimeout(0.5)
     start = time.monotonic()
     with RecordingWriter(path) as writer:
-        try:
-            while duration is None or time.monotonic() - start < duration:
-                try:
-                    data, _ = sock.recvfrom(MAX_PACKET)
-                except TimeoutError:
-                    continue
-                if writer.count == 0:
-                    start = time.monotonic()  # czas liczony od pierwszego pakietu
-                    print("Odbieram dane z gry, nagrywam...")
-                writer.write(time.monotonic() - start, data)
-        except KeyboardInterrupt:
-            pass
-        finally:
-            sock.close()
+        for data in listen(port, host, duration):
+            if writer.count == 0:
+                start = time.monotonic()  # czas liczony od pierwszego pakietu
+                print("Odbieram dane z gry, nagrywam...")
+            writer.write(time.monotonic() - start, data)
     return writer.count, writer.size
 
 

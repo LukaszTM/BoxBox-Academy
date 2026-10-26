@@ -1,15 +1,44 @@
 {
   "track_id": 11,
   "name": "Monza",
-  "length_m": 5793,
-  "accuracy": "orientacyjne (z pamięci, +-150 m; do poprawy po nagraniu)",
+  "length_m": 5798,
+  "accuracy": "dokładne (z nagrania monza-trening_2026-10-26)",
   "corners": [
-    {"name": "T1-T2", "apex_m": 640, "note": "Rettifilo: pierwsza szykana, najmocniejsze hamowanie"},
-    {"name": "T3", "apex_m": 1250, "note": "Curva Grande, pełny gaz"},
-    {"name": "T4-T5", "apex_m": 2050, "note": "Roggia: druga szykana"},
-    {"name": "T6", "apex_m": 2520, "note": "Lesmo 1"},
-    {"name": "T7", "apex_m": 2830, "note": "Lesmo 2"},
-    {"name": "T8-T10", "apex_m": 4200, "note": "Ascari: szykana w trzech"},
-    {"name": "T11", "apex_m": 5100, "note": "Parabolica, długi prawy na metę"}
+    {
+      "name": "T1-T2",
+      "apex_m": 984,
+      "note": "Rettifilo: pierwsza szykana, najmocniejsze hamowanie"
+    },
+    {
+      "name": "T3",
+      "apex_m": 1500,
+      "note": "Curva Grande, pełny gaz",
+      "flat": true
+    },
+    {
+      "name": "T4-T5",
+      "apex_m": 2154,
+      "note": "Roggia: druga szykana"
+    },
+    {
+      "name": "T6",
+      "apex_m": 2616,
+      "note": "Lesmo 1"
+    },
+    {
+      "name": "T7",
+      "apex_m": 2905,
+      "note": "Lesmo 2"
+    },
+    {
+      "name": "T8-T10",
+      "apex_m": 3968,
+      "note": "Ascari: szykana w trzech"
+    },
+    {
+      "name": "T11",
+      "apex_m": 5189,
+      "note": "Parabolica, długi prawy na metę"
+    }
   ]
 }

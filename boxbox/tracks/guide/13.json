@@ -4,14 +4,51 @@
   "length_m": 5807,
   "accuracy": "orientacyjne (z pamięci, +-150 m; do poprawy po nagraniu)",
   "corners": [
-    {"name": "T1-T2", "apex_m": 850, "note": "pierwszy zakręt, długi prawy w dół"},
-    {"name": "T3-T7", "apex_m": 1400, "note": "esy, rytm bez mocnego hamowania"},
-    {"name": "T8", "apex_m": 1950, "note": "Dunlop, lewy pod górę"},
-    {"name": "T9-T10", "apex_m": 2400, "note": "Degner 1 i 2"},
-    {"name": "T11", "apex_m": 2900, "note": "spinka, 1.-2. bieg"},
-    {"name": "T12", "apex_m": 3450, "note": "długi prawy przed Spoon"},
-    {"name": "T13-T14", "apex_m": 3850, "note": "Spoon, podwójny lewy"},
-    {"name": "T15", "apex_m": 4800, "note": "130R, szybki lewy"},
-    {"name": "T16-T18", "apex_m": 5400, "note": "szykana Casio przed metą"}
+    {
+      "name": "T1-T2",
+      "apex_m": 850,
+      "note": "pierwszy zakręt, długi prawy w dół"
+    },
+    {
+      "name": "T3-T7",
+      "apex_m": 1400,
+      "note": "esy, rytm bez mocnego hamowania"
+    },
+    {
+      "name": "T8",
+      "apex_m": 1950,
+      "note": "Dunlop, lewy pod górę"
+    },
+    {
+      "name": "T9-T10",
+      "apex_m": 2400,
+      "note": "Degner 1 i 2"
+    },
+    {
+      "name": "T11",
+      "apex_m": 2900,
+      "note": "spinka, 1.-2. bieg"
+    },
+    {
+      "name": "T12",
+      "apex_m": 3450,
+      "note": "długi prawy przed Spoon"
+    },
+    {
+      "name": "T13-T14",
+      "apex_m": 3850,
+      "note": "Spoon, podwójny lewy"
+    },
+    {
+      "name": "T15",
+      "apex_m": 4800,
+      "note": "130R, szybki lewy",
+      "flat": true
+    },
+    {
+      "name": "T16-T18",
+      "apex_m": 5400,
+      "note": "szykana Casio przed metą"
+    }
   ]
 }

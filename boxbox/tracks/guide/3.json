@@ -4,16 +4,62 @@
   "length_m": 5408,
   "accuracy": "dokładne (z nagrania bahrajn-tt_2026-10-26)",
   "corners": [
-    {"name": "T1", "apex_m": 757, "note": "mocne hamowanie po prostej startowej"},
-    {"name": "T2-T3", "apex_m": 850, "note": "wyjście z T1, płynnie na gaz"},
-    {"name": "T4", "apex_m": 1574, "note": "hamowanie po długiej prostej"},
-    {"name": "T5-T7", "apex_m": 1962, "note": "szybki kompleks, pro nie hamuje"},
-    {"name": "T8", "apex_m": 2322, "note": "spinka, 2. bieg"},
-    {"name": "T9-T10", "apex_m": 2775, "note": "podwójny lewy, T10 to ciasny lewy w dół"},
-    {"name": "T11", "apex_m": 3492, "note": "długi lewy po prostej"},
-    {"name": "T12", "apex_m": 3900, "note": "szybki, bez hamowania"},
-    {"name": "T13", "apex_m": 4166, "note": "prawy po T12"},
-    {"name": "T14", "apex_m": 4949, "note": "ostatni mocny hamulec"},
-    {"name": "T15", "apex_m": 5250, "note": "na metę, bez hamowania"}
+    {
+      "name": "T1",
+      "apex_m": 757,
+      "note": "mocne hamowanie po prostej startowej"
+    },
+    {
+      "name": "T2-T3",
+      "apex_m": 850,
+      "note": "wyjście z T1, płynnie na gaz"
+    },
+    {
+      "name": "T4",
+      "apex_m": 1574,
+      "note": "hamowanie po długiej prostej"
+    },
+    {
+      "name": "T5-T7",
+      "apex_m": 1962,
+      "note": "szybki kompleks, pro nie hamuje"
+    },
+    {
+      "name": "T8",
+      "apex_m": 2322,
+      "note": "spinka, 2. bieg"
+    },
+    {
+      "name": "T9-T10",
+      "apex_m": 2775,
+      "note": "podwójny lewy, T10 to ciasny lewy w dół"
+    },
+    {
+      "name": "T11",
+      "apex_m": 3492,
+      "note": "długi lewy po prostej"
+    },
+    {
+      "name": "T12",
+      "apex_m": 3900,
+      "note": "szybki, bez hamowania",
+      "flat": true
+    },
+    {
+      "name": "T13",
+      "apex_m": 4166,
+      "note": "prawy po T12"
+    },
+    {
+      "name": "T14",
+      "apex_m": 4949,
+      "note": "ostatni mocny hamulec"
+    },
+    {
+      "name": "T15",
+      "apex_m": 5250,
+      "note": "na metę, bez hamowania",
+      "flat": true
+    }
   ]
 }

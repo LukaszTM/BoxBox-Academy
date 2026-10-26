@@ -83,27 +83,28 @@ def test_plan_goal_after_last_lap() -> None:
 
 
 def test_calibrate_guide_snaps_to_detected_zones(tmp_path: Path) -> None:
-    guide = load_guide(GUIDE_DIR / "11.json")  # Monza, orientacyjny
+    guide = load_guide(GUIDE_DIR / "11.json")  # Monza (T1-T2 984, T4-T5 2154, T6 2616, T7 2905, T8-T10 3968, T11 5189)
     zones = (
-        Corner(1, 560, 700, 760),  # T1-T2 (przewodnik: 640)
-        Corner(2, 1950, 2110, 2170),  # T4-T5 (2050)
-        Corner(3, 2400, 2560, 2600),  # T6 (2520)
-        Corner(4, 2700, 2900, 2950),  # T7 (2830)
-        Corner(5, 3500, 3600, 3650),  # strefa spoza przewodnika
-        Corner(6, 4050, 4250, 4300),  # T8-T10 (4200)
-        Corner(7, 4950, 5180, 5250),  # T11 (5100)
+        Corner(1, 900, 1100, 1160),  # T1-T2; bliżej T3 (1500)? nie, T3 jest "flat" i nie bierze udziału
+        Corner(2, 2000, 2200, 2250),  # T4-T5
+        Corner(3, 2500, 2560, 2600),  # T6
+        Corner(4, 2800, 2900, 2950),  # T7
+        Corner(5, 3400, 3450, 3500),  # strefa spoza przewodnika
+        Corner(6, 3900, 4050, 4100),  # T8-T10
+        Corner(7, 5000, 5180, 5250),  # T11
     )
     cal = calibrate_guide(guide, zones)
     by_name = {c.name: c.apex_m for c in cal.corners}
-    assert by_name["T1-T2"] == 700 and by_name["T7"] == 2900 and by_name["T11"] == 5180
-    assert by_name["T3"] == 1250  # bez strefy hamowania: zostaje
-    assert by_name["hamowanie 1"] == 3600
+    assert by_name["T1-T2"] == 1100 and by_name["T7"] == 2900 and by_name["T11"] == 5180
+    assert by_name["T3"] == 1500  # bez hamowania: zostaje
+    assert by_name["hamowanie 1"] == 3450
     assert [c.apex_m for c in cal.corners] == sorted(c.apex_m for c in cal.corners)
     assert cal.accuracy.startswith("skalibrowane")
     out = tmp_path / "g.json"
     save_guide(cal, out)
     again = load_guide(out)
     assert again.corners == cal.corners
+    assert next(c for c in again.corners if c.name == "T3").flat is True
     state = TelemetryState()
     state.feed(session_packet())
     state.feed(lap_packet(lap_distance=100.0, lap_num=2, lap_invalid=False))

@@ -19,7 +19,7 @@ def test_parse_session(fmt: int) -> None:
     assert (s.session_type, s.track_id) == (18, 3)
     assert (s.track_name, s.session_type_name, s.weather_name) == ("Bahrajn", "time trial", "lekki deszcz")
     assert (s.session_time_left_s, s.session_duration_s) == (1799, 1800)
-    assert s.safety_car_status == 2
+    assert s.safety_car_status == 2 and s.ai_difficulty == 90
     assert (s.pit_stop_window_ideal_lap, s.pit_stop_window_latest_lap, s.pit_stop_rejoin_position) == (12, 20, 7)
     a = s.assists
     assert (a.steering, a.braking, a.gearbox, a.pit) == (False, 2, 3, True)

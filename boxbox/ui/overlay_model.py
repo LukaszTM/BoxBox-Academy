@@ -21,6 +21,7 @@ class GuideCorner:
     name: str
     apex_m: float
     note: str = ""
+    flat: bool = False  # zakręt bez hamowania: kalibracja go nie przesuwa i nie dopasowuje do stref
 
 
 @dataclass(frozen=True)
@@ -66,8 +67,8 @@ def calibrate_guide(guide: TrackGuide, zones: tuple[Corner, ...]) -> TrackGuide:
     zakręty bez strefy (np. szybkie, bez hamowania) zostają jak były, strefy bez zakrętu
     dochodzą jako "hamowanie N". Nazwy zostają, więc plan sesji nadal pasuje.
     """
-    remaining = list(guide.corners)
-    out: list[GuideCorner] = []
+    remaining = [c for c in guide.corners if not c.flat]
+    out: list[GuideCorner] = [c for c in guide.corners if c.flat]
     extra = 0
     for zone in zones:
         if not remaining:
@@ -92,7 +93,10 @@ def calibrate_guide(guide: TrackGuide, zones: tuple[Corner, ...]) -> TrackGuide:
 def save_guide(guide: TrackGuide, path: Path) -> None:
     data = {
         "track_id": guide.track_id, "name": guide.name, "length_m": guide.length_m, "accuracy": guide.accuracy,
-        "corners": [{"name": c.name, "apex_m": round(c.apex_m, 1), "note": c.note} for c in guide.corners],
+        "corners": [
+            {"name": c.name, "apex_m": round(c.apex_m, 1), "note": c.note, **({"flat": True} if c.flat else {})}
+            for c in guide.corners
+        ],
     }
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
@@ -100,7 +104,10 @@ def save_guide(guide: TrackGuide, path: Path) -> None:
 def load_guide(path: Path) -> TrackGuide:
     data = json.loads(path.read_text(encoding="utf-8"))
     corners = tuple(
-        sorted((GuideCorner(c["name"], float(c["apex_m"]), c.get("note", "")) for c in data["corners"]), key=lambda c: c.apex_m)
+        sorted(
+            (GuideCorner(c["name"], float(c["apex_m"]), c.get("note", ""), bool(c.get("flat", False))) for c in data["corners"]),
+            key=lambda c: c.apex_m,
+        )
     )
     return TrackGuide(int(data["track_id"]), data["name"], float(data["length_m"]), data.get("accuracy", ""), corners)
 

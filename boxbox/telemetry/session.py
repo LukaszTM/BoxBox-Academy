@@ -108,6 +108,7 @@ class SessionPacket:
     is_spectating: bool
     safety_car_status: int  # 0 brak, 1 SC, 2 VSC, 3 formation lap
     network_game: bool
+    ai_difficulty: int  # 0-110
     pit_stop_window_ideal_lap: int
     pit_stop_window_latest_lap: int
     pit_stop_rejoin_position: int
@@ -166,7 +167,7 @@ def parse_session(data: bytes) -> SessionPacket:
         session_time_left_s=p[8], session_duration_s=p[9], pit_speed_limit_kmh=p[10],
         game_paused=bool(p[11]), is_spectating=bool(p[12]),
         safety_car_status=m[0], network_game=bool(m[1]),
-        pit_stop_window_ideal_lap=r[5], pit_stop_window_latest_lap=r[6],
+        ai_difficulty=r[1], pit_stop_window_ideal_lap=r[5], pit_stop_window_latest_lap=r[6],
         pit_stop_rejoin_position=r[7],
         assists=assists,
         game_mode=r[17], rule_set=r[18], time_of_day_min=r[19], session_length=r[20],

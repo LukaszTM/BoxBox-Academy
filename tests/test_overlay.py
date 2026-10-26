@@ -71,8 +71,9 @@ def test_view_without_guide_and_orientational_flag(tmp_path: Path) -> None:
     state.feed(lap_packet(lap_distance=100.0, lap_num=1, lap_invalid=False))
     state.feed(telemetry_packet())
     assert "brak przewodnika" in build_view(state, plan, None, 5, None).corner_line
-    guide = load_guide_for(11)
+    guide = load_guide_for(13)  # Suzuka: jeszcze bez nagrania, pozycje z pamięci
     assert "orientacyjne" in build_view(state, plan, guide, 5, None).status_line
+    assert "orientacyjne" not in build_view(state, plan, load_guide_for(11), 5, None).status_line  # Monza z nagrania
 
 
 def test_plan_goal_after_last_lap() -> None:

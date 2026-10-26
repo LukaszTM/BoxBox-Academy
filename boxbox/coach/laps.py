@@ -1,4 +1,5 @@
 """Cięcie strumienia pakietów na okrążenia z próbkami jazdy auta gracza."""
+from collections import Counter
 from dataclasses import dataclass, field
 
 from boxbox.telemetry.header import PacketId
@@ -23,6 +24,15 @@ class Lap:
     lap_time_ms: int | None = None  # znany dopiero po przejechaniu linii mety
     invalid: bool = False  # gra oznaczyła okrążenie jako nieważne
     pitted: bool = False  # auto było w pit lane
+    # Asysty w trakcie okrążenia (najczęstsza wartość; gracz może je zmieniać w garażu między okrążeniami).
+    gearbox: int | None = None  # 1 ręczna, 2 ręczna + sugestie, 3 automat
+    traction_control: int | None = None  # 0 wył., 1 średnia, 2 pełna
+    abs_on: bool | None = None
+    _assist_votes: Counter[tuple[int | None, int | None, bool | None]] = field(default_factory=Counter, repr=False, compare=False)
+
+    def vote_assists(self, gearbox: int | None, traction_control: int | None, abs_on: bool | None) -> None:
+        self._assist_votes[(gearbox, traction_control, abs_on)] += 1
+        self.gearbox, self.traction_control, self.abs_on = self._assist_votes.most_common(1)[0][0]
 
     def is_complete(self, track_length_m: float, tolerance: float = 0.05) -> bool:
         """Czy próbki pokrywają całe okrążenie (od mety do mety)."""
@@ -71,6 +81,12 @@ class LapRecorder:
             self.current.pitted = True
             return finished
         car = self.state.telemetry.player  # type: ignore[union-attr]
+        status = self.state.status.player if self.state.status else None
+        self.current.vote_assists(
+            self.state.session.assists.gearbox if self.state.session else None,
+            status.traction_control if status else None,
+            status.anti_lock_brakes if status else None,
+        )
         self.current.samples.append(Sample(
             distance_m=lap.lap_distance, lap_time_ms=lap.current_lap_time_ms, speed_kmh=car.speed_kmh,
             throttle=car.throttle, brake=car.brake, gear=car.gear, steer=car.steer,

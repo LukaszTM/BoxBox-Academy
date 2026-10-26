@@ -1,53 +1,56 @@
 {
   "track_id": 13,
   "name": "Suzuka",
-  "length_m": 5807,
-  "accuracy": "orientacyjne (z pamięci, +-150 m; do poprawy po nagraniu)",
+  "length_m": 5809,
+  "accuracy": "dokładne (z nagrania suzuka-tt-bez-tc_2026-10-26)",
   "corners": [
     {
       "name": "T1-T2",
-      "apex_m": 850,
+      "apex_m": 855,
       "note": "pierwszy zakręt, długi prawy w dół"
     },
     {
       "name": "T3-T7",
       "apex_m": 1400,
-      "note": "esy, rytm bez mocnego hamowania"
+      "note": "esy, rytm bez hamowania",
+      "flat": true
     },
     {
       "name": "T8",
       "apex_m": 1950,
-      "note": "Dunlop, lewy pod górę"
+      "note": "Dunlop, lewy pod górę, bez hamowania",
+      "flat": true
     },
     {
       "name": "T9-T10",
-      "apex_m": 2400,
+      "apex_m": 2480,
       "note": "Degner 1 i 2"
     },
     {
       "name": "T11",
-      "apex_m": 2900,
+      "apex_m": 2943,
       "note": "spinka, 1.-2. bieg"
     },
     {
       "name": "T12",
       "apex_m": 3450,
-      "note": "długi prawy przed Spoon"
+      "note": "długi prawy przed Spoon, bez hamowania",
+      "flat": true
     },
     {
       "name": "T13-T14",
-      "apex_m": 3850,
+      "apex_m": 3991,
       "note": "Spoon, podwójny lewy"
     },
     {
       "name": "T15",
       "apex_m": 4800,
-      "note": "130R, szybki lewy",
+      "note": "130R, szybki lewy, bez hamowania",
       "flat": true
     },
     {
       "name": "T16-T18",
-      "apex_m": 5400,
+      "apex_m": 5419,
       "note": "szykana Casio przed metą"
     }
   ]

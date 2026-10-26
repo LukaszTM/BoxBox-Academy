@@ -13,6 +13,7 @@ from boxbox.coach.laps import Lap, LapRecorder
 from boxbox.telemetry.replay import replay
 from boxbox.storage.db import Database
 from boxbox.tracks.model import load_track, track_path
+from boxbox.ui.console import TC_NAMES
 
 
 def record_laps(path: Path) -> LapRecorder:
@@ -40,6 +41,8 @@ def _fmt_delta(value: float | None, width: int = 6, unit: str = "", digits: int 
 def render_table(analysis: LapAnalysis, lap: Lap, reference: LapAnalysis | None = None) -> str:
     """Tabela zakrętów; z referencją dochodzą kolumny różnic (Δ = to okrążenie minus referencja)."""
     flags = " (nieważne)" if lap.invalid else ""
+    if lap.traction_control is not None:
+        flags += f" [TC {TC_NAMES.get(lap.traction_control, lap.traction_control)}, ABS {'wł.' if lap.abs_on else 'wył.'}]"
     header = f"Okrążenie {analysis.lap_number}{flags}: {format_time(analysis.lap_time_ms)}"
     deltas = {}
     if reference is not None:
@@ -107,13 +110,10 @@ def report_laps(
     if db_path is not None:
         db = Database(db_path)
         session_id = db.save_session(session, source=source)
-        status = recorder.state.status.player if recorder.state.status else None
         for lap in laps:
             db.save_lap(
                 session_id, lap, analyses[lap.number], track.length_m, track_id=track.track_id,
-                gearbox=session.assists.gearbox if session else None,
-                traction_control=status.traction_control if status else None,
-                abs_on=status.anti_lock_brakes if status else None,
+                gearbox=lap.gearbox, traction_control=lap.traction_control, abs_on=lap.abs_on,
             )
         if ref_analysis is None:
             ref = db.reference(track.track_id)

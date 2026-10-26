@@ -95,21 +95,21 @@ głosem mechanika-instruktora. Tryb nauki (jazda bez asyst dla początkujących)
 
 Siedem etapów, każdy z kryterium ukończenia, które da się sprawdzić bez dyskusji. Jeden etap = jedna lub kilka sesji Claude Code. Kolejny etap zaczyna się dopiero po spełnieniu kryterium poprzedniego.
 
-**Etap 0 – Szkielet (1 sesja)**
+**Etap 0 – Szkielet (1 sesja)** ✔ zakończony
 
 - [x] Repozytorium Git, `pyproject.toml`, struktura katalogów z sekcji wyżej, `CLAUDE.md`, pusty `pytest` przechodzi.
 - [x] Kryterium: `pytest` zielony, `python -m boxbox.app` uruchamia się i wypisuje "brak danych".
 
-**Etap 1 – Telemetria (2–3 sesje)**
+**Etap 1 – Telemetria (2–3 sesje)** ✔ zakończony (26.10.2026)
 
 - [x] Odbiór UDP na porcie 20777, parser nagłówka pakietu i pakietów: Session, Lap Data, Car Telemetry, Car Status, Event, Car Damage. (Układy pól sprawdzone ze specyfikacją EA w `docs/`; do potwierdzenia pierwszym nagraniem.)
 - [x] Narzędzie `record` (`python -m boxbox.telemetry.record --name <tor>`) zapisujące surowe pakiety do pliku i `replay` (`python -m boxbox.app --replay <plik> [--speed N]`) odtwarzający je z zachowaniem czasu.
 - [x] Konsola pokazująca na żywo: prędkość, bieg, gaz %, hamulec %, baterię %, dystans okrążenia, aktualne asysty.
-- [ ] Kryterium: 3 nagrania (trening na 3 torach) w `recordings/`, test parsera na każdym z nich przechodzi. (2/3: Bahrajn TT 156 574 pakiety, Monza trening z AI 287 129 pakietów, 0 błędów parsera; nagrania trzymamy jako `.bin.xz`, test: `tests/test_recordings.py`.)
+- [x] Kryterium: 3 nagrania (trening na 3 torach) w `recordings/`, test parsera na każdym z nich przechodzi. (Bahrajn TT 156 574 pakiety, Monza trening z AI 287 129, Suzuka TT bez TC 125 536; 0 błędów parsera; nagrania jako `.bin.xz`, test: `tests/test_recordings.py`.)
 
-**Etap 2 – Zakręty i okrążenie referencyjne (2 sesje)**
+**Etap 2 – Zakręty i okrążenie referencyjne (2 sesje)** ✔ zakończony (26.10.2026)
 
-- [ ] Format JSON toru: lista zakrętów z numerem, dystansem wejścia i wyjścia. Pliki dla 3 torów z nagrań. (Format, model, `python -m boxbox.tracks.detect <nagranie> [--car rival]` gotowe; 2/3: `3.json` Bahrajn 8 stref, `11.json` Monza 6 stref, z nagrań.)
+- [x] Format JSON toru: lista zakrętów z numerem, dystansem wejścia i wyjścia. Pliki dla 3 torów z nagrań. (`boxbox/tracks/data/`: `3.json` Bahrajn 8 stref, `11.json` Monza 6, `13.json` Suzuka 5; strefy hamowania wykryte z nagrań, nazwy wg numerów zakrętów toru; `python -m boxbox.tracks.detect <nagranie> [--car rival]`.)
 - [x] Dzielenie okrążenia na zakręty; dla każdego: minimalna prędkość, bieg w apexie, punkt hamowania, punkt pełnego gazu. (`boxbox/coach/laps.py`, `corners.py`, tabela: `python -m boxbox.coach.analyze <nagranie>`; sprawdzone na danych syntetycznych.)
 - [x] Zapis okrążeń do SQLite; najlepsze ważne okrążenie gracza staje się referencją. (`boxbox/storage/db.py`, domyślnie `data/boxbox.sqlite`.)
 - [x] Kryterium: po odtworzeniu nagrania aplikacja wypisuje tabelę zakrętów z różnicą do referencji. (`python -m boxbox.app --replay recordings/bahrajn-tt_...bin.xz [--reference rival]`: różnica do własnego najlepszego albo do ducha rywala.)

@@ -7,7 +7,7 @@ from boxbox.coach.corners import analyze_lap
 from boxbox.coach.laps import Lap, LapRecorder, Sample
 from boxbox.telemetry.recording import RecordingWriter
 from boxbox.tracks.model import save_track
-from tests.builders import lap_packet, session_packet, telemetry_packet
+from tests.builders import lap_packet, session_packet, status_packet, telemetry_packet
 from tests.synthetic import CORNERS, LENGTH, gear_at, pedals_at, speed_at, track
 
 
@@ -124,3 +124,26 @@ def test_cli_without_track_file(tmp_path: Path) -> None:
     rec = tmp_path / "r.bin"
     make_recording(rec)
     assert main([str(rec), "--track", str(tmp_path / "missing.json")]) == 1
+
+
+def test_recorder_votes_assists_per_lap() -> None:
+    import struct
+    from boxbox.telemetry import car_status as cs
+    from tests.builders import PLAYER
+    rec = LapRecorder()
+    rec.feed(session_packet())
+
+    def status(tc: int) -> bytes:
+        raw = bytearray(status_packet())
+        offset = 29 + PLAYER * cs._CAR[2025].size
+        struct.pack_into("<B", raw, offset, tc)
+        return bytes(raw)
+
+    rec.feed(status(2))  # TC pełna jeszcze w garażu
+    feed(rec, 1, 5.0, 100)
+    rec.feed(status(0))  # wyłączona na okrążeniu
+    for d in (100.0, 200.0, 300.0):
+        feed(rec, 1, d, 150)
+    done = feed(rec, 2, 3.0, 200)
+    assert done is not None and done.number == 1
+    assert (done.gearbox, done.traction_control, done.abs_on) == (3, 0, True)  # większość próbek bez TC

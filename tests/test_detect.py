@@ -1,5 +1,4 @@
 import json
-import math
 from pathlib import Path
 
 import pytest
@@ -8,20 +7,7 @@ from boxbox.tracks.detect import SpeedSample, detect_corners, main
 from boxbox.telemetry.recording import RecordingWriter
 from tests.builders import lap_packet, session_packet, telemetry_packet
 
-LENGTH = 5000.0
-# (apex_m, prędkość w apeksie, szerokość "doliny" w m) - syntetyczny profil prędkości
-CORNERS = [(600.0, 90.0, 120.0), (1500.0, 160.0, 150.0), (3200.0, 70.0, 100.0), (4800.0, 200.0, 120.0)]
-STRAIGHT = 300.0
-
-
-def speed_at(distance: float) -> float:
-    speed = STRAIGHT
-    for apex, v_min, half_width in CORNERS:
-        d = abs(distance - apex)
-        if d < half_width:
-            # łagodna dolina: cosinus od prostej do apeksu i z powrotem
-            speed = min(speed, v_min + (STRAIGHT - v_min) * (1 - math.cos(math.pi * d / half_width)) / 2)
-    return speed
+from tests.synthetic import CORNERS, LENGTH, speed_at
 
 
 def synthetic_lap(step_m: float = 1.5) -> list[SpeedSample]:

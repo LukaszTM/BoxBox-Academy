@@ -45,29 +45,35 @@ class TelemetryState:
     def unsupported_formats(self) -> dict[int, int]:
         return {fmt: n for fmt, n in self.formats.items() if fmt not in SUPPORTED_FORMATS}
 
-    def feed(self, data: bytes) -> None:
-        """Przyjmuje surowy pakiet; nieznane i uszkodzone pakiety liczy, nie wywraca się."""
+    def feed(self, data: bytes) -> PacketId | None:
+        """Przyjmuje surowy pakiet; nieznane i uszkodzone pakiety liczy, nie wywraca się.
+
+        Zwraca rodzaj pakietu, jeśli został poprawnie sparsowany i zapisany w stanie, inaczej None.
+        """
         try:
             header = parse_header(data)
         except ValueError:
             self.errors["nagłówek"] += 1
-            return
+            return None
         kind = header.kind
         name = kind.name if kind else f"NIEZNANY_{header.packet_id}"
         self.packets[name] += 1
         self.formats[header.packet_format] += 1
         if header.packet_format not in SUPPORTED_FORMATS:
-            return
+            return None
         if kind is PacketId.EVENT:
             try:
                 self.events.append(parse_event(data))
             except ValueError:
                 self.errors[name] += 1
-            return
+                return None
+            return kind
         if kind not in _PARSERS:
-            return
+            return None
         attr, parser = _PARSERS[kind]
         try:
             setattr(self, attr, parser(data))
         except ValueError:
             self.errors[name] += 1
+            return None
+        return kind

@@ -11,9 +11,10 @@ from boxbox.coach.corners import LapAnalysis, analyze_corner, analyze_lap
 from boxbox.coach.laps import Lap, LapRecorder
 from boxbox.coach.rules import MIN_TIME_LOSS_S, Message, biggest_loss, evaluate_corner, evaluate_lap, pick_top
 from boxbox.tracks.model import Track
-from boxbox.voice.phrases import MISC_TEXTS, compose, compose_short
+from boxbox.voice.phrases import MISC_TEXTS, compose, compose_short, spoken_text
 
-CORNER_EXIT_MARGIN_M = 25.0  # tyle metrów za wyjściem z zakrętu mówimy o nim
+CORNER_EXIT_MARGIN_M = 25.0  # tyle metrów za wyjściem z zakrętu najwcześniej mówimy o nim
+CORNER_EXIT_DEADLINE_M = 150.0  # najpóźniej tu: gdy pełny gaz jeszcze nie przyszedł, czekamy do tego miejsca (~2 s)
 Speak = Callable[[list[str], str], None]
 
 
@@ -61,14 +62,18 @@ class LiveCoach:
                 continue  # zakręt przez linię mety dostaje tylko podsumowanie
             if distance < corner.exit_m + CORNER_EXIT_MARGIN_M:
                 continue
-            self.announced.add(key)
             metrics = analyze_corner(lap, corner, self.track)
             if metrics is None:
+                self.announced.add(key)
                 continue
+            # pełny gaz po apeksie jeszcze nie przyszedł: poczekaj, ale nie dłużej niż do deadline'u
+            if metrics.full_throttle_m is None and distance < corner.exit_m + CORNER_EXIT_DEADLINE_M:
+                continue
+            self.announced.add(key)
             msgs = evaluate_corner(lap.number, metrics, ref[corner.number], self.track, lap.traction_control)
             best = max(msgs, key=lambda m: m.weight, default=None)
             if best is not None and best.weight >= self.min_corner_weight:
-                self.speak(compose_short(best), f"{best.corner_name}: {best.problem}")
+                self.speak(compose_short(best), spoken_text(best, short=True))
                 out.append(best)
         return out
 
@@ -91,12 +96,12 @@ class LiveCoach:
         if top:
             self._say_misc("lap_summary")
             for m in top:
-                self.speak(compose(m), f"{m.corner_name}: {m.problem} {m.hint}")
+                self.speak(compose(m), spoken_text(m))
             out += top
         elif not lap.invalid:
             soft = biggest_loss(messages)
             if soft is not None:
-                self.speak(["misc_biggest_loss", *compose(soft)], f"{MISC_TEXTS['biggest_loss']} {soft.corner_name}: {soft.problem} {soft.hint}")
+                self.speak(["misc_biggest_loss", *compose(soft)], f"{MISC_TEXTS['biggest_loss']} {spoken_text(soft)}")
                 out.append(soft)
             else:
                 self._say_misc("lap_clean")

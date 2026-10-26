@@ -146,6 +146,21 @@ def compose_short(message: Message) -> list[str]:
     return clips
 
 
+def spoken_text(message: Message, short: bool = False) -> str:
+    """Dokładnie to, co mówi głos (te same frazy i zaokrąglone liczby), do konsoli i logu."""
+    rule = rule_variant(message)
+    head, hint = RULE_TEXTS[rule]
+    parts = [corner_text(message.corner_name), head]
+    if head.endswith("o jakieś"):
+        value = message.value_m if message.value_m is not None else 10
+        parts[-1] = head + " " + meters_text(value)
+    if message.gear is not None and rule.startswith("gear"):
+        parts.append(gear_text(min(8, max(1, message.gear))))
+    elif hint and not short:
+        parts.append(hint)
+    return " ".join(parts)
+
+
 def track_corner_names() -> list[str]:
     """Nazwy zakrętów ze wszystkich plików torów w boxbox/tracks/data."""
     import json

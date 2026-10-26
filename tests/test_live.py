@@ -34,8 +34,9 @@ def test_live_corner_and_lap_messages_with_reference(monza: RecordedSession) -> 
     texts = [s[3] for s in spoken]
     assert texts[0].startswith("Mechanik na radiu") and texts[1].startswith("Mam twoje najlepsze")
     # okrążenie 4: komunikat po Z1 (T1-T2) zanim auto dojedzie do Z2 (wejście 2008 m)
-    z1 = [s for s in spoken if s[0] == 4 and "T1-T2: Hamowanie" in s[3] and "Zacznij" not in s[3]]
+    z1 = [s for s in spoken if s[0] == 4 and s[3].startswith("Zakręty pierwszy i drugi. Hamowanie") and "Zacznij" not in s[3]]
     assert z1 and monza.track.corners[0].exit_m < z1[0][1] < monza.track.corners[1].entry_m
+    assert "dziewięćdziesiąt metrów" in z1[0][3]  # tekst = to, co mówi głos (liczba zaokrąglona do 10)
     assert z1[0][2][0] == "corner_t1_2" and z1[0][2][1].startswith("rule_brake_late")
     # podsumowanie okrążenia 4 po mecie (na początku okrążenia 5), ze wskazówkami
     summary = [s for s in spoken if s[0] == 5 and s[2] == ["misc_lap_summary"]]
@@ -71,3 +72,31 @@ def test_live_corner_messages_can_be_disabled(monza: RecordedSession) -> None:
     # bez krótkich komunikatów po zakręcie (klip zakrętu na początku, bez wskazówki "_b")
     assert not any(s[2][0].startswith("corner_") and not any(i.endswith("_b") for i in s[2]) for s in spoken)
     assert any(s[2] == ["misc_lap_summary"] for s in spoken)
+
+
+def test_corner_message_waits_for_full_throttle(monza: RecordedSession) -> None:
+    """Gdy pełny gaz przychodzi późno, ocena zakrętu czeka (do 150 m za wyjściem) zamiast przepaść."""
+    from boxbox.coach.laps import Lap, Sample
+    from boxbox.coach.corners import analyze_lap
+    track = monza.track
+    ref = analyze_lap(monza.lap(6), track)
+    lap6 = monza.lap(6)
+    # okrążenie "late": jak 6, ale po Z1 gaz pełny dopiero 120 m za wyjściem
+    z1 = track.corners[0]
+    samples = []
+    for s in lap6.samples:
+        thr = s.throttle
+        if z1.apex_m < s.distance_m < z1.exit_m + 120:
+            thr = min(thr, 0.6)
+        samples.append(Sample(s.distance_m, s.lap_time_ms, s.speed_kmh, thr, s.brake, s.gear, s.steer))
+    late = Lap(7, samples, 90_000)
+    recorder = LapRecorder()
+    recorder.current = late_partial = Lap(7, [], None)
+    spoken: list[tuple[float, str]] = []
+    coach = LiveCoach(track, lambda ids, text: spoken.append((late_partial.samples[-1].distance_m, text)), ref, said_hello=True)
+    for s in samples:  # symulacja postępu okrążenia próbka po próbce
+        late_partial.samples.append(s)
+        coach.update(recorder, None)
+    z1_msgs = [s for s in spoken if s[1].startswith("Zakręty pierwszy i drugi")]
+    assert z1_msgs and "Pełny gaz za późno" in z1_msgs[0][1]
+    assert z1.exit_m + 100 <= z1_msgs[0][0] <= z1.exit_m + 160

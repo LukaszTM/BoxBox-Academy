@@ -63,3 +63,15 @@ def test_rules_fill_value_fields(monza) -> None:
     assert first.rule == "brake_late" and first.variant == "big" and first.value_m == 290
     entries = catalog(track_corner_names())
     assert all(clip in entries for m in top for clip in compose(m))
+
+
+def test_spoken_text_matches_clips() -> None:
+    from boxbox.voice.phrases import spoken_text
+    late = Message(2, 1, "T1-T2", "brake_late", "Hamowanie za późno w T1-T2, o 277 m.", "h", 1.0, value_m=280)
+    assert spoken_text(late) == (
+        "Zakręty pierwszy i drugi. Hamowanie za późno, o jakieś dwieście osiemdziesiąt metrów. "
+        "Zacznij hamować wcześniej i puszczaj pedał stopniowo."
+    )
+    assert spoken_text(late, short=True) == "Zakręty pierwszy i drugi. Hamowanie za późno, o jakieś dwieście osiemdziesiąt metrów."
+    gear = Message(2, 3, "T6", "gear_low", "p", "h", 0.1, gear=4)
+    assert spoken_text(gear) == "Zakręt szósty. Za niski bieg. W apeksie czwarty bieg."

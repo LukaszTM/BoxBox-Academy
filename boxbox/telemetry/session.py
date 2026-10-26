@@ -1,15 +1,20 @@
 """Pakiet Session (id 1): tor, typ sesji, pogoda, asysty, ustawienia gry.
 
-Układ zgodny z docs/F1_25_Telemetry_Output_Structures.txt. Parsujemy tylko to,
-co jest potrzebne trenerowi i inżynierowi; strefy marshali i prognozę pogody pomijamy.
+Układ zgodny z docs/F1_25_Telemetry_Output_Structures.txt (2025, 753 B)
+i docs/2026_Season_Pack_Telemetry_Output_Structures.txt (2026, 926 B).
+Format 2026 dokłada na końcu strefy aktywnego aero i DRS, czas reakcji na starcie
+oraz asysty TC/ABS. Parsujemy tylko to, co jest potrzebne trenerowi i inżynierowi;
+strefy marshali, prognozę pogody i strefy aktywnego aero pomijamy.
 """
 import struct
 from dataclasses import dataclass
 
-from boxbox.telemetry.header import HEADER_SIZE, PacketHeader, PacketId, parse_header
+from boxbox.telemetry.header import HEADER_SIZE, PacketHeader, PacketId, check_packet
 
 NUM_MARSHAL_ZONES = 21
 NUM_WEATHER_SAMPLES = 64
+NUM_ACTIVE_AERO_ZONES = 8  # tylko 2026
+NUM_DRS_ZONES = 4  # tylko 2026
 
 # Segmenty pakietu po nagłówku: prefiks, strefy marshali, środek, prognoza, reszta.
 PREFIX = struct.Struct("<BbbBHBbBHHBBBBBB")
@@ -30,11 +35,21 @@ REST = struct.Struct(
     + "B" * 12  # weekendStructure
     + "ff"  # początek sektora 2 i 3 (m)
 )
+# Ogon tylko w formacie 2026.
+EXTRA_2026 = struct.Struct(
+    "<BB"  # activeAeroTrackStatus, numActiveAeroZonesFull
+    + "ff" * NUM_ACTIVE_AERO_ZONES  # strefy aktywnego aero (pełne)
+    + "B" + "ff" * NUM_ACTIVE_AERO_ZONES  # numActiveAeroZonesPartial + strefy częściowe
+    + "B" + "ff" * NUM_DRS_ZONES  # numDRSZones + strefy DRS (ułamek okrążenia: start, koniec)
+    + "f"  # startReactionTime
+    + "BBBBB"  # ABS, TC, linia hi-vis, linia dla daltonistów, przypomnienie o rewind
+)
 
 PREFIX_OFFSET = HEADER_SIZE
 MIDDLE_OFFSET = PREFIX_OFFSET + PREFIX.size + NUM_MARSHAL_ZONES * MARSHAL_ZONE.size
 REST_OFFSET = MIDDLE_OFFSET + MIDDLE.size + NUM_WEATHER_SAMPLES * WEATHER_SAMPLE.size
-PACKET_SIZE = REST_OFFSET + REST.size  # 753
+EXTRA_OFFSET = REST_OFFSET + REST.size
+PACKET_SIZE: dict[int, int] = {2025: EXTRA_OFFSET, 2026: EXTRA_OFFSET + EXTRA_2026.size}  # 753, 926
 
 TRACK_NAMES: dict[int, str] = {  # załącznik "Track IDs" w docs/Data_Output_from_F1_25_v3.pdf
     0: "Melbourne", 2: "Szanghaj", 3: "Bahrajn", 4: "Barcelona", 5: "Monako", 6: "Montreal",
@@ -60,7 +75,7 @@ WEATHER_NAMES: dict[int, str] = {
 
 @dataclass(frozen=True)
 class Assists:
-    """Asysty z ustawień gry. TC i ABS są w pakiecie Car Status, nie tutaj."""
+    """Asysty z ustawień gry. TC i ABS są zawsze w Car Status; w formacie 2026 także tutaj."""
 
     steering: bool
     braking: int  # 0 wył., 1 niska, 2 średnia, 3 wysoka
@@ -71,6 +86,8 @@ class Assists:
     drs: bool
     dynamic_racing_line: int  # 0 wył., 1 tylko zakręty, 2 cała
     dynamic_racing_line_type: int  # 0 2D, 1 3D
+    traction_control: int | None = None  # tylko 2026: 0 wył., 1 średnia, 2 pełna
+    anti_lock_brakes: bool | None = None  # tylko 2026
 
 
 @dataclass(frozen=True)
@@ -101,6 +118,8 @@ class SessionPacket:
     session_length: int
     sector2_lap_distance_start: float
     sector3_lap_distance_start: float
+    drs_zones: tuple[tuple[float, float], ...] = ()  # tylko 2026: (start, koniec) jako ułamek okrążenia
+    start_reaction_time_s: float | None = None  # tylko 2026
 
     @property
     def track_name(self) -> str:
@@ -116,14 +135,30 @@ class SessionPacket:
 
 
 def parse_session(data: bytes) -> SessionPacket:
-    header = parse_header(data)
-    if header.kind is not PacketId.SESSION:
-        raise ValueError(f"to nie pakiet Session (id {header.packet_id})")
-    if len(data) != PACKET_SIZE:
-        raise ValueError(f"zła długość pakietu: {len(data)} B, oczekiwano {PACKET_SIZE} B")
+    header = check_packet(data, PacketId.SESSION, PACKET_SIZE)
     p = PREFIX.unpack_from(data, PREFIX_OFFSET)
     m = MIDDLE.unpack_from(data, MIDDLE_OFFSET)
     r = REST.unpack_from(data, REST_OFFSET)
+    assists = Assists(
+        steering=bool(r[8]), braking=r[9], gearbox=r[10], pit=bool(r[11]),
+        pit_release=bool(r[12]), ers=bool(r[13]), drs=bool(r[14]),
+        dynamic_racing_line=r[15], dynamic_racing_line_type=r[16],
+    )
+    drs_zones: tuple[tuple[float, float], ...] = ()
+    start_reaction_time: float | None = None
+    if header.packet_format == 2026:
+        e = EXTRA_2026.unpack_from(data, EXTRA_OFFSET)
+        drs_start = 2 + 2 * NUM_ACTIVE_AERO_ZONES + 1 + 2 * NUM_ACTIVE_AERO_ZONES + 1
+        num_drs = e[drs_start - 1]
+        drs_zones = tuple(
+            (e[drs_start + 2 * i], e[drs_start + 2 * i + 1]) for i in range(num_drs)
+        )
+        tail = drs_start + 2 * NUM_DRS_ZONES
+        start_reaction_time = e[tail]
+        assists = Assists(
+            **{k: v for k, v in assists.__dict__.items() if k not in ("traction_control", "anti_lock_brakes")},
+            anti_lock_brakes=bool(e[tail + 1]), traction_control=e[tail + 2],
+        )
     return SessionPacket(
         header=header,
         weather=p[0], track_temperature=p[1], air_temperature=p[2], total_laps=p[3],
@@ -133,11 +168,8 @@ def parse_session(data: bytes) -> SessionPacket:
         safety_car_status=m[0], network_game=bool(m[1]),
         pit_stop_window_ideal_lap=r[5], pit_stop_window_latest_lap=r[6],
         pit_stop_rejoin_position=r[7],
-        assists=Assists(
-            steering=bool(r[8]), braking=r[9], gearbox=r[10], pit=bool(r[11]),
-            pit_release=bool(r[12]), ers=bool(r[13]), drs=bool(r[14]),
-            dynamic_racing_line=r[15], dynamic_racing_line_type=r[16],
-        ),
+        assists=assists,
         game_mode=r[17], rule_set=r[18], time_of_day_min=r[19], session_length=r[20],
         sector2_lap_distance_start=r[-2], sector3_lap_distance_start=r[-1],
+        drs_zones=drs_zones, start_reaction_time_s=start_reaction_time,
     )

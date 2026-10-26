@@ -1,14 +1,15 @@
 import io
 
+import pytest
+
 from boxbox.telemetry.state import TelemetryState
 from boxbox.ui.console import NO_DATA_MESSAGE, Console, render
-from tests.test_packets import lap_packet, telemetry_packet
-from tests.test_session_status import session_packet, status_packet
+from tests.builders import FORMATS, lap_packet, session_packet, status_packet, telemetry_packet
 
 
-def full_state() -> TelemetryState:
+def full_state(fmt: int = 2025) -> TelemetryState:
     state = TelemetryState()
-    for packet in (session_packet(), lap_packet(), telemetry_packet(), status_packet()):
+    for packet in (session_packet(fmt), lap_packet(fmt), telemetry_packet(fmt), status_packet(fmt)):
         state.feed(packet)
     return state
 
@@ -17,8 +18,9 @@ def test_render_empty_state() -> None:
     assert render(TelemetryState()) == NO_DATA_MESSAGE
 
 
-def test_render_full_state() -> None:
-    line = render(full_state())
+@pytest.mark.parametrize("fmt", FORMATS)
+def test_render_full_state(fmt: int) -> None:
+    line = render(full_state(fmt))
     assert line.startswith(
         "Bahrajn (time trial) | okr 3 |   1234 m | 287 km/h | bieg 6 | gaz  75% | ham  25% | ERS  75%"
     )

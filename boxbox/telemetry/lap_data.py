@@ -1,17 +1,20 @@
 """Pakiet Lap Data (id 2): czasy, dystans okrążenia, pozycja, pit, kary.
 
-Układ zgodny z docs/F1_25_Telemetry_Output_Structures.txt (format pakietu 2025).
+Układ zgodny z docs/F1_25_Telemetry_Output_Structures.txt (2025)
+i docs/2026_Season_Pack_Telemetry_Output_Structures.txt (2026).
+W 2026 zmienia się tylko liczba aut (24).
 """
 import struct
 from dataclasses import dataclass
 
-from boxbox.telemetry.header import HEADER_SIZE, PacketHeader, PacketId, parse_header
+from boxbox.telemetry.header import HEADER_SIZE, NUM_CARS, PacketHeader, PacketId, check_packet
 
-NUM_CARS = 22
 _CAR = struct.Struct("<IIHBHBHBHBfffBBBBBBBBBBBBBBBHHBfB")
 CAR_SIZE = _CAR.size  # 57
-_TAIL = struct.Struct("<BB")
-PACKET_SIZE = HEADER_SIZE + NUM_CARS * CAR_SIZE + _TAIL.size  # 1285
+_TAIL = struct.Struct("<BB")  # indeksy aut: rekord osobisty i rywal w Time Trial
+PACKET_SIZE: dict[int, int] = {
+    fmt: HEADER_SIZE + n * CAR_SIZE + _TAIL.size for fmt, n in NUM_CARS.items()
+}  # 2025: 1285, 2026: 1399
 
 
 @dataclass(frozen=True)
@@ -51,8 +54,8 @@ class LapData:
 class LapDataPacket:
     header: PacketHeader
     cars: tuple[LapData, ...]
-    time_trial_pb_car_idx: int
-    time_trial_rival_car_idx: int
+    time_trial_pb_car_idx: int  # 255 = brak
+    time_trial_rival_car_idx: int  # 255 = brak
 
     @property
     def player(self) -> LapData:
@@ -85,11 +88,7 @@ def _parse_car(data: bytes, offset: int) -> LapData:
 
 
 def parse_lap_data(data: bytes) -> LapDataPacket:
-    header = parse_header(data)
-    if header.kind is not PacketId.LAP_DATA:
-        raise ValueError(f"to nie pakiet Lap Data (id {header.packet_id})")
-    if len(data) != PACKET_SIZE:
-        raise ValueError(f"zła długość pakietu: {len(data)} B, oczekiwano {PACKET_SIZE} B")
-    cars = tuple(_parse_car(data, HEADER_SIZE + i * CAR_SIZE) for i in range(NUM_CARS))
-    pb, rival = _TAIL.unpack_from(data, HEADER_SIZE + NUM_CARS * CAR_SIZE)
+    header = check_packet(data, PacketId.LAP_DATA, PACKET_SIZE)
+    cars = tuple(_parse_car(data, HEADER_SIZE + i * CAR_SIZE) for i in range(header.num_cars))
+    pb, rival = _TAIL.unpack_from(data, HEADER_SIZE + header.num_cars * CAR_SIZE)
     return LapDataPacket(header, cars, pb, rival)

@@ -3,26 +3,22 @@ import struct
 import pytest
 
 from boxbox.telemetry import car_damage as cd
+from boxbox.telemetry import car_telemetry2 as ct2
 from boxbox.telemetry import event as ev
-from boxbox.telemetry.header import PacketHeader, PacketId, pack_header
+from boxbox.telemetry.header import NUM_CARS, PacketId
 from boxbox.telemetry.state import TelemetryState
-
-
-def header(packet_id: PacketId, player: int = 3) -> bytes:
-    return pack_header(PacketHeader(2025, 25, 1, 0, 1, int(packet_id), 1, 0.0, 0, 0, player, 255))
-
-
-def event_packet(code: str, details: bytes = b"") -> bytes:
-    body = code.encode("ascii") + details
-    return header(PacketId.EVENT) + body.ljust(ev.PACKET_SIZE - 29, b"\x00")
+from tests.builders import FORMATS, damage_packet, event_packet, telemetry2_packet
 
 
 def test_sizes_match_spec() -> None:
-    assert (ev.PACKET_SIZE, cd.CAR_SIZE, cd.PACKET_SIZE) == (45, 46, 1041)
+    assert ev.PACKET_SIZE == {2025: 45, 2026: 45}
+    assert cd.PACKET_SIZE == {2025: 1041, 2026: 1133}
+    assert ct2.PACKET_SIZE == {2026: 269}
 
 
-def test_event_without_details() -> None:
-    e = ev.parse_event(event_packet("CHQF"))
+@pytest.mark.parametrize("fmt", FORMATS)
+def test_event_without_details(fmt: int) -> None:
+    e = ev.parse_event(event_packet("CHQF", fmt=fmt))
     assert (e.code, e.name, e.details) == ("CHQF", "flaga w szachownicę", None)
 
 
@@ -51,7 +47,7 @@ def test_unknown_event_code_is_kept() -> None:
         ("BUTN", struct.pack("<I", 0x0001), ev.Buttons(1)),
         ("OVTK", struct.pack("<BB", 3, 9), ev.Overtake(3, 9)),
         ("SCAR", struct.pack("<BB", 2, 0), ev.SafetyCar(2, 0)),
-        ("COLL", struct.pack("<BB", 3, 12), ev.Collision(3, 12)),
+        ("COLL", struct.pack("<BB", 3, 12), ev.Collision(3, 12, None)),
     ],
 )
 def test_event_details(code: str, details: bytes, expected: object) -> None:
@@ -60,27 +56,15 @@ def test_event_details(code: str, details: bytes, expected: object) -> None:
     assert e.details == expected
 
 
-def damage_packet() -> bytes:
-    blank = bytes(cd.CAR_SIZE)
-    player = struct.pack(
-        "<4f4B4B4B" + "B" * 6 + "BB" + "B" * 8 + "BB",
-        12.5, 13.0, 20.25, 21.0,  # zużycie opon
-        0, 0, 5, 5,  # uszkodzenia opon
-        1, 1, 2, 2,  # hamulce
-        0, 0, 3, 0,  # pęcherze
-        10, 0, 0, 4, 0, 0,  # skrzydła, podłoga, dyfuzor, sidepod
-        0, 1,  # DRS, ERS
-        2, 3, 11, 12, 13, 14, 15, 16,  # skrzynia, silnik, zużycie podzespołów
-        0, 0,
-    )
-    assert len(player) == cd.CAR_SIZE
-    cars = [blank] * 22
-    cars[3] = player
-    return header(PacketId.CAR_DAMAGE) + b"".join(cars)
+def test_collision_2026_has_severity() -> None:
+    e = ev.parse_event(event_packet("COLL", struct.pack("<BBB", 3, 12, 2), fmt=2026))
+    assert e.details == ev.Collision(3, 12, 2)
 
 
-def test_parse_car_damage() -> None:
-    packet = cd.parse_car_damage(damage_packet())
+@pytest.mark.parametrize("fmt", FORMATS)
+def test_parse_car_damage(fmt: int) -> None:
+    packet = cd.parse_car_damage(damage_packet(fmt))
+    assert len(packet.cars) == NUM_CARS[fmt]
     c = packet.player
     assert c.tyres_wear_percent == pytest.approx((12.5, 13.0, 20.25, 21.0))
     assert c.tyres_damage_percent == (0, 0, 5, 5)
@@ -95,6 +79,22 @@ def test_parse_car_damage() -> None:
     assert packet.cars[0].has_aero_damage is False
 
 
+def test_parse_car_telemetry2() -> None:
+    packet = ct2.parse_car_telemetry2(telemetry2_packet())
+    assert len(packet.cars) == 24
+    c = packet.player
+    assert (c.active_aero_mode, c.active_aero_available, c.active_aero_activation_distance_m) == (1, True, 0)
+    assert (c.overtake_available, c.overtake_active, c.overtake_activation_distance_m) == (True, False, 120)
+    assert (c.regulations_2026, c.driving_wrong_way) == (True, False)
+
+
+def test_car_telemetry2_only_in_2026() -> None:
+    data = bytearray(telemetry2_packet())
+    data[0:2] = (2025).to_bytes(2, "little")
+    with pytest.raises(ValueError, match="nieobsługiwany format"):
+        ct2.parse_car_telemetry2(bytes(data))
+
+
 @pytest.mark.parametrize(
     "parse,data",
     [(ev.parse_event, damage_packet()), (cd.parse_car_damage, event_packet("SSTA"))],
@@ -104,30 +104,36 @@ def test_wrong_packet_type_rejected(parse, data) -> None:
         parse(data)
 
 
-@pytest.mark.parametrize(
-    "parse,data",
-    [(ev.parse_event, event_packet("SSTA")), (cd.parse_car_damage, damage_packet())],
-)
-def test_wrong_length_rejected(parse, data) -> None:
+@pytest.mark.parametrize("fmt", FORMATS)
+def test_wrong_length_rejected(fmt: int) -> None:
     with pytest.raises(ValueError, match="długość"):
-        parse(data[:-1])
+        ev.parse_event(event_packet("SSTA", fmt=fmt)[:-1])
+    with pytest.raises(ValueError, match="długość"):
+        cd.parse_car_damage(damage_packet(fmt)[:-1])
 
 
-def test_state_counts_unsupported_format() -> None:
+def test_state_counts_formats_and_rejects_unknown() -> None:
     state = TelemetryState()
-    packet = bytearray(damage_packet())
-    struct.pack_into("<H", packet, 0, 2026)  # packetFormat z 2026 Season Pack
-    state.feed(bytes(packet))
-    assert state.unsupported_formats == {2026: 1}
-    assert state.packets["CAR_DAMAGE"] == 1 and state.damage is None and not state.errors
+    state.feed(damage_packet(2025))
+    state.feed(damage_packet(2026))
+    old = bytearray(damage_packet())
+    old[0:2] = (2024).to_bytes(2, "little")
+    state.feed(bytes(old))
+    assert state.formats == {2025: 1, 2026: 1, 2024: 1}
+    assert state.unsupported_formats == {2024: 1}
+    assert state.packets["CAR_DAMAGE"] == 3 and not state.errors
+    assert state.damage is not None and state.damage.header.packet_format == 2026
 
 
-def test_state_collects_events_and_damage() -> None:
+def test_state_collects_events_damage_and_telemetry2() -> None:
     state = TelemetryState()
     state.feed(event_packet("SSTA"))
     state.feed(event_packet("PENA", struct.pack("<BBBBBBB", 5, 7, 3, 255, 3, 4, 0)))
     state.feed(damage_packet())
+    state.feed(telemetry2_packet())
     state.feed(event_packet("SSTA")[:-1])  # uszkodzone zdarzenie
     assert [e.code for e in state.events] == ["SSTA", "PENA"]
     assert state.damage is not None and state.damage.player.floor_damage_percent == 4
+    assert state.telemetry2 is not None and state.telemetry2.player.overtake_available
     assert state.packets["EVENT"] == 3 and state.errors["EVENT"] == 1
+    assert state.packets[PacketId.CAR_TELEMETRY_2.name] == 1

@@ -3,6 +3,7 @@ import argparse
 from collections.abc import Sequence
 from pathlib import Path
 
+from boxbox.telemetry.header import SUPPORTED_FORMATS
 from boxbox.telemetry.replay import replay
 from boxbox.telemetry.state import TelemetryState
 from boxbox.telemetry.udp import DEFAULT_PORT, listen
@@ -31,10 +32,13 @@ def _print_summary(state: TelemetryState) -> None:
         print(f"  {name}: {n}{errors}")
     if state.errors["nagłówek"]:
         print(f"  pakiety bez poprawnego nagłówka: {state.errors['nagłówek']}")
+    formats = ", ".join(f"{fmt}: {n}" for fmt, n in sorted(state.formats.items()))
+    print(f"  format pakietów -> {formats}")
     for fmt, n in sorted(state.unsupported_formats.items()):
         print(
-            f"  UWAGA: {n} pakietów w formacie {fmt} - obsługiwany jest tylko 2025. "
-            "Ustaw w grze UDP Format: 2025 (2026 Season Pack wysyła format 2026)."
+            f"  UWAGA: {n} pakietów w nieobsługiwanym formacie {fmt}; obsługiwane: "
+            + ", ".join(str(f) for f in SUPPORTED_FORMATS)
+            + ". Sprawdź w grze ustawienie UDP Format."
         )
 
 

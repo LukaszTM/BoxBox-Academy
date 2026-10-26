@@ -1,17 +1,19 @@
 """Pakiet Car Damage (id 10): zużycie i uszkodzenia opon, skrzydeł, silnika.
 
 W F1 25 doszły pęcherze na oponach (tyreBlisters, 4 B na auto, 46 B zamiast 42 B w F1 24).
-Układ zgodny z docs/F1_25_Telemetry_Output_Structures.txt (format pakietu 2025).
+Układ zgodny z docs/F1_25_Telemetry_Output_Structures.txt (2025)
+i docs/2026_Season_Pack_Telemetry_Output_Structures.txt (2026, zmienia się tylko liczba aut).
 """
 import struct
 from dataclasses import dataclass
 
-from boxbox.telemetry.header import HEADER_SIZE, PacketHeader, PacketId, parse_header
+from boxbox.telemetry.header import HEADER_SIZE, NUM_CARS, PacketHeader, PacketId, check_packet
 
-NUM_CARS = 22
 _CAR = struct.Struct("<4f4B4B4B" + "B" * 6 + "BB" + "B" * 8 + "BB")
 CAR_SIZE = _CAR.size  # 46
-PACKET_SIZE = HEADER_SIZE + NUM_CARS * CAR_SIZE  # 1041
+PACKET_SIZE: dict[int, int] = {
+    fmt: HEADER_SIZE + n * CAR_SIZE for fmt, n in NUM_CARS.items()
+}  # 2025: 1041, 2026: 1133
 
 
 @dataclass(frozen=True)
@@ -76,10 +78,6 @@ def _parse_car(data: bytes, offset: int) -> CarDamage:
 
 
 def parse_car_damage(data: bytes) -> CarDamagePacket:
-    header = parse_header(data)
-    if header.kind is not PacketId.CAR_DAMAGE:
-        raise ValueError(f"to nie pakiet Car Damage (id {header.packet_id})")
-    if len(data) != PACKET_SIZE:
-        raise ValueError(f"zła długość pakietu: {len(data)} B, oczekiwano {PACKET_SIZE} B")
-    cars = tuple(_parse_car(data, HEADER_SIZE + i * CAR_SIZE) for i in range(NUM_CARS))
+    header = check_packet(data, PacketId.CAR_DAMAGE, PACKET_SIZE)
+    cars = tuple(_parse_car(data, HEADER_SIZE + i * CAR_SIZE) for i in range(header.num_cars))
     return CarDamagePacket(header, cars)

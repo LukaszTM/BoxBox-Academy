@@ -1,16 +1,17 @@
 """Pakiet Event (id 3): zdarzenia w sesji - flagi, kary, SC, kolizje, najszybsze okrążenie.
 
 Po nagłówku są 4 bajty kodu zdarzenia (np. b"PENA"), a dalej szczegóły,
-których układ zależy od kodu. Układ zgodny z docs/F1_25_Telemetry_Output_Structures.txt.
+których układ zależy od kodu. Układ zgodny z docs/F1_25_Telemetry_Output_Structures.txt
+(2025) i docs/2026_Season_Pack_Telemetry_Output_Structures.txt (2026: kolizja ma wagę).
 """
 import struct
 from dataclasses import dataclass
 
-from boxbox.telemetry.header import HEADER_SIZE, PacketHeader, PacketId, parse_header
+from boxbox.telemetry.header import HEADER_SIZE, PacketHeader, PacketId, check_packet
 
 CODE_OFFSET = HEADER_SIZE
 DETAILS_OFFSET = HEADER_SIZE + 4
-PACKET_SIZE = 45  # nagłówek + kod + największa unia szczegółów (12 B)
+PACKET_SIZE: dict[int, int] = {2025: 45, 2026: 45}  # nagłówek + kod + największa unia (12 B)
 
 EVENT_NAMES: dict[str, str] = {
     "SSTA": "start sesji", "SEND": "koniec sesji", "FTLP": "najszybsze okrążenie",
@@ -106,6 +107,7 @@ class SafetyCar:
 class Collision:
     vehicle1_index: int
     vehicle2_index: int
+    severity: int | None = None  # tylko 2026: 0 lekka, 1 średnia, 2 ciężka
 
 
 Details = (
@@ -113,7 +115,7 @@ Details = (
     | SpeedTrap | StartLights | Flashback | Buttons | Overtake | SafetyCar | Collision | None
 )
 
-# kod -> (format struct, klasa szczegółów)
+# kod -> (format struct, klasa szczegółów); wspólne dla obu formatów pakietu
 _DETAILS: dict[str, tuple[struct.Struct, type]] = {
     "FTLP": (struct.Struct("<Bf"), FastestLap),
     "RTMT": (struct.Struct("<BB"), Retirement),
@@ -131,6 +133,9 @@ _DETAILS: dict[str, tuple[struct.Struct, type]] = {
     "SCAR": (struct.Struct("<BB"), SafetyCar),
     "COLL": (struct.Struct("<BB"), Collision),
 }
+_DETAILS_2026: dict[str, tuple[struct.Struct, type]] = {
+    "COLL": (struct.Struct("<BBB"), Collision),
+}
 
 
 @dataclass(frozen=True)
@@ -145,13 +150,11 @@ class EventPacket:
 
 
 def parse_event(data: bytes) -> EventPacket:
-    header = parse_header(data)
-    if header.kind is not PacketId.EVENT:
-        raise ValueError(f"to nie pakiet Event (id {header.packet_id})")
-    if len(data) != PACKET_SIZE:
-        raise ValueError(f"zła długość pakietu: {len(data)} B, oczekiwano {PACKET_SIZE} B")
+    header = check_packet(data, PacketId.EVENT, PACKET_SIZE)
     code = data[CODE_OFFSET:DETAILS_OFFSET].decode("ascii", errors="replace")
     spec = _DETAILS.get(code)
+    if header.packet_format == 2026:
+        spec = _DETAILS_2026.get(code, spec)
     if spec is None:
         return EventPacket(header, code, None)
     layout, cls = spec

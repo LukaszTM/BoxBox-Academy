@@ -1,47 +1,19 @@
-import struct
-
 import pytest
 
 from boxbox.telemetry import car_status as cs
 from boxbox.telemetry import session as ss
-from boxbox.telemetry.header import PacketHeader, PacketId, pack_header
-
-
-def header(packet_id: PacketId, player: int = 3) -> bytes:
-    return pack_header(PacketHeader(2025, 25, 1, 0, 1, int(packet_id), 1, 0.0, 0, 0, player, 255))
+from boxbox.telemetry.header import NUM_CARS
+from tests.builders import FORMATS, session_packet, status_packet
 
 
 def test_sizes_match_spec() -> None:
-    assert (ss.PACKET_SIZE, cs.CAR_SIZE, cs.PACKET_SIZE) == (753, 55, 1239)
+    assert ss.PACKET_SIZE == {2025: 753, 2026: 926}
+    assert cs.PACKET_SIZE == {2025: 1239, 2026: 1445}
 
 
-def session_packet() -> bytes:
-    buf = bytearray(ss.PACKET_SIZE)
-    buf[: len(header(PacketId.SESSION))] = header(PacketId.SESSION)
-    ss.PREFIX.pack_into(
-        buf, ss.PREFIX_OFFSET,
-        3, 38, 29, 57, 5412, 18, 3, 0, 1799, 1800, 80, 0, 0, 255, 0, 21,
-    )
-    ss.MIDDLE.pack_into(buf, ss.MIDDLE_OFFSET, 2, 0, 0)
-    rest = [
-        0, 90,  # forecastAccuracy, aiDifficulty
-        1, 2, 3,  # link ids
-        12, 20, 7,  # okno pit-stopu
-        0, 2, 3, 1, 0, 1, 1, 2, 1,  # asysty
-        3, 0,  # gameMode, ruleSet
-        14 * 60 + 30,  # timeOfDay
-        2, 0, 0, 0, 0,  # sessionLength, jednostki
-        1, 0, 0,  # SC, VSC, red flag
-        *([0] * 24),
-        1, *([0] * 12),
-        1800.5, 3900.25,
-    ]
-    ss.REST.pack_into(buf, ss.REST_OFFSET, *rest)
-    return bytes(buf)
-
-
-def test_parse_session() -> None:
-    s = ss.parse_session(session_packet())
+@pytest.mark.parametrize("fmt", FORMATS)
+def test_parse_session(fmt: int) -> None:
+    s = ss.parse_session(session_packet(fmt))
     assert (s.weather, s.track_temperature, s.air_temperature) == (3, 38, 29)
     assert (s.total_laps, s.track_length_m, s.pit_speed_limit_kmh) == (57, 5412, 80)
     assert (s.session_type, s.track_id) == (18, 3)
@@ -58,6 +30,23 @@ def test_parse_session() -> None:
     assert s.sector3_lap_distance_start == pytest.approx(3900.25)
 
 
+def test_session_2025_has_no_extra_fields() -> None:
+    s = ss.parse_session(session_packet(2025))
+    assert (s.assists.traction_control, s.assists.anti_lock_brakes) == (None, None)
+    assert s.drs_zones == () and s.start_reaction_time_s is None
+
+
+def test_session_2026_extra_fields() -> None:
+    s = ss.parse_session(session_packet(2026))
+    assert (s.assists.traction_control, s.assists.anti_lock_brakes) == (2, True)
+    assert s.assists.gearbox == 3  # pola wspólne bez zmian
+    assert s.drs_zones == (
+        (pytest.approx(0.10), pytest.approx(0.25)),
+        (pytest.approx(0.60), pytest.approx(0.72)),
+    )
+    assert s.start_reaction_time_s == pytest.approx(0.213)
+
+
 def test_reverse_track_name() -> None:
     buf = bytearray(session_packet())
     buf[ss.PREFIX_OFFSET + 7] = 41
@@ -70,22 +59,10 @@ def test_unknown_track_has_fallback_name() -> None:
     assert ss.parse_session(bytes(buf)).track_name == "tor 99"
 
 
-def status_packet() -> bytes:
-    blank = bytes(cs.CAR_SIZE)
-    player = struct.pack(
-        "<BBBBBfffHHBBHBBBbfffBfffB",
-        1, 1, 2, 56, 0, 42.5, 110.0, 18.3, 13000, 3500, 8, 1, 250,
-        18, 17, 4, 0, 300000.0, 120000.0, 3_000_000.0, 1,
-        150000.0, 50000.0, 900000.0, 0,
-    )
-    assert len(player) == cs.CAR_SIZE
-    cars = [blank] * 22
-    cars[3] = player
-    return header(PacketId.CAR_STATUS) + b"".join(cars)
-
-
-def test_parse_car_status() -> None:
-    packet = cs.parse_car_status(status_packet())
+@pytest.mark.parametrize("fmt", FORMATS)
+def test_parse_car_status(fmt: int) -> None:
+    packet = cs.parse_car_status(status_packet(fmt))
+    assert len(packet.cars) == NUM_CARS[fmt]
     c = packet.player
     assert (c.traction_control, c.anti_lock_brakes, c.fuel_mix, c.front_brake_bias_percent) == (1, True, 2, 56)
     assert c.pit_limiter_on is False
@@ -97,7 +74,10 @@ def test_parse_car_status() -> None:
     assert c.ers_store_energy_j == 3_000_000.0
     assert c.ers_store_percent == pytest.approx(75.0)
     assert (c.ers_deploy_mode, c.ers_deploy_mode_name) == (1, "medium")
+    assert c.ers_harvested_this_lap_mguh_j == 50000.0
     assert c.ers_deployed_this_lap_j == 900000.0
+    assert c.network_paused is False
+    assert c.ers_harvest_limit_per_lap_j == (None if fmt == 2025 else 2_000_000.0)
     assert packet.cars[0].max_rpm == 0
 
 
@@ -110,10 +90,8 @@ def test_wrong_packet_type_rejected(parse, data) -> None:
         parse(data)
 
 
-@pytest.mark.parametrize(
-    "parse,data",
-    [(ss.parse_session, session_packet()), (cs.parse_car_status, status_packet())],
-)
-def test_wrong_length_rejected(parse, data) -> None:
+@pytest.mark.parametrize("fmt", FORMATS)
+@pytest.mark.parametrize("parse,build", [(ss.parse_session, session_packet), (cs.parse_car_status, status_packet)])
+def test_wrong_length_rejected(parse, build, fmt: int) -> None:
     with pytest.raises(ValueError, match="długość"):
-        parse(data + b"\x00")
+        parse(build(fmt) + b"\x00")

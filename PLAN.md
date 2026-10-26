@@ -159,7 +159,7 @@ Jedna sesja = jedno zadanie z listy etapu, zaczynane od testu, kończone commite
 
 | Ryzyko | Skutek | Co zrobić |
 | --- | --- | --- |
-| Format pakietów UDP F1 25 różni się od F1 24 | Parser czyta śmieci | Zrobione: specyfikacja w `docs/`, parsery sprawdzone. Otwarte: 2026 Season Pack wysyła format 2026 (24 auta, inne układy) - aplikacja go rozpoznaje i odrzuca z komunikatem; obsługa do decyzji |
+| Format pakietów UDP F1 25 różni się od F1 24 | Parser czyta śmieci | Zrobione: specyfikacja w `docs/`, parsery sprawdzone z nią. Obsługiwane oba formaty: 2025 (gra) i 2026 (2026 Season Pack, 24 auta, pakiet Car Telemetry 2); wybór po polu `packetFormat` w nagłówku. Do potwierdzenia na nagraniach z obu wersji |
 | Ręczne mapowanie zakrętów dla 24 torów | Dużo żmudnej pracy | MVP na 3 torach; narzędzie, które wyznacza zakręty automatycznie z profilu prędkości na nagraniu |
 | Opóźnienie głosu | Komunikat przychodzi za późno i myli | Odtwarzanie w osobnym wątku, klipy w pamięci, limit 1 komunikat na zakręt |
 | Za dużo komunikatów | Gracz wyłącza aplikację | Progi wag, cisza na czystym okrążeniu, maks. 3 uwagi po okrążeniu |

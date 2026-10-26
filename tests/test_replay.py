@@ -46,3 +46,4 @@ def test_app_replay_summary(tmp_path: Path, capsys) -> None:
     # nagranie ma same nagłówki, więc parsery pakietów zgłaszają złą długość
     assert "CAR_TELEMETRY: 2 (błędy parsera: 2)" in out
     assert "LAP_DATA: 1 (błędy parsera: 1)" in out
+    assert "format pakietów -> 2025: 3" in out

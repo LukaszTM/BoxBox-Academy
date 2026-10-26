@@ -1,17 +1,22 @@
 """Pakiet Car Telemetry (id 6): prędkość, gaz, hamulec, bieg, temperatury.
 
-Układ zgodny z docs/F1_25_Telemetry_Output_Structures.txt (format pakietu 2025).
+Układ zgodny z docs/F1_25_Telemetry_Output_Structures.txt (2025)
+i docs/2026_Season_Pack_Telemetry_Output_Structures.txt (2026).
+Różnica w 2026: temperatura silnika to uint8 zamiast uint16 (59 B zamiast 60 B na auto).
 """
 import struct
 from dataclasses import dataclass
 
-from boxbox.telemetry.header import HEADER_SIZE, PacketHeader, PacketId, parse_header
+from boxbox.telemetry.header import HEADER_SIZE, NUM_CARS, PacketHeader, PacketId, check_packet
 
-NUM_CARS = 22
-_CAR = struct.Struct("<HfffBbHBBH4H4B4BH4f4B")
-CAR_SIZE = _CAR.size  # 60
-_TAIL = struct.Struct("<BBb")
-PACKET_SIZE = HEADER_SIZE + NUM_CARS * CAR_SIZE + _TAIL.size  # 1352
+_CAR: dict[int, struct.Struct] = {
+    2025: struct.Struct("<HfffBbHBBH4H4B4BH4f4B"),  # 60 B
+    2026: struct.Struct("<HfffBbHBBH4H4B4BB4f4B"),  # 59 B
+}
+_TAIL = struct.Struct("<BBb")  # panel MFD gracza 1 i 2, sugerowany bieg
+PACKET_SIZE: dict[int, int] = {
+    fmt: HEADER_SIZE + NUM_CARS[fmt] * _CAR[fmt].size + _TAIL.size for fmt in _CAR
+}  # 2025: 1352, 2026: 1448
 
 
 @dataclass(frozen=True)
@@ -45,8 +50,8 @@ class CarTelemetryPacket:
         return self.cars[self.header.player_car_index]
 
 
-def _parse_car(data: bytes, offset: int) -> CarTelemetry:
-    f = _CAR.unpack_from(data, offset)
+def _parse_car(layout: struct.Struct, data: bytes, offset: int) -> CarTelemetry:
+    f = layout.unpack_from(data, offset)
     return CarTelemetry(
         speed_kmh=f[0], throttle=f[1], steer=f[2], brake=f[3], clutch=f[4],
         gear=f[5], engine_rpm=f[6], drs=bool(f[7]), rev_lights_percent=f[8],
@@ -57,11 +62,10 @@ def _parse_car(data: bytes, offset: int) -> CarTelemetry:
 
 
 def parse_car_telemetry(data: bytes) -> CarTelemetryPacket:
-    header = parse_header(data)
-    if header.kind is not PacketId.CAR_TELEMETRY:
-        raise ValueError(f"to nie pakiet Car Telemetry (id {header.packet_id})")
-    if len(data) != PACKET_SIZE:
-        raise ValueError(f"zła długość pakietu: {len(data)} B, oczekiwano {PACKET_SIZE} B")
-    cars = tuple(_parse_car(data, HEADER_SIZE + i * CAR_SIZE) for i in range(NUM_CARS))
-    suggested_gear = _TAIL.unpack_from(data, HEADER_SIZE + NUM_CARS * CAR_SIZE)[2]
+    header = check_packet(data, PacketId.CAR_TELEMETRY, PACKET_SIZE)
+    layout = _CAR[header.packet_format]
+    cars = tuple(
+        _parse_car(layout, data, HEADER_SIZE + i * layout.size) for i in range(header.num_cars)
+    )
+    suggested_gear = _TAIL.unpack_from(data, HEADER_SIZE + header.num_cars * layout.size)[2]
     return CarTelemetryPacket(header, cars, suggested_gear)

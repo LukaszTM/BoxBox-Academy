@@ -5,7 +5,8 @@ i docs/2026_Season_Pack_Telemetry_Output_Structures.txt (2026).
 W 2026 zmienia się tylko liczba aut (24).
 """
 import struct
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from functools import cached_property
 
 from boxbox.telemetry.header import HEADER_SIZE, NUM_CARS, PacketHeader, PacketId, check_packet
 
@@ -52,14 +53,23 @@ class LapData:
 
 @dataclass(frozen=True)
 class LapDataPacket:
+    """Auta parsowane leniwie: `car(i)` tylko jedno, `cars` wszystkie (raz, z pamięcią)."""
+
     header: PacketHeader
-    cars: tuple[LapData, ...]
     time_trial_pb_car_idx: int  # 255 = brak
     time_trial_rival_car_idx: int  # 255 = brak
+    _data: bytes = field(repr=False, compare=False)
+
+    def car(self, index: int) -> LapData:
+        return _parse_car(self._data, HEADER_SIZE + index * CAR_SIZE)
+
+    @cached_property
+    def cars(self) -> tuple[LapData, ...]:
+        return tuple(self.car(i) for i in range(self.header.num_cars))
 
     @property
     def player(self) -> LapData:
-        return self.cars[self.header.player_car_index]
+        return self.car(self.header.player_car_index)
 
 
 def _with_minutes(ms_part: int, minutes_part: int) -> int:
@@ -89,6 +99,5 @@ def _parse_car(data: bytes, offset: int) -> LapData:
 
 def parse_lap_data(data: bytes) -> LapDataPacket:
     header = check_packet(data, PacketId.LAP_DATA, PACKET_SIZE)
-    cars = tuple(_parse_car(data, HEADER_SIZE + i * CAR_SIZE) for i in range(header.num_cars))
     pb, rival = _TAIL.unpack_from(data, HEADER_SIZE + header.num_cars * CAR_SIZE)
-    return LapDataPacket(header, cars, pb, rival)
+    return LapDataPacket(header, pb, rival, bytes(data))

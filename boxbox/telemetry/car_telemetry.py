@@ -5,7 +5,8 @@ i docs/2026_Season_Pack_Telemetry_Output_Structures.txt (2026).
 Różnica w 2026: temperatura silnika to uint8 zamiast uint16 (59 B zamiast 60 B na auto).
 """
 import struct
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from functools import cached_property
 
 from boxbox.telemetry.header import HEADER_SIZE, NUM_CARS, PacketHeader, PacketId, check_packet
 
@@ -41,13 +42,23 @@ class CarTelemetry:
 
 @dataclass(frozen=True)
 class CarTelemetryPacket:
+    """Auta parsowane leniwie: `car(i)` tylko jedno, `cars` wszystkie (raz, z pamięcią)."""
+
     header: PacketHeader
-    cars: tuple[CarTelemetry, ...]
     suggested_gear: int  # 0 = brak sugestii
+    _data: bytes = field(repr=False, compare=False)
+
+    def car(self, index: int) -> CarTelemetry:
+        layout = _CAR[self.header.packet_format]
+        return _parse_car(layout, self._data, HEADER_SIZE + index * layout.size)
+
+    @cached_property
+    def cars(self) -> tuple[CarTelemetry, ...]:
+        return tuple(self.car(i) for i in range(self.header.num_cars))
 
     @property
     def player(self) -> CarTelemetry:
-        return self.cars[self.header.player_car_index]
+        return self.car(self.header.player_car_index)
 
 
 def _parse_car(layout: struct.Struct, data: bytes, offset: int) -> CarTelemetry:
@@ -64,8 +75,5 @@ def _parse_car(layout: struct.Struct, data: bytes, offset: int) -> CarTelemetry:
 def parse_car_telemetry(data: bytes) -> CarTelemetryPacket:
     header = check_packet(data, PacketId.CAR_TELEMETRY, PACKET_SIZE)
     layout = _CAR[header.packet_format]
-    cars = tuple(
-        _parse_car(layout, data, HEADER_SIZE + i * layout.size) for i in range(header.num_cars)
-    )
     suggested_gear = _TAIL.unpack_from(data, HEADER_SIZE + header.num_cars * layout.size)[2]
-    return CarTelemetryPacket(header, cars, suggested_gear)
+    return CarTelemetryPacket(header, suggested_gear, bytes(data))

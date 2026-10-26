@@ -6,7 +6,8 @@ Różnica w 2026: dodatkowe pole ersHarvestLimitPerLap (59 B zamiast 55 B na aut
 i 24 auta; tryb ERS 3 nazywa się tam "boost" zamiast "overtake".
 """
 import struct
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from functools import cached_property
 
 from boxbox.telemetry.header import HEADER_SIZE, NUM_CARS, PacketHeader, PacketId, check_packet
 
@@ -72,12 +73,22 @@ class CarStatus:
 
 @dataclass(frozen=True)
 class CarStatusPacket:
+    """Auta parsowane leniwie: `car(i)` tylko jedno, `cars` wszystkie (raz, z pamięcią)."""
+
     header: PacketHeader
-    cars: tuple[CarStatus, ...]
+    _data: bytes = field(repr=False, compare=False)
+
+    def car(self, index: int) -> CarStatus:
+        size = _CAR[self.header.packet_format].size
+        return _parse_car(self.header.packet_format, self._data, HEADER_SIZE + index * size)
+
+    @cached_property
+    def cars(self) -> tuple[CarStatus, ...]:
+        return tuple(self.car(i) for i in range(self.header.num_cars))
 
     @property
     def player(self) -> CarStatus:
-        return self.cars[self.header.player_car_index]
+        return self.car(self.header.player_car_index)
 
 
 def _parse_car(packet_format: int, data: bytes, offset: int) -> CarStatus:
@@ -101,9 +112,4 @@ def _parse_car(packet_format: int, data: bytes, offset: int) -> CarStatus:
 
 def parse_car_status(data: bytes) -> CarStatusPacket:
     header = check_packet(data, PacketId.CAR_STATUS, PACKET_SIZE)
-    size = _CAR[header.packet_format].size
-    cars = tuple(
-        _parse_car(header.packet_format, data, HEADER_SIZE + i * size)
-        for i in range(header.num_cars)
-    )
-    return CarStatusPacket(header, cars)
+    return CarStatusPacket(header, bytes(data))

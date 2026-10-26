@@ -83,11 +83,11 @@ def extract_ghost_laps(path: Path, kind: GhostKind = "rival") -> GhostLaps | Non
             return
         lap_data_seen = False
         idx = state.lap.time_trial_rival_car_idx if kind == "rival" else state.lap.time_trial_pb_car_idx
-        if idx == NO_CAR or idx >= len(state.lap.cars):
+        if idx == NO_CAR or idx >= state.lap.header.num_cars:
             return
         car_index = idx
-        lap = state.lap.cars[idx]
-        car = state.telemetry.cars[idx]  # type: ignore[union-attr]
+        lap = state.lap.car(idx)
+        car = state.telemetry.car(idx)  # type: ignore[union-attr]
         if lap.lap_distance < 0:
             return
         if current and lap.lap_distance < current[-1].distance_m - 1000:

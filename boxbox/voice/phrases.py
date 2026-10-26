@@ -64,8 +64,7 @@ V2_TEXTS: dict[str, str] = {
     "brake_release": "Hamulec puszczony naraz przed {instr}.",
     "trail_missing": "Hamowanie kończy się za wcześnie przed {instr}.",
     "throttle_early": "Gaz za wcześnie na wyjściu z {gen}, koła ślizgają się zamiast przyspieszać.",
-    "grip_lost_throttle": "Utrata przyczepności w {loc}.",
-    "grip_lost_entry": "Utrata przyczepności w {loc}.",
+    "grip_lost": "Utrata przyczepności w {loc}.",  # wspólne dla obu wariantów; różni się tylko wskazówka
     "gear_low": "Za niski bieg w {loc}.",
     "gear_high": "Za wysoki bieg w {loc}, silnik nie ma siły.",
 }
@@ -132,8 +131,12 @@ def bucket_m(value: int | None) -> int:
     return min(V2_BUCKETS, key=lambda b: abs(b - v))
 
 
+def _v2_rule(rule: str) -> str:
+    return "grip_lost" if rule.startswith("grip_lost") else rule
+
+
 def v2_text(rule: str, corner_name: str, value_m: int | None = None) -> str:
-    template = V2_TEXTS[rule]
+    template = V2_TEXTS[_v2_rule(rule)]
     text = template.format(
         loc=corner_case(corner_name, "loc"), instr=corner_case(corner_name, "instr"),
         gen=corner_case(corner_name, "gen"), num=meters_text(bucket_m(value_m)) if "{num}" in template else "",
@@ -142,6 +145,7 @@ def v2_text(rule: str, corner_name: str, value_m: int | None = None) -> str:
 
 
 def v2_id(rule: str, corner_name: str, value_m: int | None = None) -> str:
+    rule = _v2_rule(rule)
     base = f"v2_{rule}_{corner_key(corner_name)}"
     return f"{base}_{bucket_m(value_m)}" if "{num}" in V2_TEXTS[rule] else base
 

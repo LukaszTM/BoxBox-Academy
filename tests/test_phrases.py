@@ -91,6 +91,7 @@ def test_corner_cases_and_v2_texts() -> None:
     assert v2_text("throttle_late", "T1-T2", 277) == "Pełny gaz za późno na wyjściu z zakrętów pierwszego i drugiego, o jakieś trzysta metrów."
     assert v2_text("brake_release", "T11") == "Hamulec puszczony naraz przed zakrętem jedenastym."
     assert v2_text("grip_lost_throttle", "T13-T14") == "Utrata przyczepności w zakrętach trzynastym i czternastym."
+    assert v2_id("grip_lost_entry", "T13-T14") == v2_id("grip_lost_throttle", "T13-T14") == "v2_grip_lost_t13_14"
     assert v2_id("brake_late", "T4", 55) == "v2_brake_late_t4_50" and v2_id("brake_release", "T11") == "v2_brake_release_t11"
     entries = catalog(track_corner_names())
     v2 = {k: v for k, v in entries.items() if k.startswith("v2_")}

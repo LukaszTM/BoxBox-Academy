@@ -527,38 +527,22 @@ v2_throttle_early_t8,"Gaz za wcześnie na wyjściu z zakrętu ósmego, koła śl
 v2_throttle_early_t13,"Gaz za wcześnie na wyjściu z zakrętu trzynastego, koła ślizgają się zamiast przyspieszać."
 v2_throttle_early_t14,"Gaz za wcześnie na wyjściu z zakrętu czternastego, koła ślizgają się zamiast przyspieszać."
 v2_throttle_early_zone,"Gaz za wcześnie na wyjściu z tego zakrętu, koła ślizgają się zamiast przyspieszać."
-v2_grip_lost_throttle_t1_2,Utrata przyczepności w zakrętach pierwszym i drugim.
-v2_grip_lost_throttle_t4_5,Utrata przyczepności w zakrętach czwartym i piątym.
-v2_grip_lost_throttle_t6,Utrata przyczepności w zakręcie szóstym.
-v2_grip_lost_throttle_t7,Utrata przyczepności w zakręcie siódmym.
-v2_grip_lost_throttle_t8_10,Utrata przyczepności w zakrętach od ósmego do dziesiątego.
-v2_grip_lost_throttle_t11,Utrata przyczepności w zakręcie jedenastym.
-v2_grip_lost_throttle_t9_10,Utrata przyczepności w zakrętach dziewiątym i dziesiątym.
-v2_grip_lost_throttle_t13_14,Utrata przyczepności w zakrętach trzynastym i czternastym.
-v2_grip_lost_throttle_t16_18,Utrata przyczepności w zakrętach od szesnastego do osiemnastego.
-v2_grip_lost_throttle_t1_3,Utrata przyczepności w zakrętach od pierwszego do trzeciego.
-v2_grip_lost_throttle_t4,Utrata przyczepności w zakręcie czwartym.
-v2_grip_lost_throttle_t6_7,Utrata przyczepności w zakrętach szóstym i siódmym.
-v2_grip_lost_throttle_t8,Utrata przyczepności w zakręcie ósmym.
-v2_grip_lost_throttle_t13,Utrata przyczepności w zakręcie trzynastym.
-v2_grip_lost_throttle_t14,Utrata przyczepności w zakręcie czternastym.
-v2_grip_lost_throttle_zone,Utrata przyczepności w tym zakręcie.
-v2_grip_lost_entry_t1_2,Utrata przyczepności w zakrętach pierwszym i drugim.
-v2_grip_lost_entry_t4_5,Utrata przyczepności w zakrętach czwartym i piątym.
-v2_grip_lost_entry_t6,Utrata przyczepności w zakręcie szóstym.
-v2_grip_lost_entry_t7,Utrata przyczepności w zakręcie siódmym.
-v2_grip_lost_entry_t8_10,Utrata przyczepności w zakrętach od ósmego do dziesiątego.
-v2_grip_lost_entry_t11,Utrata przyczepności w zakręcie jedenastym.
-v2_grip_lost_entry_t9_10,Utrata przyczepności w zakrętach dziewiątym i dziesiątym.
-v2_grip_lost_entry_t13_14,Utrata przyczepności w zakrętach trzynastym i czternastym.
-v2_grip_lost_entry_t16_18,Utrata przyczepności w zakrętach od szesnastego do osiemnastego.
-v2_grip_lost_entry_t1_3,Utrata przyczepności w zakrętach od pierwszego do trzeciego.
-v2_grip_lost_entry_t4,Utrata przyczepności w zakręcie czwartym.
-v2_grip_lost_entry_t6_7,Utrata przyczepności w zakrętach szóstym i siódmym.
-v2_grip_lost_entry_t8,Utrata przyczepności w zakręcie ósmym.
-v2_grip_lost_entry_t13,Utrata przyczepności w zakręcie trzynastym.
-v2_grip_lost_entry_t14,Utrata przyczepności w zakręcie czternastym.
-v2_grip_lost_entry_zone,Utrata przyczepności w tym zakręcie.
+v2_grip_lost_t1_2,Utrata przyczepności w zakrętach pierwszym i drugim.
+v2_grip_lost_t4_5,Utrata przyczepności w zakrętach czwartym i piątym.
+v2_grip_lost_t6,Utrata przyczepności w zakręcie szóstym.
+v2_grip_lost_t7,Utrata przyczepności w zakręcie siódmym.
+v2_grip_lost_t8_10,Utrata przyczepności w zakrętach od ósmego do dziesiątego.
+v2_grip_lost_t11,Utrata przyczepności w zakręcie jedenastym.
+v2_grip_lost_t9_10,Utrata przyczepności w zakrętach dziewiątym i dziesiątym.
+v2_grip_lost_t13_14,Utrata przyczepności w zakrętach trzynastym i czternastym.
+v2_grip_lost_t16_18,Utrata przyczepności w zakrętach od szesnastego do osiemnastego.
+v2_grip_lost_t1_3,Utrata przyczepności w zakrętach od pierwszego do trzeciego.
+v2_grip_lost_t4,Utrata przyczepności w zakręcie czwartym.
+v2_grip_lost_t6_7,Utrata przyczepności w zakrętach szóstym i siódmym.
+v2_grip_lost_t8,Utrata przyczepności w zakręcie ósmym.
+v2_grip_lost_t13,Utrata przyczepności w zakręcie trzynastym.
+v2_grip_lost_t14,Utrata przyczepności w zakręcie czternastym.
+v2_grip_lost_zone,Utrata przyczepności w tym zakręcie.
 v2_gear_low_t1_2,Za niski bieg w zakrętach pierwszym i drugim.
 v2_gear_low_t4_5,Za niski bieg w zakrętach czwartym i piątym.
 v2_gear_low_t6,Za niski bieg w zakręcie szóstym.

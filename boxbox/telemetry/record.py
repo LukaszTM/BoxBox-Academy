@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
 
-from boxbox.telemetry.recording import RecordingWriter
+from boxbox.telemetry.recording import RecordingWriter, is_needed
 from boxbox.telemetry.udp import DEFAULT_PORT, listen
 
 
@@ -21,15 +21,20 @@ def record(
     port: int = DEFAULT_PORT,
     host: str = "0.0.0.0",
     duration: float | None = None,
+    all_packets: bool = False,
 ) -> tuple[int, int]:
-    """Nagrywa do `path` do Ctrl+C lub upływu `duration`. Zwraca (pakiety, bajty)."""
+    """Nagrywa do `path` do Ctrl+C lub upływu `duration`. Zwraca (pakiety, bajty).
+
+    Domyślnie pomija duże, nieużywane typy pakietów (ok. 60% danych); `all_packets` zapisuje wszystko.
+    """
     start = time.monotonic()
     with RecordingWriter(path) as writer:
         for data in listen(port, host, duration):
             if writer.count == 0:
                 start = time.monotonic()  # czas liczony od pierwszego pakietu
                 print("Odbieram dane z gry, nagrywam...")
-            writer.write(time.monotonic() - start, data)
+            if all_packets or is_needed(data):
+                writer.write(time.monotonic() - start, data)
     return writer.count, writer.size
 
 
@@ -39,6 +44,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--port", type=int, default=DEFAULT_PORT)
     parser.add_argument("--dir", type=Path, default=Path("recordings"))
     parser.add_argument("--duration", type=float, help="limit w sekundach")
+    parser.add_argument("--all", action="store_true", help="zapisz wszystkie typy pakietów (większy plik)")
     args = parser.parse_args(argv)
 
     args.dir.mkdir(parents=True, exist_ok=True)
@@ -49,7 +55,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         encoding="utf-8",
     )
     print(f"Nasłuchuję na porcie {args.port}. Plik: {path}. Zatrzymanie: Ctrl+C.")
-    count, size = record(path, args.port, duration=args.duration)
+    count, size = record(path, args.port, duration=args.duration, all_packets=args.all)
     if count == 0:
         path.unlink(missing_ok=True)
         notes.unlink(missing_ok=True)

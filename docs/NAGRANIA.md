@@ -128,9 +128,12 @@ Uwagi: na okrążeniu 3 lekko ściąłem Z2, okrążenie mogło być nieważne
 
 ## 8. Co zrobić z plikami
 
-Z folderu `recordings` weź pliki `.bin`, `.txt` i (z nakładki) `.guide.json`. Plik `.bin` ma ok. 170 MB;
-spakuj go do ZIP lub RAR (zostaje ok. 12 MB) i prześlij w sesji Claude Code jako załącznik razem z `.txt`
-i `.guide.json`. Do repozytorium trafia skompresowana wersja `.bin.xz`, to już robi Claude.
+Po sesji uruchom `spakuj.bat recordings\<plik>.bin`. Powstanie `<plik>.bin.xz` (ok. 10 razy mniejszy),
+a jeśli ma ponad 24 MB, zamiast niego części `<plik>.bin.xz.part001`, `.part002`, ... po 20 MB.
+Wyślij `.bin.xz` (albo wszystkie części) razem z `.txt` i `.guide.json`:
+na GitHubie przełącz gałąź na `claude/new-session-t6gmj8`, wejdź do `recordings`, „Add file → Upload files”,
+„Commit changes”. Części skleja Claude. Recorder od tej wersji pomija nieużywane typy pakietów,
+więc nowe nagrania są ok. 60% mniejsze (stare `.bin` nadal da się odtworzyć).
 
 ## 9. Gdy coś nie działa
 

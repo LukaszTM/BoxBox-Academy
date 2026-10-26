@@ -17,7 +17,7 @@ from pathlib import Path
 
 from boxbox.coach.laps import Lap, LapRecorder
 from boxbox.telemetry.record import recording_path
-from boxbox.telemetry.recording import RecordingWriter
+from boxbox.telemetry.recording import RecordingWriter, is_needed
 from boxbox.telemetry.udp import DEFAULT_PORT, listen
 from boxbox.tracks.detect import SpeedSample, detect_corners
 from boxbox.ui.overlay_model import (
@@ -35,10 +35,11 @@ GREEN = "#3ddc3d"
 class Receiver(threading.Thread):
     """Odbiera UDP w tle, zapisuje nagranie i aktualizuje stan pod blokadą."""
 
-    def __init__(self, port: int, writer: RecordingWriter | None) -> None:
+    def __init__(self, port: int, writer: RecordingWriter | None, all_packets: bool = False) -> None:
         super().__init__(daemon=True)
         self.port = port
         self.writer = writer
+        self.all_packets = all_packets
         self.recorder = LapRecorder()
         self.state = self.recorder.state
         self.completed: list[Lap] = []  # pełne okrążenia do kalibracji przewodnika
@@ -54,7 +55,8 @@ class Receiver(threading.Thread):
                 if self.writer is not None:
                     if self.packets == 0:
                         start = time.monotonic()
-                    self.writer.write(time.monotonic() - start, data)
+                    if self.all_packets or is_needed(data):
+                        self.writer.write(time.monotonic() - start, data)
                 with self.lock:
                     done = self.recorder.feed(data)
                     if done is not None:
@@ -239,6 +241,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--guide-dir", type=Path, default=GUIDE_DIR)
     parser.add_argument("--scale", type=float, default=1.0, help="mnożnik wielkości napisów, np. 1.3")
     parser.add_argument("--alpha", type=float, default=0.97, help="krycie okna 0.5-1.0 (1.0 = bez przezroczystości)")
+    parser.add_argument("--all", action="store_true", help="zapisz wszystkie typy pakietów (większy plik)")
     args = parser.parse_args(argv)
 
     name = "-".join(args.name) if args.name else None
@@ -257,7 +260,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         writer = RecordingWriter(path)
         print(f"Nagrywam do {path}. Zamknij nakładkę (Esc), żeby zakończyć.")
-    receiver = Receiver(args.port, writer)
+    receiver = Receiver(args.port, writer, args.all)
     receiver.start()
     guide_out = path.with_suffix(".guide.json") if path else None
     window = OverlayWindow(

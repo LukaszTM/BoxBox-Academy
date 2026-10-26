@@ -75,3 +75,32 @@ def test_main_without_packets_reports_error(tmp_path: Path, capsys: pytest.Captu
     assert code == 1
     assert "Nie odebrano" in capsys.readouterr().out
     assert list(tmp_path.iterdir()) == []
+
+
+def test_record_skips_big_unused_packets(tmp_path: Path) -> None:
+    from boxbox.telemetry.header import PacketHeader, PacketId, pack_header
+    from boxbox.telemetry.recording import is_needed
+
+    def packet(pid: int) -> bytes:
+        return pack_header(PacketHeader(2025, 25, 1, 0, 1, pid, 1, 0.0, 0, 0, 0, 255)) + b"\x00" * 20
+
+    assert not is_needed(packet(int(PacketId.MOTION))) and not is_needed(packet(int(PacketId.SESSION_HISTORY)))
+    assert is_needed(packet(int(PacketId.CAR_TELEMETRY))) and is_needed(packet(int(PacketId.EVENT)))
+    assert is_needed(b"abc")  # za krótki na nagłówek: zostaje, parser go policzy jako błąd
+
+    port = _free_port()
+    path = tmp_path / "f.bin"
+
+    def send() -> None:
+        time.sleep(0.3)
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            for pid in (0, 6, 11, 2):
+                s.sendto(packet(pid), ("127.0.0.1", port))
+                time.sleep(0.05)
+
+    t = threading.Thread(target=send)
+    t.start()
+    count, _ = record(path, port, host="127.0.0.1", duration=1.2)
+    t.join()
+    assert count == 2
+    assert [p.data[6] for p in read_recording(path)] == [6, 2]

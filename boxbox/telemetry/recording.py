@@ -15,6 +15,15 @@ from typing import BinaryIO
 MAGIC = b"BBXREC01"
 _RECORD_HEADER = struct.Struct("<dH")
 
+# Typy pakietów pomijane przy nagrywaniu (id z nagłówka): duże i częste, nieużywane przez aplikację.
+# Motion (0), Car Setups (5), Session History (11), Tyre Sets (12), Motion Ex (13), Lap Positions (15).
+SKIPPED_PACKET_IDS = frozenset({0, 5, 11, 12, 13, 15})
+PACKET_ID_OFFSET = 6  # bajt id pakietu w nagłówku
+
+
+def is_needed(data: bytes) -> bool:
+    return len(data) <= PACKET_ID_OFFSET or data[PACKET_ID_OFFSET] not in SKIPPED_PACKET_IDS
+
 
 @dataclass(frozen=True)
 class RecordedPacket:

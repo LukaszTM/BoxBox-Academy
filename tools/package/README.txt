@@ -16,6 +16,8 @@ SAMO NAGRYWANIE (bez nakladki):
 
 Sprawdzenie:  sprawdz.bat recordings\<plik>.bin
 Notatki:      recordings\<plik>.txt (uzupelnij po kazdej sesji)
-Po sesji spakuj .bin do ZIP/RAR (166 MB -> ok. 12 MB) i przeslij razem z .txt i .guide.json.
+Po sesji: spakuj.bat recordings\<plik>.bin  -> plik .bin.xz (lub czesci .part001... gdy > 24 MB).
+Wyslij .bin.xz (albo wszystkie czesci) razem z .txt i .guide.json: GitHub, galaz claude/new-session-t6gmj8,
+folder recordings, Add file -> Upload files.
 
 Linux/macOS: python3 -m boxbox.ui.overlay --name <nazwa> --plan plany/<plan>.json

@@ -1,0 +1,5 @@
+Tor: Monza, Time Trial, FORMAT UDP 2026 (2026 Season Pack), 60 Hz, recorder z filtrem pakietów
+Asysty (skrzynia / TC / ABS): automat / wył. / wł. (z telemetrii)
+Okrążenia (z telemetrii): 1: 1:30,930  2: 1:26,806 (najlepsze)  3: 1:37,977 (obrót w Rettifilo)  4: urwane
+Okrążenia i błędy: sesja testowa formatu 2026, bez celowych błędów.
+Oryginalna nazwa pliku: pakiet2026-monza_2026-10-26_185457.bin (113 MB).

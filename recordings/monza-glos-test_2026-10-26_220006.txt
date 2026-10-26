@@ -1,0 +1,4 @@
+Tor: Monza, Time Trial, FORMAT UDP 2026, sesja testowa trenera z głosem (trener.bat, --record)
+Asysty (skrzynia / TC / ABS): automat / wył. / wł. (z telemetrii)
+Okrążenia (z telemetrii): 4: 1:27,668  5: 1:26,294  6: 1:23,284 (każde lepsze; mechanik: odniesienie, 2x czyste, 2x nowe najlepsze)
+Uwagi: głosu nie było słychać - błąd winsound (SND_MEMORY+SND_ASYNC), naprawiony po tej sesji.

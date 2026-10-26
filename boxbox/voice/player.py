@@ -82,6 +82,9 @@ class Backend:
 
 
 class WinsoundBackend(Backend):
+    """Wbudowany winsound. Z pamięci gra tylko synchronicznie (SND_MEMORY + SND_ASYNC to błąd),
+    co nam pasuje: odtwarzacz i tak działa we własnym wątku."""
+
     name = "winsound"
 
     def __init__(self) -> None:
@@ -90,8 +93,7 @@ class WinsoundBackend(Backend):
         self._ws = winsound
 
     def play(self, clip: Clip) -> None:
-        self._ws.PlaySound(wav_bytes(clip), self._ws.SND_MEMORY | self._ws.SND_ASYNC | self._ws.SND_NODEFAULT)
-        time.sleep(clip.seconds)
+        self._ws.PlaySound(wav_bytes(clip), self._ws.SND_MEMORY | self._ws.SND_NODEFAULT)
 
     def stop(self) -> None:
         self._ws.PlaySound(None, 0)
@@ -167,6 +169,7 @@ class VoicePlayer:
     _thread: threading.Thread | None = field(default=None, init=False)
     _lock: threading.Lock = field(default_factory=threading.Lock, init=False)
     spoken: list[Spoken] = field(default_factory=list, init=False)
+    errors: list[str] = field(default_factory=list, init=False)
 
     def start(self) -> "VoicePlayer":
         if self._thread is None:
@@ -211,10 +214,44 @@ class VoicePlayer:
             try:
                 self.backend.play(clip)
             except Exception as exc:  # noqa: BLE001
-                print(f"[głos] błąd odtwarzania: {exc}", file=sys.stderr)
+                self.errors.append(str(exc))
+                print(f"[głos] błąd odtwarzania ({self.backend.name}): {exc}", file=sys.stderr)
 
     def close(self, timeout: float = 5.0) -> None:
         if self._thread is not None:
             self._queue.put(None)
             self._thread.join(timeout=timeout)
             self._thread = None
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Test głośników: python -m boxbox.voice.player assets/voice misc_hello [kolejne id...]"""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Odtwórz klipy mechanika (test dźwięku)")
+    parser.add_argument("voice_dir", type=Path)
+    parser.add_argument("ids", nargs="*", default=["misc_hello"])
+    args = parser.parse_args(argv)
+    library = ClipLibrary(args.voice_dir)
+    if len(library) == 0:
+        print(f"Brak klipów w {args.voice_dir}")
+        return 1
+    backend = default_backend()
+    missing = library.missing(args.ids)
+    if missing:
+        print(f"Nie ma klipów: {missing}")
+    clip = library.compose(args.ids)
+    if clip is None:
+        return 1
+    print(f"Backend: {backend.name}, klipów w bibliotece: {len(library)}, gram {clip.seconds:.1f} s...")
+    try:
+        backend.play(clip)
+    except Exception as exc:  # noqa: BLE001
+        print(f"Błąd odtwarzania: {exc}")
+        return 1
+    print("Koniec. Jeśli nic nie słychać: sprawdź urządzenie wyjściowe i głośność w mikserze Windows (python.exe).")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

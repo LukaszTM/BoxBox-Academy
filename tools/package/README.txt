@@ -4,6 +4,8 @@ Pelna instrukcja: BoxBox_Academy_instrukcja_nagran.pdf (w tym folderze).
 
 Wymagania: Python 3.12+ (py -3 --version), z tkinter (domyslnie w instalatorze z python.org).
 
+TEST GLOSNIKOW: glos-test.bat (odtwarza powitanie i przykladowy komunikat; bez gry)
+
 TRENER NA ZYWO Z GLOSEM (etap 4):
   trener.bat <nazwa sesji>        np. trener.bat bahrajn glos test
   Mowi po zakrecie i po okrazeniu (potrzebny plik toru: Bahrajn, Monza, Suzuka). Ctrl+C konczy.

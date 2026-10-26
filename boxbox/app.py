@@ -78,7 +78,10 @@ def _make_player(args: argparse.Namespace) -> VoicePlayer | None:
     if len(library) == 0:
         print(f"Brak klipów głosu w {args.voice}; komunikaty tylko w konsoli.")
         return None
-    return VoicePlayer(library).start()
+    player = VoicePlayer(library).start()
+    player.say(["misc_hello"], "test dźwięku")  # od razu po starcie: słychać, zanim wyjedziesz na tor
+    print(f"Głos: {len(library)} klipów, backend {player.backend.name}. Powinieneś teraz słyszeć powitanie.")
+    return player
 
 
 def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
@@ -115,7 +118,10 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
             db.close()
             if ref is not None:
                 reference, best_time = ref.analysis, ref.lap.lap_time_ms
-        coach = LiveCoach(track, speak, reference, corner_messages=args.corner_messages == "on", best_time_ms=best_time)
+        coach = LiveCoach(
+            track, speak, reference, corner_messages=args.corner_messages == "on", best_time_ms=best_time,
+            said_hello=player is not None,  # powitanie poszło już na starcie aplikacji
+        )
 
     writer: RecordingWriter | None = None
     rec_start = time.monotonic()
@@ -157,6 +163,8 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
         coach.finish()
     if player is not None:
         player.close()
+        if player.errors:
+            print(f"Głos: {len(player.errors)} błędów odtwarzania, pierwszy: {player.errors[0]}")
     return state, recorder
 
 

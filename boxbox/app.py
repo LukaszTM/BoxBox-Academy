@@ -1,6 +1,9 @@
 """Punkt wejścia aplikacji: wybór trybu i spięcie warstw."""
 import argparse
+import os
+import time
 from collections.abc import Sequence
+from datetime import datetime
 from pathlib import Path
 
 from boxbox.coach.analyze import report_laps
@@ -10,6 +13,8 @@ from boxbox.storage.db import Database
 from boxbox.tracks.model import load_track, track_path
 from boxbox.voice.player import ClipLibrary, NullBackend, VoicePlayer
 from boxbox.telemetry.header import SUPPORTED_FORMATS
+from boxbox.telemetry.record import recording_path
+from boxbox.telemetry.recording import RecordingWriter, is_needed
 from boxbox.telemetry.replay import replay
 from boxbox.telemetry.state import TelemetryState
 from boxbox.telemetry.udp import DEFAULT_PORT, listen
@@ -38,6 +43,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--reference", choices=["best", "rival", "pb"], default="best",
         help="z czym porównać zakręty: własne najlepsze okrążenie albo duch z Time Trial (tylko --replay)",
     )
+    parser.add_argument("--record", help="na żywo: zapisz też nagranie sesji pod tą nazwą do recordings/")
     parser.add_argument("--voice", type=Path, default=DEFAULT_VOICE, help="folder z klipami WAV mechanika")
     parser.add_argument("--no-voice", action="store_true", help="bez dźwięku (komunikaty tylko w konsoli)")
     parser.add_argument(
@@ -111,7 +117,20 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
                 reference, best_time = ref.analysis, ref.lap.lap_time_ms
         coach = LiveCoach(track, speak, reference, corner_messages=args.corner_messages == "on", best_time_ms=best_time)
 
+    writer: RecordingWriter | None = None
+    rec_start = time.monotonic()
+    if args.record and not args.replay:
+        path = recording_path(Path("recordings"), args.record.replace(" ", "-"), datetime.now())
+        path.parent.mkdir(parents=True, exist_ok=True)
+        writer = RecordingWriter(path)
+        console.note(f"Nagrywam sesję do {path}")
+
     def handle(data: bytes) -> None:
+        nonlocal rec_start
+        if writer is not None and is_needed(data):
+            if writer.count == 0:
+                rec_start = time.monotonic()
+            writer.write(time.monotonic() - rec_start, data)
         finished = recorder.feed(data)
         if args.mode == "coach":
             ensure_coach()
@@ -119,13 +138,21 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
                 coach.update(recorder, finished)
         console.update(state)
 
-    if args.replay:
-        replay(args.replay, handle, speed=args.speed)
-    else:
-        for data in listen(args.port, duration=args.duration):
-            handle(data)
+    wall0, cpu0 = time.monotonic(), sum(os.times()[:2])
+    try:
+        if args.replay:
+            replay(args.replay, handle, speed=args.speed)
+        else:
+            for data in listen(args.port, duration=args.duration):
+                handle(data)
+    finally:
+        if writer is not None:
+            writer.close()
+    wall, cpu = time.monotonic() - wall0, sum(os.times()[:2]) - cpu0
     console.update(state, force=True)
     console.finish()
+    if not args.replay and wall > 1:
+        print(f"Obciążenie: {100 * cpu / wall:.1f}% jednego rdzenia średnio przez {wall:.0f} s")
     if coach is not None:
         coach.finish()
     if player is not None:

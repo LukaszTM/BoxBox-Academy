@@ -4,7 +4,12 @@ Pelna instrukcja: BoxBox_Academy_instrukcja_nagran.pdf (w tym folderze).
 
 Wymagania: Python 3.12+ (py -3 --version), z tkinter (domyslnie w instalatorze z python.org).
 
-NAKLADKA + NAGRYWANIE (zalecane):
+TRENER NA ZYWO Z GLOSEM (etap 4):
+  trener.bat <nazwa sesji>        np. trener.bat bahrajn glos test
+  Mowi po zakrecie i po okrazeniu (potrzebny plik toru: Bahrajn, Monza, Suzuka). Ctrl+C konczy.
+  Nie laczyc z nakladka.bat (jeden program na port UDP).
+
+NAKLADKA + NAGRYWANIE:
   nakladka.bat <nazwa>             np. nakladka.bat monza trening z AI
   Nazwa moze miec spacje (zamienia je na myslniki). Plan dobiera sie po pierwszym slowie:
   bahrajn / monza / suzuka / pakiet2026. Recznie: nakladka.bat --plan suzuka-tt-bez-tc <nazwa>

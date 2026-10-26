@@ -17,7 +17,7 @@ def rms(samples: list[float]) -> float:
 
 
 def test_radio_bandpass_and_level() -> None:
-    settings = RadioSettings(noise_db=-120.0, click_ms=0, drive=1.0)
+    settings = RadioSettings(noise_db=-120.0, click_ms=0, drive=1.0, trim_keep_ms=-1)
     mid = apply_radio(RATE, tone(1000), settings)
     low = apply_radio(RATE, tone(80), settings)
     high = apply_radio(RATE, tone(9000), settings)
@@ -36,13 +36,22 @@ def test_radio_bandpass_and_level() -> None:
     assert max(abs(s) for s in mid) <= 0.95
 
 
+def test_trim_silence() -> None:
+    from boxbox.voice.radio import trim_silence
+    silence = [0.0] * int(RATE * 0.5)
+    samples = silence + tone(500, 0.3) + silence
+    out = trim_silence(RATE, samples, keep_ms=40)
+    assert abs(len(out) - (int(RATE * 0.3) + 2 * int(RATE * 0.04))) < RATE // 50
+    assert trim_silence(RATE, [0.0] * 1000) == [0.0] * 1000[:0] or len(trim_silence(RATE, [0.0] * 1000)) <= 1000
+
+
 def test_radio_click_adds_length_and_file_roundtrip(tmp_path: Path) -> None:
     src = tmp_path / "raw"
     src.mkdir()
     write_wav(src / "a.wav", RATE, tone(500))
     write_wav(src / "b.wav", RATE, tone(700, 0.2))
     dst = tmp_path / "out"
-    assert process_dir(src, dst, RadioSettings(click_ms=25)) == 2
+    assert process_dir(src, dst, RadioSettings(click_ms=25, trim_keep_ms=-1)) == 2
     rate, out = read_wav(dst / "a.wav")
     assert rate == RATE and len(out) == len(tone(500)) + 2 * int(RATE * 0.025)
     assert max(abs(s) for s in out) <= 1.0

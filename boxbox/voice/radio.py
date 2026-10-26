@@ -52,6 +52,8 @@ class Biquad:
 
 @dataclass(frozen=True)
 class RadioSettings:
+    trim_db: float = -40.0  # cisza na początku/końcu poniżej tego poziomu jest ucinana
+    trim_keep_ms: int = 40  # tyle ciszy zostaje z każdej strony
     low_hz: float = 300.0
     high_hz: float = 3400.0
     drive: float = 3.0  # wzmocnienie przed miękkim ograniczeniem (kompresja "radiowa")
@@ -86,9 +88,27 @@ def _soft_clip(x: float) -> float:
     return math.tanh(x)
 
 
+def trim_silence(rate: int, samples: list[float], threshold_db: float = -40.0, keep_ms: int = 40) -> list[float]:
+    """Ucina ciszę z początku i końca klipu (TTS zostawia jej sporo), zostawiając krótki margines."""
+    thr = 10 ** (threshold_db / 20)
+    win = max(1, rate // 100)  # 10 ms
+    n = len(samples)
+    start, end = 0, n
+    for i in range(0, n, win):
+        if max(abs(s) for s in samples[i:i + win]) > thr:
+            start = i
+            break
+    for i in range(n, 0, -win):
+        if max(abs(s) for s in samples[max(0, i - win):i]) > thr:
+            end = i
+            break
+    keep = int(rate * keep_ms / 1000)
+    return samples[max(0, start - keep):min(n, end + keep)]
+
+
 def apply_radio(rate: int, samples: list[float], settings: RadioSettings = RadioSettings(), seed: int = 7) -> list[float]:
+    out = trim_silence(rate, samples, settings.trim_db, settings.trim_keep_ms) if settings.trim_keep_ms >= 0 else samples
     # pasmo: 2x high-pass + 2x low-pass (stromsze zbocza)
-    out = samples
     for _ in range(2):
         out = Biquad.highpass(rate, settings.low_hz).run(out)
         out = Biquad.lowpass(rate, settings.high_hz).run(out)

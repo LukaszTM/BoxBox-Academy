@@ -42,7 +42,7 @@ def test_trim_silence() -> None:
     samples = silence + tone(500, 0.3) + silence
     out = trim_silence(RATE, samples, keep_ms=40)
     assert abs(len(out) - (int(RATE * 0.3) + 2 * int(RATE * 0.04))) < RATE // 50
-    assert trim_silence(RATE, [0.0] * 1000) == [0.0] * 1000[:0] or len(trim_silence(RATE, [0.0] * 1000)) <= 1000
+    assert len(trim_silence(RATE, [0.0] * 1000)) == 1000  # sama cisza: nic nie ucinamy
 
 
 def test_radio_click_adds_length_and_file_roundtrip(tmp_path: Path) -> None:

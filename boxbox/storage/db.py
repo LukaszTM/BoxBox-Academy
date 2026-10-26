@@ -189,14 +189,20 @@ class Database:
         ).fetchall()
         return [self._stored(r) for r in rows]
 
-    def best_lap(self, track_id: int) -> StoredLap | None:
-        """Najszybsze ważne, pełne okrążenie bez pit lane z tego toru."""
-        row = self.conn.execute(
-            "SELECT * FROM laps WHERE track_id = ? AND valid = 1 AND complete = 1 AND pitted = 0"
-            " AND lap_time_ms IS NOT NULL ORDER BY lap_time_ms LIMIT 1",
-            (track_id,),
-        ).fetchone()
-        return self._stored(row) if row else None
+    def best_lap(self, track_id: int, allow_invalid: bool = False) -> StoredLap | None:
+        """Najszybsze ważne, pełne okrążenie bez pit lane z tego toru.
+
+        `allow_invalid`: gdy nie ma ważnego (np. Time Trial z wyjazdami poza tor), weź najszybsze nieważne.
+        """
+        for valid_clause in (["AND valid = 1"] + (["AND valid = 0"] if allow_invalid else [])):
+            row = self.conn.execute(
+                f"SELECT * FROM laps WHERE track_id = ? {valid_clause} AND complete = 1 AND pitted = 0"
+                " AND lap_time_ms IS NOT NULL ORDER BY lap_time_ms LIMIT 1",
+                (track_id,),
+            ).fetchone()
+            if row:
+                return self._stored(row)
+        return None
 
     def corner_metrics(self, lap_id: int) -> tuple[CornerMetrics, ...]:
         rows = self.conn.execute(
@@ -216,8 +222,8 @@ class Database:
         row = self.conn.execute("SELECT data FROM lap_samples WHERE lap_id = ?", (lap_id,)).fetchone()
         return unpack_samples(row["data"]) if row else ()
 
-    def reference(self, track_id: int) -> ReferenceLap | None:
-        best = self.best_lap(track_id)
+    def reference(self, track_id: int, allow_invalid: bool = True) -> ReferenceLap | None:
+        best = self.best_lap(track_id, allow_invalid)
         if best is None:
             return None
         return ReferenceLap(best, self.corner_metrics(best.id), self.samples(best.id))

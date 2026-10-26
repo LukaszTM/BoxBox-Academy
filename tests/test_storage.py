@@ -61,6 +61,22 @@ def test_session_uid_above_int64_is_stored(tmp_path: Path) -> None:
     assert db.save_session(session, source="y") != sid
 
 
+def test_invalid_lap_is_fallback_reference(tmp_path: Path) -> None:
+    db = Database(tmp_path / "t.sqlite")
+    sid = db.save_session(parse_session(session_packet()), source="x")
+    t = track()
+    for num, time_ms in ((1, 95_000), (2, 91_000)):
+        lap = Lap(num, synthetic_samples(), time_ms, invalid=True)
+        db.save_lap(sid, lap, analyze_lap(lap, t), t.length_m)
+    assert db.best_lap(3) is None
+    assert db.best_lap(3, allow_invalid=True).number == 2
+    ref = db.reference(3)
+    assert ref is not None and ref.lap.number == 2 and not ref.lap.valid
+    valid = Lap(3, synthetic_samples(), 99_000)
+    db.save_lap(sid, valid, analyze_lap(valid, t), t.length_m)
+    assert db.reference(3).lap.number == 3  # ważne wygrywa nawet gdy wolniejsze
+
+
 def test_lap_without_time_is_not_reference(tmp_path: Path) -> None:
     db = Database(tmp_path / "t.sqlite")
     sid = db.save_session(None, source="x")

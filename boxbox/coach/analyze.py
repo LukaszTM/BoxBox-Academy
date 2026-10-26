@@ -118,6 +118,8 @@ def report_laps(
         if ref_analysis is None:
             ref = db.reference(track.track_id)
             ref_analysis = ref.analysis if ref else None
+            if ref is not None and not ref.lap.valid:
+                ref_label = "referencja: najlepsze okrążenie jest nieważne (brak ważnych), porównanie orientacyjne"
         db.close()
     head = f"{track.name}, {len(track.corners)} zakrętów, {len(laps)} pełnych okrążeń"
     lines = [head + (f"; {ref_label}" if ref_label else ""), ""]

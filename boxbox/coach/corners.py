@@ -19,6 +19,9 @@ class CornerMetrics:
     time_ms: int  # od wejścia do wyjścia
     brake_point_m: float | None  # początek ciągłego hamowania przed apeksem, None = nie hamował
     full_throttle_m: float | None  # pierwszy pełny gaz po apeksie, None = nie było w oknie
+    brake_end_m: float | None = None  # koniec tej fazy hamowania (hamulec poniżej progu)
+    brake_release_s: float | None = None  # czas od 50% hamulca do puszczenia; krótki = puszczony naraz
+    max_brake: float = 0.0  # najmocniejsze wciśnięcie w fazie hamowania (0-1)
 
 
 @dataclass(frozen=True)
@@ -61,13 +64,24 @@ def analyze_corner(lap: Lap, corner: Corner, track: Track, lookback_m: float = 1
 
     # Punkt hamowania: ostatnia faza ciągłego hamowania kończąca się najpóźniej w apeksie.
     brake_point: float | None = None
+    brake_end: float | None = None
+    release_s: float | None = None
+    max_brake = 0.0
     i = apex_idx
     while i >= 0 and window[i][1].brake < BRAKE_THRESHOLD:
         i -= 1
     if i >= 0:
+        end_idx = i  # ostatnia próbka z hamulcem w tej fazie
         while i > 0 and window[i - 1][1].brake >= BRAKE_THRESHOLD:
             i -= 1
-        brake_point = window[i][1].distance_m
+        phase = [s for _, s in window[i:end_idx + 1]]
+        brake_point = phase[0].distance_m
+        brake_end = phase[-1].distance_m
+        max_brake = max(s.brake for s in phase)
+        # puszczanie: od ostatniej próbki z hamulcem >= 50% maksimum do końca fazy
+        half = max_brake * 0.5
+        last_strong = max((k for k, s in enumerate(phase) if s.brake >= half), default=0)
+        release_s = max(0, phase[-1].lap_time_ms - phase[last_strong].lap_time_ms) / 1000
 
     full_throttle = next(
         (s.distance_m for rel, s in window[apex_idx:] if s.throttle >= FULL_THROTTLE), None
@@ -78,6 +92,7 @@ def analyze_corner(lap: Lap, corner: Corner, track: Track, lookback_m: float = 1
         entry_speed_kmh=entry.speed_kmh, exit_speed_kmh=exit_.speed_kmh,
         time_ms=max(0, exit_.lap_time_ms - entry.lap_time_ms),
         brake_point_m=brake_point, full_throttle_m=full_throttle,
+        brake_end_m=brake_end, brake_release_s=release_s, max_brake=max_brake,
     )
 
 

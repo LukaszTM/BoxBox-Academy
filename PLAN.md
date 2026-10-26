@@ -114,12 +114,12 @@ Siedem etapów, każdy z kryterium ukończenia, które da się sprawdzić bez dy
 - [x] Zapis okrążeń do SQLite; najlepsze ważne okrążenie gracza staje się referencją. (`boxbox/storage/db.py`, domyślnie `data/boxbox.sqlite`.)
 - [x] Kryterium: po odtworzeniu nagrania aplikacja wypisuje tabelę zakrętów z różnicą do referencji. (`python -m boxbox.app --replay recordings/bahrajn-tt_...bin.xz [--reference rival]`: różnica do własnego najlepszego albo do ducha rywala.)
 
-**Etap 3 – Trener gaz/hamulec (2–3 sesje)**
+**Etap 3 – Trener gaz/hamulec (2–3 sesje)** ✔ zakończony (26.10.2026)
 
-- [ ] Reguły: hamowanie za późno/za wcześnie, brak stopniowego puszczania hamulca, gaz za wcześnie (poślizg kół na wyjściu), za niski/za wysoki bieg w apexie.
-- [ ] Każda reguła zwraca komunikat: zakręt, problem, wskazówka, waga.
-- [ ] Po okrążeniu wybór 2–3 komunikatów o największej wadze.
-- [ ] Kryterium: test na nagraniu ze znanym błędem wykrywa go; na czystym okrążeniu milczy.
+- [x] Reguły: hamowanie za późno/za wcześnie, brak stopniowego puszczania hamulca, gaz za wcześnie (poślizg kół na wyjściu), za niski/za wysoki bieg w apexie. (`boxbox/coach/rules.py`; dodatkowo: utrata przyczepności/obrót, pełny gaz za późno. Poślizg kół liczony pośrednio: brak pakietu Motion Ex w nagraniach, więc po prędkości wyjścia i v_min.)
+- [x] Każda reguła zwraca komunikat: zakręt, problem, wskazówka, waga. (`Message`; waga = strata czasu w zakręcie względem referencji.)
+- [x] Po okrążeniu wybór 2–3 komunikatów o największej wadze. (`pick_top`: jeden na zakręt, próg 0,5 s; w aplikacji linia „Trener:” pod tabelą.)
+- [x] Kryterium: test na nagraniu ze znanym błędem wykrywa go; na czystym okrążeniu milczy. (`tests/test_rules.py` na Monzie, Suzuce i Bahrajnie; progi dobrane do tych nagrań, do weryfikacji na żywo w etapie 4.)
 
 **Etap 4 – Głos (2 sesje)**
 

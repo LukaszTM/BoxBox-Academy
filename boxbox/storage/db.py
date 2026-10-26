@@ -49,6 +49,9 @@ CREATE TABLE IF NOT EXISTS corner_metrics (
     time_ms INTEGER NOT NULL,
     brake_point_m REAL,
     full_throttle_m REAL,
+    brake_end_m REAL,
+    brake_release_s REAL,
+    max_brake REAL NOT NULL DEFAULT 0,
     PRIMARY KEY (lap_id, corner)
 );
 CREATE TABLE IF NOT EXISTS lap_samples (
@@ -107,6 +110,17 @@ class Database:
         self.conn.row_factory = sqlite3.Row
         self.conn.execute("PRAGMA foreign_keys = ON")
         self.conn.executescript(SCHEMA)
+        self._migrate()
+
+    def _migrate(self) -> None:
+        """Dokłada kolumny dodane po pierwszych bazach (CREATE TABLE IF NOT EXISTS ich nie doda)."""
+        have = {row["name"] for row in self.conn.execute("PRAGMA table_info(corner_metrics)")}
+        for column, ddl in (
+            ("brake_end_m", "REAL"), ("brake_release_s", "REAL"), ("max_brake", "REAL NOT NULL DEFAULT 0"),
+        ):
+            if column not in have:
+                self.conn.execute(f"ALTER TABLE corner_metrics ADD COLUMN {column} {ddl}")
+        self.conn.commit()
 
     def close(self) -> None:
         self.conn.close()
@@ -163,10 +177,13 @@ class Database:
         )
         lap_id = int(cur.lastrowid)  # type: ignore[arg-type]
         self.conn.executemany(
-            "INSERT INTO corner_metrics VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO corner_metrics (lap_id, corner, min_speed_kmh, apex_m, gear_at_apex, entry_speed_kmh,"
+            " exit_speed_kmh, time_ms, brake_point_m, full_throttle_m, brake_end_m, brake_release_s, max_brake)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 (lap_id, m.corner, m.min_speed_kmh, m.apex_m, m.gear_at_apex, m.entry_speed_kmh,
-                 m.exit_speed_kmh, m.time_ms, m.brake_point_m, m.full_throttle_m)
+                 m.exit_speed_kmh, m.time_ms, m.brake_point_m, m.full_throttle_m,
+                 m.brake_end_m, m.brake_release_s, m.max_brake)
                 for m in analysis.corners
             ],
         )
@@ -214,6 +231,7 @@ class Database:
                 gear_at_apex=r["gear_at_apex"], entry_speed_kmh=r["entry_speed_kmh"],
                 exit_speed_kmh=r["exit_speed_kmh"], time_ms=r["time_ms"],
                 brake_point_m=r["brake_point_m"], full_throttle_m=r["full_throttle_m"],
+                brake_end_m=r["brake_end_m"], brake_release_s=r["brake_release_s"], max_brake=r["max_brake"] or 0.0,
             )
             for r in rows
         )

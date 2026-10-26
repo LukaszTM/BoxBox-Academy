@@ -9,6 +9,7 @@ from pathlib import Path
 from boxbox.coach.compare import compare_to_reference
 from boxbox.coach.corners import LapAnalysis, analyze_lap
 from boxbox.coach.ghost import extract_ghost_laps
+from boxbox.coach.rules import evaluate_lap, pick_top
 from boxbox.coach.laps import Lap, LapRecorder
 from boxbox.telemetry.replay import replay
 from boxbox.storage.db import Database
@@ -124,7 +125,11 @@ def report_laps(
     head = f"{track.name}, {len(track.corners)} zakrętów, {len(laps)} pełnych okrążeń"
     lines = [head + (f"; {ref_label}" if ref_label else ""), ""]
     for lap in laps:
-        lines += [render_table(analyses[lap.number], lap, ref_analysis), ""]
+        lines += [render_table(analyses[lap.number], lap, ref_analysis)]
+        if ref_analysis is not None and ref_analysis.lap_number != lap.number:
+            top = pick_top(evaluate_lap(lap, analyses[lap.number], ref_analysis, track))
+            lines += ["  Trener: " + (" | ".join(f"{m.corner_name}: {m.problem} {m.hint}" for m in top) if top else "czyste okrążenie, nic do poprawy.")]
+        lines += [""]
     return "\n".join(lines)
 
 

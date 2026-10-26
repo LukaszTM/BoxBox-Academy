@@ -1,0 +1,3 @@
+Tor:
+Asysty (skrzynia / TC / ABS):
+Okrążenia i błędy (numer okrążenia, zakręt, błąd):

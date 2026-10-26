@@ -147,3 +147,11 @@ def test_recorder_votes_assists_per_lap() -> None:
     done = feed(rec, 2, 3.0, 200)
     assert done is not None and done.number == 1
     assert (done.gearbox, done.traction_control, done.abs_on) == (3, 0, True)  # większość próbek bez TC
+
+
+def test_recorder_drops_lap_without_samples() -> None:
+    rec = LapRecorder()
+    rec.feed(session_packet())
+    assert feed(rec, 5, 10.0, 0, pit=2) is None  # w garażu: numer okrążenia z poprzedniej sesji, brak próbek
+    assert feed(rec, 1, 2.0, 80) is None  # wyjazd: nowe okrążenie, "5" nie trafia do listy
+    assert rec.laps == [] and rec.current is not None and rec.current.number == 1

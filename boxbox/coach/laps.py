@@ -70,10 +70,11 @@ class LapRecorder:
             return None  # przed pierwszym przejazdem linii mety
         finished: Lap | None = None
         if self.current is None or lap.current_lap_num != self.current.number:
-            if self.current is not None:
+            if self.current is not None and self.current.samples:
                 self.current.lap_time_ms = lap.last_lap_time_ms or None
                 self.laps.append(self.current)
                 finished = self.current
+            # okrążenie bez próbek (np. numer z poprzedniej sesji jeszcze w garażu) jest pomijane
             self.current = Lap(number=lap.current_lap_num)
         if lap.current_lap_invalid:
             self.current.invalid = True

@@ -7,3 +7,4 @@ dist/
 *.spec
 data/
 *.sqlite
+assets/voice/raw/

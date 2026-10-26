@@ -1,0 +1,98 @@
+"""Trener na żywo: komunikat po zakręcie i podsumowanie po okrążeniu, jako listy klipów + tekst.
+
+Silnik nie odtwarza dźwięku; woła `speak(ids, text)`, które aplikacja podpina
+pod odtwarzacz i konsolę. Referencja: najlepsze ważne okrążenie (z bazy albo
+z bieżącej sesji); bez referencji trener tylko zapisuje pierwsze okrążenie.
+"""
+from collections.abc import Callable
+from dataclasses import dataclass, field
+
+from boxbox.coach.corners import LapAnalysis, analyze_corner, analyze_lap
+from boxbox.coach.laps import Lap, LapRecorder
+from boxbox.coach.rules import MIN_TIME_LOSS_S, Message, evaluate_corner, evaluate_lap, pick_top
+from boxbox.tracks.model import Track
+from boxbox.voice.phrases import MISC_TEXTS, compose, compose_short
+
+CORNER_EXIT_MARGIN_M = 25.0  # tyle metrów za wyjściem z zakrętu mówimy o nim
+Speak = Callable[[list[str], str], None]
+
+
+@dataclass
+class LiveCoach:
+    track: Track
+    speak: Speak
+    reference: LapAnalysis | None = None
+    corner_messages: bool = True
+    min_corner_weight: float = MIN_TIME_LOSS_S
+    announced: set[tuple[int, int]] = field(default_factory=set)  # (okrążenie, zakręt) już skomentowane
+    best_time_ms: int | None = None
+    said_hello: bool = False
+
+    def _say_misc(self, key: str) -> None:
+        self.speak([f"misc_{key}"], MISC_TEXTS[key])
+
+    def update(self, recorder: LapRecorder, finished: Lap | None) -> list[Message]:
+        """Wołane po każdym pakiecie. Zwraca komunikaty wypowiedziane w tym kroku."""
+        out: list[Message] = []
+        if not self.said_hello and recorder.state.lap is not None:
+            self.said_hello = True
+            self._say_misc("hello")
+        if finished is not None:
+            out += self._on_lap_finished(finished)
+        if self.corner_messages and self.reference is not None and recorder.current is not None:
+            out += self._on_progress(recorder.current)
+        return out
+
+    def _on_progress(self, lap: Lap) -> list[Message]:
+        if not lap.samples or lap.pitted:
+            return []
+        distance = lap.samples[-1].distance_m
+        ref = {c.corner: c for c in self.reference.corners} if self.reference else {}
+        out: list[Message] = []
+        for corner in self.track.corners:
+            key = (lap.number, corner.number)
+            if key in self.announced or corner.number not in ref or corner.exit_m < corner.entry_m:
+                continue  # zakręt przez linię mety dostaje tylko podsumowanie
+            if distance < corner.exit_m + CORNER_EXIT_MARGIN_M:
+                continue
+            self.announced.add(key)
+            metrics = analyze_corner(lap, corner, self.track)
+            if metrics is None:
+                continue
+            msgs = evaluate_corner(lap.number, metrics, ref[corner.number], self.track, lap.traction_control)
+            best = max(msgs, key=lambda m: m.weight, default=None)
+            if best is not None and best.weight >= self.min_corner_weight:
+                self.speak(compose_short(best), f"{best.corner_name}: {best.problem}")
+                out.append(best)
+        return out
+
+    def _on_lap_finished(self, lap: Lap) -> list[Message]:
+        if lap.pitted or not lap.is_complete(self.track.length_m):
+            return []
+        analysis = analyze_lap(lap, self.track)
+        out: list[Message] = []
+        usable = not lap.invalid and lap.lap_time_ms is not None
+        if self.reference is None:
+            if usable:
+                self.reference = analysis
+                self.best_time_ms = lap.lap_time_ms
+                self._say_misc("no_reference")
+            return []
+        if lap.invalid:
+            self._say_misc("lap_invalid")
+        top = pick_top(evaluate_lap(lap, analysis, self.reference, self.track))
+        if top:
+            self._say_misc("lap_summary")
+            for m in top:
+                self.speak(compose(m), f"{m.corner_name}: {m.problem} {m.hint}")
+            out += top
+        elif not lap.invalid:
+            self._say_misc("lap_clean")
+        if usable and (self.best_time_ms is None or lap.lap_time_ms < self.best_time_ms):  # type: ignore[operator]
+            self.best_time_ms = lap.lap_time_ms
+            self.reference = analysis
+            self._say_misc("lap_best")
+        return out
+
+    def finish(self) -> None:
+        self._say_misc("session_end")

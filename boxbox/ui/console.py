@@ -84,6 +84,13 @@ class Console:
         self._out.flush()
         self._last_len = len(line)
 
+    def note(self, text: str) -> None:
+        """Trwała linia (np. komunikat mechanika) nad odświeżaną linią stanu."""
+        self._out.write("\r" + text.ljust(self._last_len) + "\n")
+        self._out.flush()
+        self._last_len = 0
+        self._last_print = -self._interval
+
     def finish(self) -> None:
         self._out.write("\n")
         self._out.flush()

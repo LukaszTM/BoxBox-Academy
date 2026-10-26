@@ -5,6 +5,10 @@ from pathlib import Path
 
 from boxbox.coach.analyze import report_laps
 from boxbox.coach.laps import LapRecorder
+from boxbox.coach.live import LiveCoach
+from boxbox.storage.db import Database
+from boxbox.tracks.model import load_track, track_path
+from boxbox.voice.player import ClipLibrary, NullBackend, VoicePlayer
 from boxbox.telemetry.header import SUPPORTED_FORMATS
 from boxbox.telemetry.replay import replay
 from boxbox.telemetry.state import TelemetryState
@@ -14,6 +18,7 @@ from boxbox.ui.console import NO_DATA_MESSAGE, Console
 __all__ = ["NO_DATA_MESSAGE", "main"]
 
 DEFAULT_DB = Path("data") / "boxbox.sqlite"
+DEFAULT_VOICE = Path("assets") / "voice"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -32,6 +37,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--reference", choices=["best", "rival", "pb"], default="best",
         help="z czym porównać zakręty: własne najlepsze okrążenie albo duch z Time Trial (tylko --replay)",
+    )
+    parser.add_argument("--voice", type=Path, default=DEFAULT_VOICE, help="folder z klipami WAV mechanika")
+    parser.add_argument("--no-voice", action="store_true", help="bez dźwięku (komunikaty tylko w konsoli)")
+    parser.add_argument(
+        "--corner-messages", choices=["on", "off"], default="on", help="krótki komunikat tuż po zakręcie"
     )
     return parser
 
@@ -54,14 +64,59 @@ def _print_summary(state: TelemetryState) -> None:
         )
 
 
+def _make_player(args: argparse.Namespace) -> VoicePlayer | None:
+    """Odtwarzacz, gdy są klipy i dźwięk nie jest wyłączony; przy replayu bez czekania tylko konsola."""
+    if args.no_voice or (args.replay and args.speed <= 0):
+        return None
+    library = ClipLibrary(args.voice)
+    if len(library) == 0:
+        print(f"Brak klipów głosu w {args.voice}; komunikaty tylko w konsoli.")
+        return None
+    return VoicePlayer(library).start()
+
+
 def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
     recorder = LapRecorder()
     state = recorder.state
     console = Console()
     console.update(state, force=True)  # od razu "brak danych", dopóki nic nie przyjdzie
+    player = _make_player(args) if args.mode == "coach" else None
+    coach: LiveCoach | None = None
+    coach_failed = False
+
+    def speak(ids: list[str], text: str) -> None:
+        console.note(f"Mechanik: {text}")
+        if player is not None:
+            player.say(ids, text)
+
+    def ensure_coach() -> None:
+        """Trener startuje, gdy znamy tor (pakiet Session): plik toru + referencja z bazy."""
+        nonlocal coach, coach_failed
+        if coach is not None or coach_failed or state.session is None:
+            return
+        path = args.track or track_path(state.session.track_id)
+        try:
+            track = load_track(path)
+        except FileNotFoundError:
+            coach_failed = True
+            console.note(f"Brak pliku toru {path}: trener na żywo wyłączony (tabela po sesji nadal będzie).")
+            return
+        reference = None
+        best_time = None
+        if args.db is not None:
+            db = Database(args.db)
+            ref = db.reference(track.track_id)
+            db.close()
+            if ref is not None:
+                reference, best_time = ref.analysis, ref.lap.lap_time_ms
+        coach = LiveCoach(track, speak, reference, corner_messages=args.corner_messages == "on", best_time_ms=best_time)
 
     def handle(data: bytes) -> None:
-        recorder.feed(data)
+        finished = recorder.feed(data)
+        if args.mode == "coach":
+            ensure_coach()
+            if coach is not None:
+                coach.update(recorder, finished)
         console.update(state)
 
     if args.replay:
@@ -71,6 +126,10 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
             handle(data)
     console.update(state, force=True)
     console.finish()
+    if coach is not None:
+        coach.finish()
+    if player is not None:
+        player.close()
     return state, recorder
 
 

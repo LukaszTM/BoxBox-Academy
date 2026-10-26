@@ -131,6 +131,18 @@ def compose(message: Message) -> list[str]:
     return clips
 
 
+def compose_short(message: Message) -> list[str]:
+    """Jedno krótkie zdanie tuż po zakręcie: zakręt + problem (+ liczba), bez wskazówki."""
+    rule = rule_variant(message)
+    head, _ = RULE_TEXTS[rule]
+    clips = [f"corner_{corner_key(message.corner_name)}", f"rule_{rule}_a"]
+    if head.endswith("o jakieś"):
+        clips.append(f"num_{message.value_m if message.value_m is not None else 10}")
+    if message.gear is not None and rule.startswith("gear"):
+        clips.append(f"gear_{min(8, max(1, message.gear))}")
+    return clips
+
+
 def track_corner_names() -> list[str]:
     """Nazwy zakrętów ze wszystkich plików torów w boxbox/tracks/data."""
     import json

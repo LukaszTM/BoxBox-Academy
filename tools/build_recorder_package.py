@@ -17,7 +17,7 @@ from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
-    ListFlowable, ListItem, Paragraph, Preformatted, SimpleDocTemplate, Spacer, Table, TableStyle,
+    CondPageBreak, ListFlowable, ListItem, Paragraph, Preformatted, SimpleDocTemplate, Spacer, Table, TableStyle,
 )
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -97,6 +97,7 @@ def markdown_to_story(text: str, width: float) -> list:
         if line.startswith("# "):
             story.append(Paragraph(_inline(line[2:]), st["h1"]))
         elif line.startswith("## "):
+            story.append(CondPageBreak(45 * mm))  # nagłówek nie zostaje sam na dole strony
             story.append(Paragraph(_inline(line[3:]), st["h2"]))
         elif line.startswith("### "):
             story.append(Paragraph(_inline(line[4:]), st["h3"]))

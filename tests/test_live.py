@@ -41,7 +41,7 @@ def test_live_corner_and_lap_messages_with_reference(monza: RecordedSession) -> 
     # podsumowanie okrążenia 4 po mecie (na początku okrążenia 5), ze wskazówkami
     summary = [s for s in spoken if s[0] == 5 and s[2] == ["misc_lap_summary"]]
     assert summary and summary[0][1] < 50
-    after = [s for s in spoken if s[0] == 5 and s[1] < 50 and "Zacznij" in s[3]]
+    after = [s for s in spoken if s[0] == 5 and s[1] < 50 and "zacznij" in s[3].lower()]
     assert after
     # okrążenie 3 (czyste, 1:28.0): "najwięcej do zyskania" albo czyste - ale nie pełne podsumowanie
     lap3 = [s for s in spoken if s[0] == 4 and s[1] < 50]

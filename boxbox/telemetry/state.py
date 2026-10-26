@@ -56,7 +56,7 @@ class TelemetryState:
             self.errors["nagłówek"] += 1
             return None
         kind = header.kind
-        name = kind.name if kind else f"NIEZNANY_{header.packet_id}"
+        name = kind.name if kind is not None else f"NIEZNANY_{header.packet_id}"  # MOTION ma id 0, więc "if kind" by go pominął
         self.packets[name] += 1
         self.formats[header.packet_format] += 1
         if header.packet_format not in SUPPORTED_FORMATS:

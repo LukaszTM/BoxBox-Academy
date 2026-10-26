@@ -1,0 +1,9 @@
+Tor: Bahrajn, Time Trial (format UDP 2025, 60 Hz)
+Duch rywala: Jarno Opmeer, 1:26,764 (indeks auta 5 w pakietach; duch PB gracza: indeks 1)
+Asysty (skrzynia / TC / ABS): automat / średnia / wł. (z telemetrii)
+Okrążenia (z telemetrii): 1: 1:38,901  2: 1:37,546  3: 1:37,938  4: 1:56,778  5: urwane na 266 m
+Okrążenia i błędy (numer okrążenia, zakręt, błąd):
+okrążenia 2-3: problemy z płynnym wciskaniem gazu po wyjściu z zakrętu
+okrążenie 4: problem ze zlokalizowaniem zakrętu 10
+nie wykonałem okrążenia zjazdowego
+Oryginalna nazwa pliku: Sesja_2026-10-26_122816.bin (166 MB), skompresowane xz.

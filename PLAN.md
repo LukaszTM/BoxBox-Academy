@@ -105,7 +105,7 @@ Siedem etapów, każdy z kryterium ukończenia, które da się sprawdzić bez dy
 - [x] Odbiór UDP na porcie 20777, parser nagłówka pakietu i pakietów: Session, Lap Data, Car Telemetry, Car Status, Event, Car Damage. (Układy pól sprawdzone ze specyfikacją EA w `docs/`; do potwierdzenia pierwszym nagraniem.)
 - [x] Narzędzie `record` (`python -m boxbox.telemetry.record --name <tor>`) zapisujące surowe pakiety do pliku i `replay` (`python -m boxbox.app --replay <plik> [--speed N]`) odtwarzający je z zachowaniem czasu.
 - [x] Konsola pokazująca na żywo: prędkość, bieg, gaz %, hamulec %, baterię %, dystans okrążenia, aktualne asysty.
-- [ ] Kryterium: 3 nagrania (trening na 3 torach) w `recordings/`, test parsera na każdym z nich przechodzi.
+- [ ] Kryterium: 3 nagrania (trening na 3 torach) w `recordings/`, test parsera na każdym z nich przechodzi. (1/3: Bahrajn TT, 156 574 pakiety, 0 błędów parsera; nagrania trzymamy jako `.bin.xz`, test: `tests/test_recordings.py`.)
 
 **Etap 2 – Zakręty i okrążenie referencyjne (2 sesje)**
 
@@ -168,7 +168,7 @@ Jedna sesja = jedno zadanie z listy etapu, zaczynane od testu, kończone commite
 
 Pytania otwarte:
 
-- [ ] Skąd okrążenie referencyjne dla kogoś, kto dopiero zaczyna: własne najlepsze, czy dołączone wzorcowe okrążenia z gry? Kandydaci do sprawdzenia na nagraniach: (a) auto AI z tej samej sesji na wysokim poziomie trudności (gra wysyła telemetrię wszystkich 22 aut), (b) duch rywala w Time Trial, jeśli jego telemetria leci po UDP (Lap Data ma `time_trial_rival_car_idx`), (c) nagranie od szybkiego gracza przez `record`.
+- [ ] Skąd okrążenie referencyjne dla kogoś, kto dopiero zaczyna: własne najlepsze, czy dołączone wzorcowe okrążenia z gry? Ustalone na nagraniu Bahrajn TT: duch rywala jest w pakietach (indeks `time_trial_rival_car_idx`, u nas 5) z prędkością, gazem, hamulcem i czasem okrążenia; część próbek ma śmieciową prędkość >340 km/h, do odfiltrowania. Kandydaci: (a) auto AI z tej samej sesji na wysokim poziomie trudności (gra wysyła telemetrię wszystkich 22 aut), (b) duch rywala w Time Trial, jeśli jego telemetria leci po UDP (Lap Data ma `time_trial_rival_car_idx`), (c) nagranie od szybkiego gracza przez `record`.
 - [ ] Czy w trybie nauki mechanik ma w ogóle mówić podczas okrążenia, czy tylko po nim?
 - [ ] Jaki język komunikatów domyślnie: polski, angielski, oba?
 - [ ] Czy rozwijać projekt publicznie na GitHubie od początku (dla CV i kanału), czy po MVP?

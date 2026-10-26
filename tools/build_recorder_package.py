@@ -159,20 +159,29 @@ def build_pdf(target: Path) -> None:
     doc.build(story + markdown_to_story(SOURCE.read_text(encoding="utf-8"), width))
 
 
+def _add(z: zipfile.ZipFile, path: Path, arcname: str) -> None:
+    """Dodaje plik z wyrównanymi atrybutami (zwykły plik 0644), żeby kreator Windows nie marudził."""
+    info = zipfile.ZipInfo.from_file(path, arcname)
+    info.external_attr = (0o644 << 16)
+    info.compress_type = zipfile.ZIP_DEFLATED
+    with open(path, "rb") as f:
+        z.writestr(info, f.read())
+
+
 def build_zip(pdf: Path, target: Path) -> None:
     package_dir = ROOT / "tools" / "package"
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as z:
-        z.write(pdf, pdf.name)
+        _add(z, pdf, pdf.name)
         for extra in sorted(package_dir.rglob("*")):
             if extra.is_file():
-                z.write(extra, extra.relative_to(package_dir).as_posix())
+                _add(z, extra, extra.relative_to(package_dir).as_posix())
         for pattern in ("*.py", "*.json"):
             for path in sorted((ROOT / "boxbox").rglob(pattern)):
-                z.write(path, path.relative_to(ROOT).as_posix())
+                _add(z, path, path.relative_to(ROOT).as_posix())
         for path in sorted((ROOT / "assets" / "voice").glob("*.wav")):
-            z.write(path, f"assets/voice/{path.name}")
-        z.write(ROOT / "tools" / "generate_voice_elevenlabs.py", "wygeneruj_glos.py")
-        z.write(ROOT / "assets" / "voice" / "phrases.csv", "phrases.csv")
+            _add(z, path, f"assets/voice/{path.name}")
+        _add(z, ROOT / "tools" / "generate_voice_elevenlabs.py", "wygeneruj_glos.py")
+        _add(z, ROOT / "assets" / "voice" / "phrases.csv", "phrases.csv")
         z.writestr("recordings/.gitkeep", "")
 
 

@@ -90,8 +90,9 @@ numer okrążenia i cel na nie, zbliżający się zakręt (numer jak w grze, odl
 do zrobienia w tym zakręcie na okrążeniach z błędami.
 
 1. W grze: **Ustawienia graficzne → Tryb okna: Bez ramki** (w pełnym ekranie nakładka nie będzie widoczna).
-2. W terminalu: `nakladka.bat <nazwa-nagrania> <plan>`, np. `nakladka.bat bahrajn-tt bahrajn-tt`.
-   Plany: `bahrajn-tt`, `monza-trening`, `suzuka-tt-bez-tc`, `pakiet2026`.
+2. W terminalu: `nakladka.bat <nazwa nagrania>`, np. `nakladka.bat monza trening z AI`. Spacje w nazwie
+   są w porządku (zamieniają się na myślniki). Plan sesji dobiera się po pierwszym słowie: `bahrajn`, `monza`,
+   `suzuka`, `pakiet2026`. Ręcznie: `nakladka.bat --plan suzuka-tt-bez-tc <nazwa>`.
 3. Okno pojawi się w lewym górnym rogu; przeciągnij je tam, gdzie nie zasłania toru. Nie klikaj w nie podczas jazdy, bo zabiera grze klawiaturę.
 4. Po sesji naciśnij **Esc** na nakładce (albo zamknij okno). Nagranie zostaje zapisane jak przy `nagraj.bat`.
 

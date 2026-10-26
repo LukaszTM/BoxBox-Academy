@@ -170,21 +170,55 @@ class OverlayWindow:
         self.root.mainloop()
 
 
+def resolve_plan(plan: str | None, name: str | None, plans_dir: Path) -> Path | None:
+    """Plan z argumentu (plik lub nazwa) albo dobrany po pierwszym słowie nazwy nagrania."""
+    if plan:
+        candidates = [Path(plan), plans_dir / plan, plans_dir / f"{plan}.json"]
+        for c in candidates:
+            if c.is_file():
+                return c
+        print(f"Nie ma planu '{plan}'. Dostępne: {', '.join(p.stem for p in sorted(plans_dir.glob('*.json')))}")
+        return None
+    available = sorted(plans_dir.glob("*.json"))
+    if not available:
+        print(f"Brak planów w {plans_dir}. Podaj --plan <plik.json>.")
+        return None
+    key = (name or "").lower().split("-")[0]
+    matches = [p for p in available if key and p.stem.lower().startswith(key)]
+    if len(matches) == 1:
+        return matches[0]
+    print("Który plan? " + ", ".join(f"{i + 1}) {p.stem}" for i, p in enumerate(available)))
+    try:
+        choice = int(input("Numer: ").strip())
+        return available[choice - 1]
+    except (ValueError, IndexError, EOFError):
+        print("Nie wybrano planu.")
+        return None
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Nakładka do nagrań BoxBox Academy")
-    parser.add_argument("--name", help="nazwa nagrania (bez tego tylko nakładka, bez zapisu)")
-    parser.add_argument("--plan", type=Path, required=True, help="plik JSON z planem sesji")
+    parser.add_argument(
+        "--name", nargs="*", help="nazwa nagrania; kilka słów łączy się myślnikami (bez tego tylko nakładka, bez zapisu)"
+    )
+    parser.add_argument("--plan", help="plan sesji: plik JSON albo nazwa z katalogu planów (domyślnie wg nazwy nagrania)")
+    parser.add_argument("--plans-dir", type=Path, default=Path("plany"))
     parser.add_argument("--port", type=int, default=DEFAULT_PORT)
     parser.add_argument("--dir", type=Path, default=Path("recordings"))
     parser.add_argument("--guide-dir", type=Path, default=GUIDE_DIR)
     args = parser.parse_args(argv)
 
-    plan = load_plan(args.plan)
+    name = "-".join(args.name) if args.name else None
+    plan_path = resolve_plan(args.plan, name, args.plans_dir)
+    if plan_path is None:
+        return 1
+    plan = load_plan(plan_path)
+    print(f"Plan: {plan.title} ({plan_path})")
     writer = None
     path = None
-    if args.name:
+    if name:
         args.dir.mkdir(parents=True, exist_ok=True)
-        path = recording_path(args.dir, args.name, datetime.now())
+        path = recording_path(args.dir, name, datetime.now())
         path.with_suffix(".txt").write_text(
             "Tor:\nAsysty (skrzynia / TC / ABS):\nOkrążenia i błędy (numer okrążenia, zakręt, błąd):\n", encoding="utf-8"
         )

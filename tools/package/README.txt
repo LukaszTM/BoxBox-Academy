@@ -5,8 +5,9 @@ Pelna instrukcja: BoxBox_Academy_instrukcja_nagran.pdf (w tym folderze).
 Wymagania: Python 3.12+ (py -3 --version), z tkinter (domyslnie w instalatorze z python.org).
 
 NAKLADKA + NAGRYWANIE (zalecane):
-  nakladka.bat <nazwa> <plan>      np. nakladka.bat monza-trening monza-trening
-  Plany: bahrajn-tt, monza-trening, suzuka-tt-bez-tc, pakiet2026
+  nakladka.bat <nazwa>             np. nakladka.bat monza trening z AI
+  Nazwa moze miec spacje (zamienia je na myslniki). Plan dobiera sie po pierwszym slowie:
+  bahrajn / monza / suzuka / pakiet2026. Recznie: nakladka.bat --plan suzuka-tt-bez-tc <nazwa>
   Gra w trybie okna bez ramki (nie pelny ekran). Esc na nakladce konczy nagranie.
 
 SAMO NAGRYWANIE (bez nakladki):

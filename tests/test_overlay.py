@@ -109,3 +109,22 @@ def test_calibrate_guide_snaps_to_detected_zones(tmp_path: Path) -> None:
     state.feed(lap_packet(lap_distance=100.0, lap_num=2, lap_invalid=False))
     state.feed(telemetry_packet())
     assert "skalibrowane" in build_view(state, load_plan(PLANS / "monza-trening.json"), cal, 5, None).status_line
+
+
+def test_resolve_plan(tmp_path: Path, capsys) -> None:
+    from boxbox.ui.overlay_model import load_plan as _lp  # noqa: F401
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("ov", Path("boxbox/ui/overlay.py"))
+    try:
+        import tkinter  # noqa: F401
+    except ModuleNotFoundError:
+        import pytest
+        pytest.skip("brak tkinter w tym środowisku")
+    ov = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ov)  # type: ignore[union-attr]
+    assert ov.resolve_plan(None, "monza-trening-z-AI", PLANS).stem == "monza-trening"
+    assert ov.resolve_plan(None, "suzuka", PLANS).stem == "suzuka-tt-bez-tc"
+    assert ov.resolve_plan("bahrajn-tt", None, PLANS).stem == "bahrajn-tt"
+    assert ov.resolve_plan(str(PLANS / "pakiet2026.json"), None, PLANS).stem == "pakiet2026"
+    assert ov.resolve_plan("nie-ma", None, PLANS) is None
+    assert "Dostępne" in capsys.readouterr().out

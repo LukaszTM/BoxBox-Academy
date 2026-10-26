@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/logo.png" alt="BoxBox Academy" width="420"></p>
+<p align="center"><img src="assets/logo.png" alt="BoxBox Academy" width="320"></p>
 
 # BoxBox Academy
 

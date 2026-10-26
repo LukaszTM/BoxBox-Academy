@@ -148,11 +148,12 @@ def build_pdf(target: Path) -> None:
     width = A4[0] - doc.leftMargin - doc.rightMargin
     story: list = []
     if LOGO.exists():
-        logo_width = 70 * mm
+        logo_width = 55 * mm
         small = DIST / "logo_small.png"  # pomniejszone do druku, żeby PDF nie ważył 2 MB
         with PILImage.open(LOGO) as im:
-            im.convert("RGB").resize((600, 400), PILImage.LANCZOS).save(small, optimize=True)
-        logo = Image(str(small), width=logo_width, height=logo_width * 2 / 3)
+            aspect = im.size[1] / im.size[0]
+            im.convert("RGBA").resize((600, int(600 * aspect)), PILImage.LANCZOS).save(small, optimize=True)
+        logo = Image(str(small), width=logo_width, height=logo_width * aspect)
         logo.hAlign = "CENTER"
         story += [logo, Spacer(1, 8)]
     doc.build(story + markdown_to_story(SOURCE.read_text(encoding="utf-8"), width))

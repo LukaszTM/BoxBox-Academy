@@ -128,6 +128,9 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
         print(f"Obciążenie: {result.cpu_percent:.1f}% jednego rdzenia średnio przez {result.wall_s:.0f} s")
     if result.player_errors:
         print(f"Głos: {len(result.player_errors)} błędów odtwarzania, pierwszy: {result.player_errors[0]}")
+    if result.summary is not None:
+        print(f"Dobrze:   {result.summary.good}")
+        print(f"Do pracy: {result.summary.to_work}")
     return session.state, session.recorder
 
 

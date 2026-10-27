@@ -241,6 +241,8 @@ class HomePage(QWidget):
             lines.append(texts.HOME["cpu"].format(cpu=result.cpu_percent, wall=result.wall_s))
         if result.player_errors:
             lines.append(f"Głos: {len(result.player_errors)} błędów, pierwszy: {result.player_errors[0]}")
+        if result.summary is not None:
+            lines += [f"Dobrze:   {result.summary.good}", f"Do pracy: {result.summary.to_work}", ""]
         if not result.state.empty:
             source = str(session.cfg.replay) if session.cfg.replay else "okno"
             try:

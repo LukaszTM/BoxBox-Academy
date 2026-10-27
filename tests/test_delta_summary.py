@@ -57,7 +57,7 @@ def test_summary_good_and_to_work() -> None:
             Message(2, 3, "Z3", "throttle_early", "p", "h", 0.5)]
     s = summarize([lap_ref, lap_bad], msgs, t, best_now=a_ref)
     assert s.laps == 2 and s.best_lap_ms == 90_000 and s.clean_laps == 1
-    assert s.to_work.startswith("Z1: hamowanie za późno") and "2.0 s" in s.to_work
+    assert s.to_work.startswith("Z1: hamowanie za późno") and "1.4 s" in s.to_work
     assert s.good.startswith("1 czyste okrążenie")
     # poprawa względem poprzedniej sesji: hamowanie 15 m później w Z1
     before = [CornerMetrics(m.corner, m.min_speed_kmh, m.apex_m, m.gear_at_apex, m.entry_speed_kmh, m.exit_speed_kmh, m.time_ms,

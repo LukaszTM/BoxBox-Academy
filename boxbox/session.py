@@ -17,6 +17,7 @@ from boxbox.coach.laps import LapRecorder
 from boxbox.coach.live import LiveCoach
 from boxbox.coach.progress import CLEAN_LAPS_TO_ADVANCE, STEPS
 from boxbox.coach.rules import Message
+from boxbox.coach.summary import SessionSummary, summarize
 from boxbox.storage.db import Database
 from boxbox.telemetry.record import recording_path
 from boxbox.telemetry.recording import RecordingWriter, is_needed
@@ -42,13 +43,29 @@ def progress_line(step: int, streak: int) -> str:
     return goal + (f", potem: {nxt}" if nxt else ", jedziesz bez asyst: pracujemy nad czasem") + f" | teraz: {STEPS[step]}"
 
 
+def next_lap_target(m: Message) -> str:
+    """Mały, osiągalny krok na następne okrążenie zamiast całej różnicy do referencji: połowa, 5–20 m."""
+    if m.value_m is None:
+        return ""
+    step = int(min(20, max(5, round(m.value_m / 2 / 5) * 5)))
+    if m.rule in ("brake_late", "brake_late_big"):
+        return f"hamuj {step} m wcześniej"
+    if m.rule == "brake_early":
+        return f"hamuj {step} m później"
+    if m.rule == "throttle_late":
+        return f"pełny gaz {step} m wcześniej"
+    return ""
+
+
 def focus_line(messages: list[Message]) -> str:
-    """Co poprawić na następnym okrążeniu: największa strata z podsumowania."""
+    """Co poprawić na następnym okrążeniu: największa strata z podsumowania, jako konkretny cel."""
     big = [m for m in messages if m.corner]
     if not big:
         return ""
     m = max(big, key=lambda x: x.weight)
-    return f"Na tym okrążeniu popraw: {m.corner_name}, {m.problem.rstrip('.').lower()}"
+    target = next_lap_target(m)
+    what = target or m.problem.rstrip(".").lower()
+    return f"Na tym okrążeniu popraw: {m.corner_name}, {what}"
 
 
 @dataclass
@@ -77,6 +94,7 @@ class SessionResult:
     coach_started: bool
     player_errors: list[str] = field(default_factory=list)
     recording: Path | None = None
+    summary: SessionSummary | None = None  # Dobrze / Do pracy (tylko tryb nauki z trenerem)
 
 
 class CoachSession:
@@ -94,6 +112,9 @@ class CoachSession:
         self.state = self.recorder.state
         self.shared = SharedCoachState(self.state, recording_name=cfg.record if not cfg.replay else None)
         self.messages: list[tuple[float, str]] = []  # (sekundy od startu, tekst), pod shared.lock
+        self.lap_messages: list[Message] = []  # wszystkie uwagi z okrążeń (do podsumowania sesji)
+        self.reference_before: tuple | None = None  # metryki referencji z bazy sprzed sesji
+        self.best_before_ms: int | None = None
         self.player: VoicePlayer | None = None
         self.coach: LiveCoach | None = None
         self.coach_failed = False
@@ -151,6 +172,7 @@ class CoachSession:
             db.close()
             if ref is not None:
                 reference, best_time = ref.analysis, ref.lap.lap_time_ms
+                self.reference_before, self.best_before_ms = ref.corners, ref.lap.lap_time_ms
         if progress is not None:
             self.shared.progress_line = progress_line(progress.step, progress.streak)
         log.info("trener: tor %s (%s), referencja %s, krok %s", track.name, path,
@@ -180,6 +202,7 @@ class CoachSession:
                     if finished is not None:
                         log.info("okrążenie %d: %s, %d komunikatów", finished.number,
                                  f"{finished.lap_time_ms} ms" if finished.lap_time_ms else "bez czasu", len(said))
+                        self.lap_messages += [m for m in said if m.corner]
                         self.shared.focus_line = focus_line(said)
                         if self.coach.progress is not None:
                             self.shared.progress_line = progress_line(self.coach.progress.step, self.coach.progress.streak)
@@ -259,5 +282,17 @@ class CoachSession:
         if self.player is not None:
             self.player.close()
             errors = list(self.player.errors)
-        self.result = SessionResult(self.state, self.recorder, wall, cpu_percent, self.coach is not None, errors, self.recording)
+        summary = None
+        if self.coach is not None:
+            laps = self.recorder.laps
+            best_now = None
+            if self.coach.reference is not None and self.coach.best_time_ms is not None:
+                best_now = self.coach.reference  # po sesji referencja = najlepsze okrążenie sesji albo z bazy
+            try:
+                summary = summarize(laps, self.lap_messages, self.coach.track, best_now, self.reference_before, self.best_before_ms)
+            except Exception:  # podsumowanie nie może zepsuć zakończenia sesji
+                log.error("podsumowanie: %s", traceback.format_exc())
+            if summary is not None:
+                log.info("podsumowanie: dobrze: %s | do pracy: %s", summary.good, summary.to_work)
+        self.result = SessionResult(self.state, self.recorder, wall, cpu_percent, self.coach is not None, errors, self.recording, summary)
         return self.result

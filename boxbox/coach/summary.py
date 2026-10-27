@@ -94,7 +94,8 @@ def summarize(
         worst = max(scores, key=scores.get)
         rules = [m.rule for m in messages if m.corner == worst]
         top_rule = max(set(rules), key=rules.count)
-        to_work = f"{_corner_name(track, worst)}: {rule_pl(top_rule)} (łącznie {scores[worst]:.1f} s w sesji)"
+        worst_single = max(m.weight for m in messages if m.corner == worst)
+        to_work = f"{_corner_name(track, worst)}: {rule_pl(top_rule)} (do {worst_single:.1f} s na okrążeniu)"
     else:
         to_work = "nic pilnego; następny krok to kolejne czyste okrążenia"
     return SessionSummary(good, to_work, best_ms, len(valid), clean, scores)

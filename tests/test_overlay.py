@@ -4,7 +4,7 @@ from pathlib import Path
 from boxbox.telemetry.state import TelemetryState
 from boxbox.tracks.model import Corner
 from boxbox.ui.overlay_model import (
-    GUIDE_DIR, build_view, calibrate_guide, load_guide, load_guide_for, load_plan, save_guide,
+    GUIDE_DIR, build_coach_view, build_view, calibrate_guide, load_guide, load_guide_for, load_plan, save_guide,
 )
 from tests.builders import lap_packet, session_packet, telemetry_packet
 
@@ -162,3 +162,17 @@ def test_checklist_and_progress() -> None:
     view = build_view(state, plan, guide, 10, None, done)
     assert sum(1 for i in view.items if i.done) == 6 + 3
     assert all(i.done for i in view.items if i.key.startswith("lap:"))
+
+
+def test_build_coach_view() -> None:
+    state = TelemetryState()
+    view = build_coach_view(state, None, ["a"], 0)
+    assert view.status_line.startswith("czekam na telemetrię") and view.messages == ("a",)
+    state.feed(session_packet())  # tor 3 (Bahrajn)
+    state.feed(lap_packet(lap_num=2, lap_distance=500.0, lap_invalid=False))
+    state.feed(telemetry_packet(speed=250, gear=7))
+    guide = load_guide(GUIDE_DIR / "3.json")
+    view = build_coach_view(state, guide, ["pierwszy", "drugi", "trzeci", "czwarty"], 10, "krok 2", "sesja")
+    assert view.lap_line == "OKRĄŻENIE 2" and view.corner_line == "T1  za 257 m"
+    assert view.messages == ("czwarty", "trzeci", "drugi") and view.progress_line == "krok 2"
+    assert "250 km/h" in view.status_line and "nagrywam: sesja" in view.status_line

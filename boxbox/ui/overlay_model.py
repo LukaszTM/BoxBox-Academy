@@ -5,6 +5,9 @@ Przewodnik toru (`boxbox/tracks/guide/<track_id>.json`) to lista zakrętów z na
 co robić na którym okrążeniu i w którym zakręcie.
 """
 import json
+import threading
+from collections import deque
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -216,3 +219,64 @@ def build_view(
     elif guide is not None and guide.accuracy.startswith("skalibrowane"):
         status += " | zakręty skalibrowane z okrążenia"
     return OverlayView(plan.title, lap_line, goal, corner_line, task_line, note_line, status, items)
+
+
+@dataclass(frozen=True)
+class CoachView:
+    """Treść nakładki trenera: okrążenie, zbliżający się zakręt, ostatnie słowa mechanika."""
+
+    lap_line: str
+    corner_line: str
+    messages: tuple[str, ...]  # od najnowszego
+    progress_line: str
+    status_line: str
+
+
+def build_coach_view(
+    state: TelemetryState,
+    guide: TrackGuide | None,
+    messages: Sequence[str],
+    packets: int,
+    progress_line: str = "",
+    recording_name: str | None = None,
+) -> CoachView:
+    rec = f"nagrywam: {recording_name}" if recording_name else "bez nagrywania"
+    msgs = tuple(reversed(list(messages)[-3:]))
+    if state.lap is None or state.telemetry is None:
+        waiting = "czekam na telemetrię z gry..." if packets == 0 else f"pakietów: {packets}"
+        return CoachView("", "", msgs, progress_line, f"{waiting} | {rec}")
+    lap = state.lap.player
+    car = state.telemetry.player
+    lap_line = f"OKRĄŻENIE {lap.current_lap_num}"
+    if lap.pit_status:
+        lap_line += " (pit lane)"
+    elif lap.current_lap_invalid:
+        lap_line += " (nieważne)"
+    corner_line = ""
+    if guide is not None and lap.lap_distance >= 0:
+        corner, dist = guide.next_corner(lap.lap_distance)
+        where = f"za {dist:.0f} m" if dist > 15 else ("TERAZ" if dist > -APEX_HOLD_M else "")
+        corner_line = f"{corner.name}  {where}".strip()
+    status = f"{car.speed_kmh} km/h, bieg {car.gear} | {lap.lap_distance:.0f} m | {rec}"
+    return CoachView(lap_line, corner_line, msgs, progress_line, status)
+
+
+MAX_MESSAGES = 3
+
+
+@dataclass
+class SharedCoachState:
+    """Stan dzielony między wątkiem telemetrii a oknem."""
+
+    state: TelemetryState
+    lock: threading.Lock = field(default_factory=threading.Lock)
+    stop: threading.Event = field(default_factory=threading.Event)
+    messages: deque[str] = field(default_factory=lambda: deque(maxlen=MAX_MESSAGES))
+    packets: int = 0
+    progress_line: str = ""
+    recording_name: str | None = None
+    error: str | None = None
+
+    def say(self, text: str) -> None:
+        with self.lock:
+            self.messages.append(text)

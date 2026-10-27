@@ -56,6 +56,7 @@ def main() -> int:
     parser.add_argument("--speed", type=float, default=1.0)
     parser.add_argument("--only", nargs="*", help="tylko te id (np. do poprawek)")
     parser.add_argument("--dry-run", action="store_true", help="policz znaki, nic nie wysyłaj")
+    parser.add_argument("--done-dir", type=Path, help="pomiń też klipy, które są już w tym folderze (np. assets/voice po efekcie radia)")
     args = parser.parse_args()
 
     api_key = os.environ.get("ELEVENLABS_API_KEY")
@@ -65,7 +66,10 @@ def main() -> int:
     if args.only:
         rows = [r for r in rows if r[0] in set(args.only)]
     args.out.mkdir(parents=True, exist_ok=True)
-    todo = [(k, t) for k, t in rows if not (args.out / f"{k}.wav").exists()]
+    def exists(key: str) -> bool:
+        return (args.out / f"{key}.wav").exists() or (args.done_dir is not None and (args.done_dir / f"{key}.wav").exists())
+
+    todo = [(k, t) for k, t in rows if not exists(k)]
     chars = sum(len(t) for _, t in todo)
     print(f"{len(rows)} fraz w katalogu, {len(todo)} do wygenerowania, {chars} znaków")
     if args.dry_run:

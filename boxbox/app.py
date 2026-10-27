@@ -1,6 +1,7 @@
 """Punkt wejścia aplikacji: wybór trybu i spięcie warstw."""
 import argparse
 import os
+import threading
 import time
 from collections.abc import Sequence
 from datetime import datetime
@@ -9,6 +10,7 @@ from pathlib import Path
 from boxbox.coach.analyze import report_laps
 from boxbox.coach.laps import LapRecorder
 from boxbox.coach.live import LiveCoach
+from boxbox.coach.progress import CLEAN_LAPS_TO_ADVANCE, STEPS
 from boxbox.storage.db import Database
 from boxbox.tracks.model import load_track, track_path
 from boxbox.voice.player import ClipLibrary, NullBackend, VoicePlayer
@@ -19,6 +21,7 @@ from boxbox.telemetry.replay import replay
 from boxbox.telemetry.state import TelemetryState
 from boxbox.telemetry.udp import DEFAULT_PORT, listen
 from boxbox.ui.console import NO_DATA_MESSAGE, Console
+from boxbox.ui.overlay_model import SharedCoachState
 
 __all__ = ["NO_DATA_MESSAGE", "main"]
 
@@ -51,6 +54,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--corner-messages", choices=["on", "off"], default="on", help="krótki komunikat tuż po zakręcie"
     )
+    parser.add_argument("--overlay", action="store_true", help="okno nakładki na grę (zakręt, słowa mechanika)")
+    parser.add_argument("--scale", type=float, default=1.0, help="nakładka: mnożnik wielkości napisów")
+    parser.add_argument("--alpha", type=float, default=0.97, help="nakładka: krycie okna 0.5-1.0")
     return parser
 
 
@@ -86,6 +92,17 @@ def _make_player(args: argparse.Namespace) -> VoicePlayer | None:
     return player
 
 
+class _Stopped(Exception):
+    """Zamknięto okno nakładki w trakcie odtwarzania nagrania."""
+
+
+def _run_overlay(shared: SharedCoachState, args: argparse.Namespace) -> None:
+    """Okno nakładki w wątku głównym (tkinter tego wymaga); telemetria chodzi obok."""
+    from boxbox.ui.coach_overlay import CoachOverlayWindow
+
+    CoachOverlayWindow(shared, scale=args.scale, alpha=args.alpha).run()
+
+
 def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
     recorder = LapRecorder()
     state = recorder.state
@@ -94,9 +111,11 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
     player = _make_player(args) if args.mode == "coach" else None
     coach: LiveCoach | None = None
     coach_failed = False
+    shared = SharedCoachState(state, recording_name=args.record if not args.replay else None)
 
     def speak(ids: list[str], text: str) -> None:
         console.note(f"Mechanik: {text}")
+        shared.messages.append(text)  # pod blokadą: wywoływane z handle()
         if player is not None:
             player.say(ids, text)
 
@@ -122,6 +141,8 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
             db.close()
             if ref is not None:
                 reference, best_time = ref.analysis, ref.lap.lap_time_ms
+        if progress is not None:
+            shared.progress_line = f"krok {progress.step}: {STEPS[progress.step]}, czyste z rzędu {progress.streak}/{CLEAN_LAPS_TO_ADVANCE}"
         coach = LiveCoach(
             track, speak, reference, corner_messages=args.corner_messages == "on", best_time_ms=best_time,
             said_hello=player is not None,  # powitanie poszło już na starcie aplikacji
@@ -139,27 +160,54 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
 
     def handle(data: bytes) -> None:
         nonlocal rec_start
+        if shared.stop.is_set():
+            raise _Stopped
         if writer is not None and is_needed(data):
             if writer.count == 0:
                 rec_start = time.monotonic()
             writer.write(time.monotonic() - rec_start, data)
-        finished = recorder.feed(data)
-        if args.mode == "coach":
-            ensure_coach()
-            if coach is not None:
-                coach.update(recorder, finished)
+        with shared.lock:
+            finished = recorder.feed(data)
+            shared.packets += 1
+            if args.mode == "coach":
+                ensure_coach()
+                if coach is not None:
+                    coach.update(recorder, finished)
+                    if coach.progress is not None:
+                        p = coach.progress
+                        shared.progress_line = f"krok {p.step}: {STEPS[p.step]}, czyste z rzędu {p.streak}/{CLEAN_LAPS_TO_ADVANCE}"
         console.update(state)
 
+    def loop() -> None:
+        try:
+            if args.replay:
+                replay(args.replay, handle, speed=args.speed)
+            else:
+                for data in listen(args.port, duration=args.duration, stop=shared.stop):
+                    handle(data)
+        except _Stopped:
+            pass
+        except OSError as exc:
+            shared.error = f"port {args.port}: {exc}"
+            console.note(shared.error)
+        finally:
+            shared.stop.set()
+            if writer is not None:
+                writer.close()
+
     wall0, cpu0 = time.monotonic(), sum(os.times()[:2])
-    try:
-        if args.replay:
-            replay(args.replay, handle, speed=args.speed)
-        else:
-            for data in listen(args.port, duration=args.duration):
-                handle(data)
-    finally:
-        if writer is not None:
-            writer.close()
+    if args.overlay:
+        worker = threading.Thread(target=loop, daemon=True)
+        worker.start()
+        try:
+            _run_overlay(shared, args)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            shared.stop.set()
+            worker.join(timeout=5)
+    else:
+        loop()
     wall, cpu = time.monotonic() - wall0, sum(os.times()[:2]) - cpu0
     console.update(state, force=True)
     console.finish()

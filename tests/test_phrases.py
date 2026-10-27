@@ -32,8 +32,10 @@ def test_catalog_covers_rules_tracks_and_fits_free_plan() -> None:
         assert f"corner_{corner_key(name)}" in entries
     for rule in RULE_TEXTS:
         assert f"rule_{rule}_a" in entries
-    chars_v1 = sum(len(t) for k, t in entries.items() if not k.startswith("v2_"))
+    chars_v1 = sum(len(t) for k, t in entries.items() if not k.startswith(("v2_", "eng_", "misc_")))
     assert chars_v1 < 5000, chars_v1  # część składana (v1) mieściła się w planie free
+    assert sum(len(t) for t in entries.values()) < 60_000  # całość (v1+v2+misc+inżynier) w jednym miesiącu Creator
+    assert "eng_pit_this_lap" in entries and "eng_laps_3" in entries
     texts = list(entries.values())
     assert len(texts) - len(set(texts)) <= 1  # jedyny powtórzony tekst: "Utrata przyczepności." w dwóch wariantach
 

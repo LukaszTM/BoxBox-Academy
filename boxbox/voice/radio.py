@@ -131,9 +131,12 @@ def apply_radio(rate: int, samples: list[float], settings: RadioSettings = Radio
     return out
 
 
-def process_dir(src: Path, dst: Path, settings: RadioSettings = RadioSettings()) -> int:
+def process_dir(src: Path, dst: Path, settings: RadioSettings = RadioSettings(), skip_existing: bool = False) -> int:
+    dst.mkdir(parents=True, exist_ok=True)
     count = 0
     for path in sorted(src.glob("*.wav")):
+        if skip_existing and (dst / path.name).exists():
+            continue
         rate, samples = read_wav(path)
         write_wav(dst / path.name, rate, apply_radio(rate, samples, settings))
         count += 1
@@ -147,9 +150,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--drive", type=float, default=RadioSettings.drive)
     parser.add_argument("--noise-db", type=float, default=RadioSettings.noise_db)
     parser.add_argument("--no-click", action="store_true")
+    parser.add_argument("--skip-existing", action="store_true", help="nie przetwarzaj klipów, które już są w folderze docelowym")
     args = parser.parse_args(argv)
     settings = RadioSettings(drive=args.drive, noise_db=args.noise_db, click_ms=0 if args.no_click else RadioSettings.click_ms)
-    n = process_dir(args.src, args.dst, settings)
+    n = process_dir(args.src, args.dst, settings, skip_existing=args.skip_existing)
     print(f"przetworzono {n} klipów -> {args.dst}")
     return 0
 

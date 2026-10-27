@@ -104,6 +104,115 @@ misc_step_done,Jedziesz bez asyst i masz trzy czyste okrążenia. Od teraz pracu
 misc_ers_wasted,"Za dużo baterii idzie w zakrętach. Używaj jej na prostych, zaraz po wyjściu."
 misc_ers_unused,Bateria na mecie prawie pełna. Masz zapas na wyjściach z wolnych zakrętów.
 misc_ers_last_lap,"Ostatnie okrążenie. Wciśnij całą baterię, co zostało."
+eng_hello,"Inżynier na radiu. Pełny wyścig, spokojnie, trzymaj swoje tempo."
+eng_formation_lap,"Okrążenie formacyjne. Grzej opony i hamulce, trzymaj pozycję."
+eng_lights_out,"Start. Czysto przez pierwszy zakręt, pozycje odrobisz później."
+eng_last_lap,Ostatnie okrążenie. Nic już nie oszczędzaj.
+eng_final_laps,Zostały trzy okrążenia. Dowieź to do mety.
+eng_race_end,"Meta. Dobra robota, wracaj do boksu."
+eng_push_now,"Teraz możesz cisnąć, masz czysty tor przed sobą."
+eng_manage_pace,"Zejdź z tempa o dwie dziesiąte, dowieziemy te opony."
+eng_tyres_cold,"Opony za zimne. Więcej pracy w zakrętach, ostrożnie na gazie."
+eng_tyres_hot,"Opony przegrzane. Spokojniej na wyjściach, daj im odpocząć."
+eng_tyres_window,Opony w oknie. Tak trzymaj.
+eng_tyres_front_wear,"Przednie opony się kończą. Nie wjeżdżaj za ostro, odpuść wejścia."
+eng_tyres_rear_wear,Tylne opony się kończą. Gaz łagodniej na wyjściach.
+eng_tyres_critical,"Opony na granicy. Pit, jak tylko będzie okno."
+eng_tyres_graining,"Zaczyna się ziarnienie, kilka okrążeń spokojniej i powinno zejść."
+eng_pit_window_open,"Okno pit-stopu otwarte. Box na tym okrążeniu, potwierdź."
+eng_pit_this_lap,"Box, box. Zjeżdżasz na tym okrążeniu."
+eng_pit_next_lap,Box na następnym okrążeniu. Przygotuj się.
+eng_pit_in,"Zjeżdżaj. Limiter przed linią, trafisz w boks."
+eng_pit_out,"Wyjazd z boksu. Opony zimne, pierwsze okrążenie ostrożnie."
+eng_pit_stay_out,"Zostań na torze, pit za chwilę."
+eng_pit_undercut,"Rywal zjechał. Trzy mocne okrążenia i zjeżdżamy, bronimy pozycji."
+eng_pit_to_wet,Robi się mokro. Box na przejściówki.
+eng_pit_to_dry,Tor schnie. Box na slicki.
+eng_flag_yellow,"Żółta flaga w sektorze. Zwolnij, bez wyprzedzania."
+eng_flag_yellow_clear,"Tor czysty. Zielona, wracaj do tempa."
+eng_flag_blue,"Niebieska flaga. Przepuść lidera, nie trać na tym tempa."
+eng_flag_red,Czerwona flaga. Wracaj spokojnie do boksu.
+eng_safety_car,"Safety car. Trzymaj pozycję, grzej opony, nie wyprzedzaj."
+eng_safety_car_in,Safety car zjeżdża na tym okrążeniu. Bądź gotowy na restart.
+eng_vsc,"Wirtualny safety car. Trzymaj deltę, zwolnij."
+eng_vsc_end,Koniec wirtualnego safety cara. Jedziemy.
+eng_drs_enabled,DRS dostępny. Używaj go na prostej.
+eng_drs_disabled,DRS wyłączony.
+eng_gap_ahead_close,Masz auto przed sobą w zasięgu DRS. Atakuj.
+eng_gap_ahead,Do auta z przodu:
+eng_gap_behind,Auto z tyłu:
+eng_gap_behind_close,"Rywal w zasięgu DRS. Broń się, nie blokuj dwa razy."
+eng_gap_safe,"Bezpieczna przewaga. Trzymaj tempo, bez ryzyka."
+eng_position_gained,Pozycja zyskana. Dobrze.
+eng_position_lost,"Pozycja stracona. Spokojnie, odrobimy."
+eng_damage_front_wing,Uszkodzone przednie skrzydło. Auto będzie podsterowne.
+eng_damage_front_wing_big,"Przednie skrzydło mocno uszkodzone. Box, wymieniamy."
+eng_damage_floor,"Uszkodzona podłoga. Stracimy trochę przyczepności, jedź dalej."
+eng_damage_rear_wing,Uszkodzone tylne skrzydło. Ostrożnie w szybkich zakrętach.
+eng_puncture,"Przebita opona. Box, box, natychmiast."
+eng_engine_warn,"Silnik ma problemy. Oszczędzaj, dojedź do boksu."
+eng_fuel_ok,Paliwo w porządku.
+eng_fuel_save,"Oszczędzaj paliwo. Krótsze zmiany biegów, wcześniej odpuszczaj gaz."
+eng_fuel_push,Masz zapas paliwa. Możesz cisnąć.
+eng_ers_deploy,"Baterię używaj na prostych, mamy dużo zapasu."
+eng_ers_save,Oszczędzaj baterię do ataku na następnym okrążeniu.
+eng_rain_coming,Deszcz za kilka minut. Przygotuj się na mokry tor.
+eng_rain_now,"Pada. Hamuj wcześniej, szukaj przyczepności poza linią."
+eng_track_drying,Tor schnie. Linia wyścigowa jest najsuchsza.
+eng_penalty_time,Masz karę czasową. Odjedziesz ją na mecie.
+eng_penalty_warning,Ostrzeżenie za limity toru. Zostaw sobie margines.
+eng_collision,"Kontakt. Sprawdź, czy auto jedzie prosto."
+eng_answer_laps_left,Do końca zostało:
+eng_answer_position,Twoja pozycja:
+eng_answer_tyres,"Opony: zużycie w normie, temperatura w oknie."
+eng_answer_weather,Pogoda: bez zmian w najbliższych minutach.
+eng_laps_1,jedno okrążenie
+eng_laps_2,dwa okrążenia
+eng_laps_3,trzy okrążenia
+eng_laps_4,cztery okrążenia
+eng_laps_5,pięć okrążeń
+eng_laps_6,sześć okrążeń
+eng_laps_7,siedem okrążeń
+eng_laps_8,osiem okrążeń
+eng_laps_9,dziewięć okrążeń
+eng_laps_10,dziesięć okrążeń
+eng_laps_15,piętnaście okrążeń
+eng_laps_20,dwadzieścia okrążeń
+eng_sec_half,pół sekundy
+eng_sec_1,sekunda
+eng_sec_2,dwie sekundy
+eng_sec_3,trzy sekundy
+eng_sec_4,cztery sekundy
+eng_sec_5,pięć sekund
+eng_sec_7,siedem sekund
+eng_sec_10,dziesięć sekund
+eng_sec_15,piętnaście sekund
+eng_sec_20,dwadzieścia sekund
+eng_sec_30,ponad trzydzieści sekund
+eng_pos_1,pierwsza
+eng_pos_2,druga
+eng_pos_3,trzecia
+eng_pos_4,czwarta
+eng_pos_5,piąta
+eng_pos_6,szósta
+eng_pos_7,siódma
+eng_pos_8,ósma
+eng_pos_9,dziewiąta
+eng_pos_10,dziesiąta
+eng_pos_11,jedenasta
+eng_pos_12,dwunasta
+eng_pos_13,trzynasta
+eng_pos_14,czternasta
+eng_pos_15,piętnasta
+eng_pos_16,szesnasta
+eng_pos_17,siedemnasta
+eng_pos_18,osiemnasta
+eng_pos_19,dziewiętnasta
+eng_pos_20,dwudziesta
+eng_pos_21,dwudziesta pierwsza
+eng_pos_22,dwudziesta druga
+eng_pos_23,dwudziesta trzecia
+eng_pos_24,dwudziesta czwarta
 v2_brake_late_t1_2_20,"Hamowanie za późno w zakrętach pierwszym i drugim, o jakieś dwadzieścia metrów."
 v2_brake_late_t1_2_50,"Hamowanie za późno w zakrętach pierwszym i drugim, o jakieś pięćdziesiąt metrów."
 v2_brake_late_t1_2_100,"Hamowanie za późno w zakrętach pierwszym i drugim, o jakieś sto metrów."

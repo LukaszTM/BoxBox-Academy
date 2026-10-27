@@ -182,6 +182,7 @@ def build_zip(pdf: Path, target: Path) -> None:
             _add(z, path, f"assets/voice/{path.name}")
         _add(z, ROOT / "tools" / "generate_voice_elevenlabs.py", "wygeneruj_glos.py")
         _add(z, ROOT / "assets" / "voice" / "phrases.csv", "phrases.csv")
+        _add(z, ROOT / "docs" / "TEST_PARTIA_1.md", "TEST_PARTIA_1.txt")
         z.writestr("recordings/.gitkeep", "")
 
 

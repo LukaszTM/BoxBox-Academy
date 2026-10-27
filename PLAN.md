@@ -137,7 +137,7 @@ Siedem etapów, każdy z kryterium ukończenia, które da się sprawdzić bez dy
 
 **Etap 6 – Tryb wyścigowy i wydanie (3 sesje)**
 
-- [ ] Reguły inżyniera: temperatura i zużycie opon, okno pit-stopu, flagi, przewaga/strata do rywali, uszkodzenia, deszcz.
+- [ ] Reguły inżyniera: temperatura i zużycie opon, okno pit-stopu, flagi, przewaga/strata do rywali, uszkodzenia, deszcz. (teksty klipów gotowe: `engineer/phrases.py`, generowane razem z resztą)
 - [ ] Komendy głosowe: 5–8 pytań z lokalnym rozpoznawaniem mowy.
 - [ ] Okno aplikacji z wyborem trybu, instrukcją włączenia telemetrii w grze i sprawdzeniem połączenia.
 - [ ] `PyInstaller` → jeden `.exe`, test na czystym Windowsie.

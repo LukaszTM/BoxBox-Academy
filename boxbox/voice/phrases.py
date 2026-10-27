@@ -14,6 +14,7 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from boxbox.coach.rules import Message
+from boxbox.engineer.phrases import engineer_catalog
 
 ORDINAL = [
     "", "pierwszy", "drugi", "trzeci", "czwarty", "piąty", "szósty", "siódmy", "ósmy", "dziewiąty",
@@ -186,6 +187,7 @@ def catalog(corner_names: Sequence[str] = ()) -> dict[str, str]:
         out[f"gear_{g}"] = gear_text(g)
     for key, text in MISC_TEXTS.items():
         out[f"misc_{key}"] = text
+    out.update(engineer_catalog())  # inżynier (etap 6): generujemy razem, w jednym miesiącu planu
     # v2: pełne zdania dla zakrętów z plików torów (+ ogólne "ten zakręt")
     names = list(corner_names) + ["zone"]
     for rule, template in V2_TEXTS.items():

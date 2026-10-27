@@ -7,7 +7,8 @@ rem Klucza nie wpisuj do zadnego pliku ani nie wklejaj na czacie.
 cd /d "%~dp0"
 if not exist "boxbox\app.py" cd /d "%~dp0..\.."
 rem (skrypt dziala z paczki ZIP albo z tools\package w klonie repozytorium)
-if "%ELEVENLABS_API_KEY%"=="" set /p ELEVENLABS_API_KEY=Klucz API ElevenLabs: 
+rem Klucz wpisywany bez echa (nie widac go na ekranie ani na zrzutach).
+if "%ELEVENLABS_API_KEY%"=="" for /f "usebackq delims=" %%k in (`powershell -NoProfile -Command "$s = Read-Host 'Klucz API ElevenLabs (nie bedzie widoczny)' -AsSecureString; [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($s))"`) do set "ELEVENLABS_API_KEY=%%k"
 if "%ELEVENLABS_VOICE_ID%"=="" set /p ELEVENLABS_VOICE_ID=ID glosu (np. Piotr - Neutral and Mature): 
 set GEN=wygeneruj_glos.py
 set CSV=phrases.csv
@@ -27,5 +28,5 @@ echo.
 echo Efekt radia...
 py -3 -m boxbox.voice.radio assets\voice\raw assets\voice --skip-existing
 echo.
-echo Gotowe. Spakuj folder assets\voice\raw do ZIP i przeslij (zeby klipy trafily do repozytorium).
+echo Gotowe. W klonie repozytorium: git add assets\voice, git commit, git push. W paczce ZIP: spakuj.bat assets\voice\raw i przeslij.
 pause

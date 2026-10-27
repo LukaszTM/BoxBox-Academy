@@ -13,6 +13,7 @@ DOCS = {
     "DOKUMENTACJA.md": ("BoxBox_Academy_dokumentacja.pdf", "BoxBox Academy – dokumentacja"),
     "WYTYCZNE_GUI.md": ("BoxBox_Academy_wytyczne_GUI_i_marki.pdf", "BoxBox Academy – wytyczne GUI i marki"),
     "SPECYFIKACJA_FUNKCJI.md": ("BoxBox_Academy_specyfikacja_funkcji.pdf", "BoxBox Academy – specyfikacja funkcji i rozpiska do makiety"),
+    "LISTA_TOROW.md": ("BoxBox_Academy_lista_torow.pdf", "BoxBox Academy – lista torów F1 25 i sezon 2026"),
     "MAKIETA_V2_BRIEF.md": ("BoxBox_Academy_makieta_v2_wytyczne.pdf", "BoxBox Academy – makieta v2 i nakładka HUD: wytyczne"),
 }
 

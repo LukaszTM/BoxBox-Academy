@@ -6,6 +6,8 @@ rem Gra: telemetria UDP wlaczona (port 20777), tryb okna bez ramki (nakladka mus
 rem Nie uruchamiaj jednoczesnie nakladka.bat ani nagraj.bat (jeden program na port UDP).
 rem Zakonczenie: Esc na nakladce albo Ctrl+C w terminalu -> tabela zakretow, postep i obciazenie CPU.
 cd /d "%~dp0"
+if not exist "boxbox\app.py" cd /d "%~dp0..\.."
+rem (skrypt dziala z paczki ZIP albo z tools\package w klonie repozytorium)
 set "NAZWA=%*"
 if "%NAZWA%"=="" set "NAZWA=sesja"
 set "NAZWA=%NAZWA: =-%"

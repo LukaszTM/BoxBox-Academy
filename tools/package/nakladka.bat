@@ -11,6 +11,8 @@ if "%~1"=="" (
   exit /b 1
 )
 cd /d "%~dp0"
+if not exist "boxbox\app.py" cd /d "%~dp0..\.."
+rem (skrypt dziala z paczki ZIP albo z tools\package w klonie repozytorium)
 set SKALA=1.0
 set ALPHA=0.97
 if /i "%~1"=="--plan" (

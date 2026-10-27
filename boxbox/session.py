@@ -14,6 +14,7 @@ from datetime import datetime
 from pathlib import Path
 
 from boxbox.coach.laps import LapRecorder
+from boxbox.coach.lessons import Lesson, evaluate as evaluate_lesson, lesson as lesson_by_id
 from boxbox.coach.live import LiveCoach
 from boxbox.coach.progress import CLEAN_LAPS_TO_ADVANCE, STEPS
 from boxbox.coach.rules import Message
@@ -83,6 +84,9 @@ class SessionConfig:
     no_voice: bool = False
     volume: float = 1.0
     corner_messages: bool = True
+    lesson: str | None = None  # id lekcji (boxbox/coach/lessons.py); trener mówi tylko o jej regułach
+    lesson_corner: int | None = None
+    explain_mode: bool = False  # dłuższe wyjaśnienie przy pierwszej uwadze danego typu
 
 
 @dataclass
@@ -95,6 +99,7 @@ class SessionResult:
     player_errors: list[str] = field(default_factory=list)
     recording: Path | None = None
     summary: SessionSummary | None = None  # Dobrze / Do pracy (tylko tryb nauki z trenerem)
+    lesson_result: tuple[bool, int, int] | None = None  # (zaliczona, najlepsza seria, wymagana)
 
 
 class CoachSession:
@@ -115,6 +120,8 @@ class CoachSession:
         self.lap_messages: list[Message] = []  # wszystkie uwagi z okrążeń (do podsumowania sesji)
         self.reference_before: tuple | None = None  # metryki referencji z bazy sprzed sesji
         self.best_before_ms: int | None = None
+        self.lesson: Lesson | None = lesson_by_id(cfg.lesson) if cfg.lesson else None
+        self.messages_by_lap: dict[int, list[Message]] = {}
         self.player: VoicePlayer | None = None
         self.coach: LiveCoach | None = None
         self.coach_failed = False
@@ -181,7 +188,7 @@ class CoachSession:
             track, self.speak, reference, corner_messages=cfg.corner_messages, best_time_ms=best_time,
             said_hello=self.player is not None,  # powitanie poszło już na starcie
             available=(lambda i: i in self.player.library) if self.player is not None else None,
-            progress=progress,
+            progress=progress, lesson=self.lesson, lesson_corner=cfg.lesson_corner, explain_mode=cfg.explain_mode,
         )
 
     # --- przetwarzanie --------------------------------------------------
@@ -203,6 +210,7 @@ class CoachSession:
                         log.info("okrążenie %d: %s, %d komunikatów", finished.number,
                                  f"{finished.lap_time_ms} ms" if finished.lap_time_ms else "bez czasu", len(said))
                         self.lap_messages += [m for m in said if m.corner]
+                        self.messages_by_lap[finished.number] = [m for m in said if m.corner]
                         self.shared.focus_line = focus_line(said)
                         if self.coach.progress is not None:
                             self.shared.progress_line = progress_line(self.coach.progress.step, self.coach.progress.streak)
@@ -294,5 +302,9 @@ class CoachSession:
                 log.error("podsumowanie: %s", traceback.format_exc())
             if summary is not None:
                 log.info("podsumowanie: dobrze: %s | do pracy: %s", summary.good, summary.to_work)
-        self.result = SessionResult(self.state, self.recorder, wall, cpu_percent, self.coach is not None, errors, self.recording, summary)
+        lesson_result = None
+        if self.lesson is not None and self.coach is not None:
+            lesson_result = evaluate_lesson(self.lesson, self.recorder.laps, self.messages_by_lap, self.cfg.lesson_corner)
+            log.info("lekcja %s: %s, seria %d/%d", self.lesson.id, "zaliczona" if lesson_result[0] else "nie", lesson_result[1], lesson_result[2])
+        self.result = SessionResult(self.state, self.recorder, wall, cpu_percent, self.coach is not None, errors, self.recording, summary, lesson_result)
         return self.result

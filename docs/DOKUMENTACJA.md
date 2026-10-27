@@ -158,6 +158,19 @@ uwagami, „czyste okrążenie, pierwsze z trzech”, „okrążenie nieważne�
 czystych z rzędu komunikat o kolejnym kroku asyst, rada ERS gdy asysta ERS wyłączona, „koniec
 sesji”. Tekst w konsoli i na nakładce jest budowany z tych samych fraz co mowa, więc zawsze się zgadzają.
 
+## 8a. Lekcje, tryb „wytłumacz mi”, podsumowanie sesji
+
+`coach/lessons.py`: pięć lekcji (trzy darmowe: hamowanie w jednym zakręcie, gaz na wyjściu, czyste
+okrążenie; dwie premium: trail-braking, bateria na prostych), każda z regułami, o których trener mówi,
+i warunkiem zaliczenia (seria okrążeń bez danej uwagi). `--lesson <id> [--lesson-corner N]` w konsoli;
+po sesji wynik „zaliczona / najlepsza seria n/3”. `coach/glossary.py`: słownik pojęć i dłuższe wersje
+uwag; `--explain` dokłada wyjaśnienie przy pierwszej uwadze danego typu (klipy `explain_*` w katalogu
+fraz). `coach/summary.py`: po sesji jedno zdanie „Dobrze” (nowe najlepsze, hamowanie później niż
+w poprzednich sesjach, czyste okrążenia) i jedno „Do pracy” (zakręt z największą stratą, reguła po
+polsku). `coach/delta.py`: delta czasu do referencji co 10 m, odcinki największych strat, CSV okrążenia.
+`games/`: adapter gry (F1 25) z nazwami asyst i formatami; baza i pliki torów mają pole gry, żeby
+kolejne gry nie zmieniały okna. `tools/bugreport.py`: raport błędu ZIP.
+
 ## 9. Postęp i ERS
 
 Kroki: 1 automat/TC pełna/ABS, 2 TC średnia, 3 TC wyłączona, 4 ABS wyłączony. Okrążenie czyste:

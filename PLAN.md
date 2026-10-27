@@ -153,7 +153,7 @@ początkującego krok po kroku (asysty, start, opony, bateria), a postęp jest w
 **Decyzje do podjęcia przed etapem 6**
 
 - [x] GUI: `PySide6` (Qt), decyzja 27.10: rozmiar pliku bez znaczenia, zero wyskakujących okien, PDF przez okno drukowania Windows. Propozycja była: natywne okno, wykresy (QtCharts), eksport PDF z okna, dymki podpowiedzi, obraz w karcie kierowcy, działa w `.exe`; licencja LGPL dopuszcza użytek komercyjny. Alternatywa: interfejs w przeglądarce (HTML + wykresy JS) w oknie `pywebview`. Obie wymagają nowej zależności, więc wybór należy do właściciela projektu.
-- [ ] Język: polski na start, teksty w jednym pliku, żeby angielski dało się dodać bez zmian w kodzie.
+- [x] Język: polski na start, teksty okna w `gui/texts.py`, trenera w `voice/phrases.py`, lekcje i słownik w `coach/lessons.py`, `coach/glossary.py`.
 - [ ] Identyfikator gracza: lokalny UUID + nick w profilu; ranking (chmura) dopiero po becie, z wyraźną zgodą gracza.
 
 **Etap 6 – Aplikacja okienkowa i profil (3–4 sesje)**
@@ -170,17 +170,17 @@ początkującego krok po kroku (asysty, start, opony, bateria), a postęp jest w
 - [ ] Wykresy okrążenia względem dystansu: prędkość, gaz, hamulec, bieg, kierownica, ERS, DRS; nałożenie na okrążenie referencyjne (własne najlepsze, duch Time Trial, AI) i delta czasu w każdym punkcie toru.
 - [ ] Mapa toru z realnego kształtu (recorder) z punktami hamowania, apeksami, strefami DRS i miejscem każdej uwagi trenera; mapa także na nakładce.
 - [ ] Tabela przejazdów dla każdego toru: sesje, okrążenia, czasy, sektory, asysty, ważność, uwagi trenera; filtry i sortowanie; porównanie dwóch okrążeń obok siebie.
-- [ ] Eksport: telemetria okrążenia do CSV, raport sesji do PDF z wykresami, mapą i uwagami trenera (jeden przycisk).
+- [ ] Eksport: telemetria okrążenia do CSV, raport sesji do PDF z wykresami, mapą i uwagami trenera (jeden przycisk). (silnik: `coach/delta.py` delta do referencji i CSV; przyciski po makiecie)
 - [ ] Kryterium: po sesji gracz widzi, gdzie traci czas i dlaczego, bez słuchania komunikatów.
 
 **Etap 8 – Trener 2.0: optymalne punkty i wyjaśnianie (3–4 sesje)**
 
-- [ ] Optymalny punkt hamowania w każdym zakręcie: z najlepszych własnych okrążeń, ducha i AI; trener mówi „hamuj przy tablicy 100 m”, a na mapie i nakładce widać znacznik; „próbuj 5 m później” jako cel na następne okrążenie.
+- [ ] Optymalny punkt hamowania w każdym zakręcie: z najlepszych własnych okrążeń, ducha i AI; na mapie i nakładce znacznik. (zrobione: cel „hamuj X m wcześniej/później” jako połowa różnicy, 5–20 m, w linii „popraw” na nakładce i w oknie)
 - [ ] Optymalne dodanie gazu i trail-braking: punkt pełnego gazu, krzywa puszczania hamulca, bieg w apeksie; porównanie z referencją jako cel na zakręt.
 - [ ] DRS: wykrywanie stref z pakietu Session, czas reakcji na włączenie, uwaga „DRS włączony o 0,4 s za późno”, ćwiczenie na prostych.
 - [ ] Bateria: plan deployu na okrążenie (gdzie zyskuje najwięcej), tryb przeglądu/hotlap, ostrzeżenie o pustej baterii przed prostą, ocena po okrążeniu z liczbą.
-- [ ] Tryb „wytłumacz mi”: przy pierwszym wystąpieniu każdej uwagi trener mówi dłuższą wersję (co to jest trail-braking, czemu TC pomaga, jak czytać deltę); później krótko. Słownik pojęć w oknie.
-- [ ] Lekcje: zestaw krótkich ćwiczeń (np. „hamowanie w T1: 5 okrążeń, cel 10 m później co okrążenie”), postęp lekcji widoczny w karcie kierowcy.
+- [x] Tryb „wytłumacz mi”: przy pierwszym wystąpieniu każdej uwagi trener mówi dłuższą wersję; później krótko. Słownik pojęć w oknie. (silnik: `coach/glossary.py`, `--explain`, klipy `explain_*` do dogrania; okno: po makiecie)
+- [x] Lekcje: zestaw krótkich ćwiczeń z jednym celem, trener mówi tylko o regułach lekcji, ocena serii po sesji. (silnik: `coach/lessons.py`, `--lesson`; okno i zapis postępu lekcji: po makiecie)
 - [ ] Kryterium: na nagraniu początkującego trener wskazuje punkt hamowania i gazu w każdym zakręcie z celem na kolejne okrążenie; na nagraniu szybkiego gracza milczy.
 
 **Etap 9 – Opony, start i walka na torze (3 sesje)**
@@ -201,7 +201,7 @@ początkującego krok po kroku (asysty, start, opony, bateria), a postęp jest w
 **Etap 11 – Wydanie beta (2 sesje)**
 
 - [ ] Test na 3–5 początkujących z formularzem z `docs/PLAN_TESTOW.md`; lista błędów i poprawki.
-- [ ] Zgłaszanie błędów z aplikacji: przycisk „wyślij raport” pakuje dziennik, bazę i ostatnie nagranie (recorder).
+- [x] Zgłaszanie błędów: `python -m boxbox.tools.bugreport "co się stało"` pakuje dziennik, bazę, ustawienia i ostatnie nagranie do ZIP (przycisk w oknie po makiecie).
 - [ ] Sprawdzenie aktualizacji z GitHub Releases, podpis `.exe` albo instrukcja dla antywirusa.
 - [ ] Oba formaty telemetrii (2025 i 2026) przetestowane na żywo na 3 torach; pozostałe tory: pliki torów z recordera i automatycznego wykrywania zakrętów.
 - [ ] Kryterium: beta na GitHub Releases, instalacja i pierwsza sesja u obcej osoby bez pomocy.

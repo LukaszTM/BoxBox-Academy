@@ -9,6 +9,8 @@ from dataclasses import dataclass, field
 
 from boxbox.coach.corners import LapAnalysis, analyze_corner, analyze_lap
 from boxbox.coach.ers import advise_ers, analyze_ers
+from boxbox.coach.glossary import explain
+from boxbox.coach.lessons import Lesson, filter_messages
 from boxbox.coach.progress import TrackProgress
 from boxbox.coach.laps import Lap, LapRecorder
 from boxbox.coach.rules import MIN_TIME_LOSS_S, Message, biggest_loss, evaluate_corner, evaluate_lap, pick_top
@@ -34,9 +36,30 @@ class LiveCoach:
     available: Callable[[str], bool] | None = None  # czy klip o id jest w bibliotece (wybór v2/v1)
     progress: TrackProgress | None = None  # ścieżka zdejmowania asyst (z bazy); None = bez śledzenia
     ers_advice: bool = True
+    lesson: Lesson | None = None  # lekcja: trener mówi tylko o jej regułach (i zakręcie)
+    lesson_corner: int | None = None
+    explain_mode: bool = False  # "wytłumacz mi": przy pierwszej uwadze danego typu dłuższe wyjaśnienie
+    explained: set[str] = field(default_factory=set)
 
     def _say_misc(self, key: str) -> None:
         self.speak([f"misc_{key}"], MISC_TEXTS[key])
+
+    def _say_message(self, m: Message, short: bool = False) -> None:
+        ids, text = utterance(m, self.available, short=short)
+        if self.explain_mode and m.rule not in self.explained:
+            self.explained.add(m.rule)
+            long = explain(m.rule)
+            if long:
+                clip = f"explain_{m.rule.replace('_big', '').replace('_throttle', '').replace('_entry', '')}"
+                if self.available is not None and self.available(clip):
+                    ids = ids + [clip]
+                text = f"{text} {long}"
+        self.speak(ids, text)
+
+    def _lesson_filter(self, messages: list[Message]) -> list[Message]:
+        if self.lesson is None:
+            return messages
+        return filter_messages(self.lesson, messages, self.lesson_corner)
 
     def update(self, recorder: LapRecorder, finished: Lap | None) -> list[Message]:
         """Wołane po każdym pakiecie. Zwraca komunikaty wypowiedziane w tym kroku."""
@@ -75,10 +98,10 @@ class LiveCoach:
             if metrics.full_throttle_m is None and distance < corner.exit_m + CORNER_EXIT_DEADLINE_M:
                 continue
             self.announced.add(key)
-            msgs = evaluate_corner(lap.number, metrics, ref[corner.number], self.track, lap.traction_control)
+            msgs = self._lesson_filter(evaluate_corner(lap.number, metrics, ref[corner.number], self.track, lap.traction_control))
             best = max(msgs, key=lambda m: m.weight, default=None)
             if best is not None and best.weight >= self.min_corner_weight:
-                self.speak(*utterance(best, self.available, short=True))
+                self._say_message(best, short=True)
                 out.append(best)
         return out
 
@@ -97,14 +120,15 @@ class LiveCoach:
         if lap.invalid:
             self._say_misc("lap_invalid")
         messages = evaluate_lap(lap, analysis, self.reference, self.track)
-        top = pick_top(messages)
+        spoken = self._lesson_filter(messages)
+        top = pick_top(spoken)
         if top:
             self._say_misc("lap_summary")
             for m in top:
-                self.speak(*utterance(m, self.available))
+                self._say_message(m)
             out += top
         elif not lap.invalid:
-            soft = biggest_loss(messages)
+            soft = biggest_loss(spoken)
             if soft is not None:
                 ids, text = utterance(soft, self.available)
                 self.speak(["misc_biggest_loss", *ids], f"{MISC_TEXTS['biggest_loss']} {text}")

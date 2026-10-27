@@ -188,6 +188,10 @@ def catalog(corner_names: Sequence[str] = ()) -> dict[str, str]:
     for key, text in MISC_TEXTS.items():
         out[f"misc_{key}"] = text
     out.update(engineer_catalog())  # inżynier (etap 6): generujemy razem, w jednym miesiącu planu
+    from boxbox.coach.glossary import EXPLAIN  # tryb "wytłumacz mi": dłuższe wersje uwag (etap 8)
+
+    for rule, text in EXPLAIN.items():
+        out[f"explain_{rule}"] = text
     # v2: pełne zdania dla zakrętów z plików torów (+ ogólne "ten zakręt")
     names = list(corner_names) + ["zone"]
     for rule, template in V2_TEXTS.items():

@@ -213,6 +213,15 @@ eng_pos_21,dwudziesta pierwsza
 eng_pos_22,dwudziesta druga
 eng_pos_23,dwudziesta trzecia
 eng_pos_24,dwudziesta czwarta
+explain_brake_late,"Hamujesz później niż na swoim najlepszym okrążeniu, więc dojeżdżasz do apeksu za szybko i musisz zwalniać w środku zakrętu. To kosztuje wyjście i całą prostą. Przesuń punkt hamowania wcześniej, ale puszczaj hamulec stopniowo."
+explain_brake_early,Hamujesz wcześniej niż na swoim najlepszym okrążeniu i do apeksu dojeżdżasz z zapasem prędkości. Możesz hamować później; zyskasz na wejściu bez ryzyka.
+explain_brake_release,"Puściłeś hamulec naraz zamiast stopniowo. Auto nagle traci dociążenie przodu i gorzej skręca. Zwalniaj hamulec płynnie, aż do apeksu."
+explain_trail_missing,Hamowanie skończyło się za wcześnie przed apeksem. Lekki hamulec do apeksu dociąża przód i pozwala wejść w zakręt pewniej.
+explain_throttle_late,"Pełny gaz przyszedł później niż na twoim najlepszym okrążeniu. Każdy metr bez gazu na wyjściu to strata na całej prostej. Dodawaj gaz, gdy kierownica się prostuje."
+explain_throttle_early,"Gaz za wcześnie: koła ślizgają się zamiast przyspieszać, a bez kontroli trakcji auto może się obrócić. Poczekaj z pełnym gazem, aż auto się wyprostuje."
+explain_grip_lost,"Prędkość w zakręcie spadła dużo bardziej niż zwykle: utrata przyczepności, obrót albo wyjazd. Następnym razem wolniej na wejściu i łagodniej z gazem."
+explain_gear_low,"Za niski bieg w apeksie: silnik na obrotach, koła łatwo tracą przyczepność na gazie. Wrzuć o jeden wyżej przed apeksem."
+explain_gear_high,Za wysoki bieg w apeksie: silnik nie ma siły na wyjściu i tracisz na prostej. Zredukuj o jeden przed apeksem.
 v2_brake_late_t1_2_20,"Hamowanie za późno w zakrętach pierwszym i drugim, o jakieś dwadzieścia metrów."
 v2_brake_late_t1_2_50,"Hamowanie za późno w zakrętach pierwszym i drugim, o jakieś pięćdziesiąt metrów."
 v2_brake_late_t1_2_100,"Hamowanie za późno w zakrętach pierwszym i drugim, o jakieś sto metrów."

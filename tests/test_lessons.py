@@ -50,3 +50,24 @@ def test_next_lap_target_and_focus_line() -> None:
 def test_glossary_and_explain() -> None:
     assert "apeks" in GLOSSARY and all(len(v[1]) > 40 for v in GLOSSARY.values())
     assert explain("brake_late_big") == explain("brake_late") and explain("grip_lost_throttle") and explain("xyz") == ""
+
+
+def test_session_with_lesson_and_explain_on_recording(tmp_path) -> None:
+    from pathlib import Path
+
+    from boxbox.session import CoachSession, SessionConfig
+
+    said: list[str] = []
+    cfg = SessionConfig(replay=Path("recordings/monza-trening_2026-10-26_153411.bin.xz"),
+                        speed=0, db=tmp_path / "l.sqlite", no_voice=True, lesson="throttle_exit", explain_mode=True)
+    s = CoachSession(cfg, on_message=lambda ids, text: said.append(text))
+    s.start()
+    s.loop()
+    result = s.finish()
+    assert result.lesson_result is not None and result.lesson_result[2] == 3
+    corner_texts = [t for t in said if "Zakręt" in t or "Zakręty" in t]
+    assert corner_texts and all(("gaz" in t.lower() or "przyczepno" in t.lower()) for t in corner_texts), corner_texts  # lekcja gazu: bez uwag o hamowaniu
+    explained = [t for t in said if "Każdy metr bez gazu" in t or "a bez kontroli trakcji auto może się obrócić" in t]
+    assert len(explained) >= 1  # wyjaśnienie przy pierwszej uwadze danego typu
+    rules_explained = sum(1 for t in said if "Każdy metr bez gazu" in t)
+    assert rules_explained <= 1  # tylko przy pierwszym wystąpieniu

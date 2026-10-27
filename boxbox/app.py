@@ -58,6 +58,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--corner-messages", choices=["on", "off"], default="on", help="krótki komunikat tuż po zakręcie"
     )
     parser.add_argument("--overlay", action="store_true", help="okno nakładki na grę (zakręt, słowa mechanika)")
+    parser.add_argument("--lesson", help="lekcja: trener mówi tylko o jej regułach (np. braking_one_corner)")
+    parser.add_argument("--lesson-corner", type=int, help="numer zakrętu do lekcji „jeden zakręt”")
+    parser.add_argument("--explain", action="store_true", help="tryb „wytłumacz mi”: dłuższe wyjaśnienie przy pierwszej uwadze")
     parser.add_argument("--scale", type=float, default=1.0, help="nakładka: mnożnik wielkości napisów")
     parser.add_argument("--alpha", type=float, default=0.97, help="nakładka: krycie okna 0.5-1.0")
     return parser
@@ -98,6 +101,7 @@ def config_from_args(args: argparse.Namespace) -> SessionConfig:
         mode=args.mode, replay=args.replay, speed=args.speed, port=args.port, duration=args.duration,
         track=args.track, db=args.db, record=args.record, voice=args.voice, no_voice=args.no_voice,
         volume=args.volume, corner_messages=args.corner_messages == "on",
+        lesson=args.lesson, lesson_corner=args.lesson_corner, explain_mode=args.explain,
     )
 
 
@@ -131,6 +135,9 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
     if result.summary is not None:
         print(f"Dobrze:   {result.summary.good}")
         print(f"Do pracy: {result.summary.to_work}")
+    if result.lesson_result is not None:
+        ok, best, needed = result.lesson_result
+        print(f"Lekcja: {'zaliczona' if ok else 'jeszcze nie'}, najlepsza seria {best}/{needed}")
     return session.state, session.recorder
 
 

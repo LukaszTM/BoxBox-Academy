@@ -66,8 +66,13 @@ def _table(rows: list[list[str]], st: dict[str, ParagraphStyle], width: float) -
     data = [[Paragraph(_inline(c), st["cellhead"]) for c in rows[0]]]
     data += [[Paragraph(_inline(c), st["cell"]) for c in r] for r in rows[1:]]
     ncols = len(rows[0])
-    first = 0.32 if ncols == 2 else 1 / ncols
-    widths = [width * first] + [width * (1 - first) / (ncols - 1)] * (ncols - 1)
+    if ncols == 2:
+        shares = [0.32, 0.68]
+    else:  # szerokość kolumny według ilości tekstu, ale żadna nie węższa niż 13% ani szersza niż 50%
+        avg = [max(1.0, sum(len(r[i]) for r in rows if i < len(r)) / len(rows)) for i in range(ncols)]
+        raw = [min(0.5, max(0.13, a / sum(avg))) for a in avg]
+        shares = [r / sum(raw) for r in raw]
+    widths = [width * s for s in shares]
     table = Table(data, colWidths=widths, repeatRows=1)
     table.setStyle(TableStyle([
         ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
@@ -139,11 +144,11 @@ def markdown_to_story(text: str, width: float) -> list:
     return story
 
 
-def build_pdf(target: Path) -> None:
+def build_pdf(target: Path, source: Path = SOURCE, title: str = "BoxBox Academy – instrukcja nagrywania telemetrii") -> None:
     _register_fonts()
     doc = SimpleDocTemplate(
         str(target), pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm, topMargin=16 * mm, bottomMargin=16 * mm,
-        title="BoxBox Academy – instrukcja nagrywania telemetrii", author="BoxBox Academy",
+        title=title, author="BoxBox Academy",
     )
     width = A4[0] - doc.leftMargin - doc.rightMargin
     story: list = []
@@ -156,7 +161,7 @@ def build_pdf(target: Path) -> None:
         logo = Image(str(small), width=logo_width, height=logo_width * aspect)
         logo.hAlign = "CENTER"
         story += [logo, Spacer(1, 8)]
-    doc.build(story + markdown_to_story(SOURCE.read_text(encoding="utf-8"), width))
+    doc.build(story + markdown_to_story(source.read_text(encoding="utf-8"), width))
 
 
 _WIN_FILE = 0x20  # FILE_ATTRIBUTE_ARCHIVE: tak znakuje pliki sam Windows

@@ -2,6 +2,7 @@
 from collections import Counter
 from dataclasses import dataclass, field
 
+from boxbox.coach.ers_sample import ErsSample
 from boxbox.telemetry.header import PacketId
 from boxbox.telemetry.state import TelemetryState
 
@@ -28,11 +29,15 @@ class Lap:
     gearbox: int | None = None  # 1 ręczna, 2 ręczna + sugestie, 3 automat
     traction_control: int | None = None  # 0 wył., 1 średnia, 2 pełna
     abs_on: bool | None = None
+    ers_assist: bool | None = None
+    ers: list["ErsSample"] = field(default_factory=list, repr=False, compare=False)  # próbki baterii (z Car Status)
     _assist_votes: Counter[tuple[int | None, int | None, bool | None]] = field(default_factory=Counter, repr=False, compare=False)
 
-    def vote_assists(self, gearbox: int | None, traction_control: int | None, abs_on: bool | None) -> None:
+    def vote_assists(self, gearbox: int | None, traction_control: int | None, abs_on: bool | None, ers_assist: bool | None = None) -> None:
         self._assist_votes[(gearbox, traction_control, abs_on)] += 1
         self.gearbox, self.traction_control, self.abs_on = self._assist_votes.most_common(1)[0][0]
+        if ers_assist is not None:
+            self.ers_assist = ers_assist
 
     def is_complete(self, track_length_m: float, tolerance: float = 0.05) -> bool:
         """Czy próbki pokrywają całe okrążenie (od mety do mety)."""
@@ -87,7 +92,13 @@ class LapRecorder:
             self.state.session.assists.gearbox if self.state.session else None,
             status.traction_control if status else None,
             status.anti_lock_brakes if status else None,
+            self.state.session.assists.ers if self.state.session else None,
         )
+        if status is not None:
+            self.current.ers.append(ErsSample(
+                lap.lap_distance, status.ers_store_energy_j, status.ers_deployed_this_lap_j,
+                status.ers_harvested_this_lap_mguk_j + status.ers_harvested_this_lap_mguh_j, status.ers_deploy_mode,
+            ))
         self.current.samples.append(Sample(
             distance_m=lap.lap_distance, lap_time_ms=lap.current_lap_time_ms, speed_kmh=car.speed_kmh,
             throttle=car.throttle, brake=car.brake, gear=car.gear, steer=car.steer,

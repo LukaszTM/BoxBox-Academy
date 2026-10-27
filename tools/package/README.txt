@@ -8,6 +8,8 @@ KROK 0 - GLOS (raz, ElevenLabs Creator):
                           generuje tylko brakujace klipy, potem sam naklada efekt radia.
   Klucza API nie wpisuj do zadnego pliku i nie wklejaj na czacie.
   Potem spakuj assets\voice\raw do ZIP i przeslij (klipy trafia do repozytorium).
+  popraw_glos.bat -> jesli klipy masz juz z poprzedniej paczki: kasuje 8 zdan z koncowka "-uj"
+                     (czytana jako "-uc") i generuje je w nowym brzmieniu (ok. 500 znakow).
 
 TEST GLOSNIKOW: glos-test.bat (powitanie + przykladowy komunikat; bez gry)
 

@@ -90,7 +90,7 @@ misc_lap_summary,Podsumowanie okrążenia.
 misc_lap_clean,"Czyste okrążenie, nic do poprawy. Tak trzymaj."
 misc_lap_best,Nowe najlepsze okrążenie.
 misc_lap_invalid,"Okrążenie nieważne, wyjazd poza tor."
-misc_no_reference,Pierwsze okrążenie zapisane jako odniesienie. Teraz spróbuj je poprawić.
+misc_no_reference,Pierwsze okrążenie zapisane jako odniesienie. Teraz postaraj się je poprawić.
 misc_reference_loaded,Mam twoje najlepsze okrążenie z poprzednich sesji. Porównuję do niego.
 misc_out_lap,"Okrążenie wyjazdowe. Rozgrzej opony, ocena od następnego."
 misc_biggest_loss,Czyste okrążenie. Najwięcej do zyskania:
@@ -98,8 +98,8 @@ misc_session_end,Koniec sesji. Dobra robota.
 misc_streak_1,"Czyste okrążenie, pierwsze z trzech."
 misc_streak_2,"Czyste okrążenie, drugie z trzech."
 misc_step_tc_medium,Trzy czyste okrążenia z rzędu. Jesteś gotowy na kolejny krok: kontrola trakcji na średnią.
-misc_step_tc_off,Trzy czyste okrążenia z rzędu. Kolejny krok: kontrola trakcji wyłączona. Gaz dawkuj łagodniej na wyjściach.
-misc_step_abs_off,"Trzy czyste okrążenia z rzędu. Kolejny krok: ABS wyłączony. Hamuj mocno, ale nie do zablokowania kół."
+misc_step_tc_off,Trzy czyste okrążenia z rzędu. Kolejny krok: kontrola trakcji wyłączona. Gaz dodawaj łagodniej na wyjściach.
+misc_step_abs_off,"Trzy czyste okrążenia z rzędu. Kolejny krok: ABS wyłączony. Naciskaj hamulec mocno, ale nie do zablokowania kół."
 misc_step_done,Jedziesz bez asyst i masz trzy czyste okrążenia. Od teraz pracujemy nad czasem.
 misc_ers_wasted,"Za dużo baterii idzie w zakrętach. Używaj jej na prostych, zaraz po wyjściu."
 misc_ers_unused,Bateria na mecie prawie pełna. Masz zapas na wyjściach z wolnych zakrętów.
@@ -121,7 +121,7 @@ eng_tyres_critical,"Opony na granicy. Pit, jak tylko będzie okno."
 eng_tyres_graining,"Zaczyna się ziarnienie, kilka okrążeń spokojniej i powinno zejść."
 eng_pit_window_open,"Okno pit-stopu otwarte. Box na tym okrążeniu, potwierdź."
 eng_pit_this_lap,"Box, box. Zjeżdżasz na tym okrążeniu."
-eng_pit_next_lap,Box na następnym okrążeniu. Przygotuj się.
+eng_pit_next_lap,Box na następnym okrążeniu. Bądź gotowy.
 eng_pit_in,"Zjeżdżaj. Limiter przed linią, trafisz w boks."
 eng_pit_out,"Wyjazd z boksu. Opony zimne, pierwsze okrążenie ostrożnie."
 eng_pit_stay_out,"Zostań na torze, pit za chwilę."
@@ -138,10 +138,10 @@ eng_vsc,"Wirtualny safety car. Trzymaj deltę, zwolnij."
 eng_vsc_end,Koniec wirtualnego safety cara. Jedziemy.
 eng_drs_enabled,DRS dostępny. Używaj go na prostej.
 eng_drs_disabled,DRS wyłączony.
-eng_gap_ahead_close,Masz auto przed sobą w zasięgu DRS. Atakuj.
+eng_gap_ahead_close,Masz auto przed sobą w zasięgu DRS. Do ataku.
 eng_gap_ahead,Do auta z przodu:
 eng_gap_behind,Auto z tyłu:
-eng_gap_behind_close,"Rywal w zasięgu DRS. Broń się, nie blokuj dwa razy."
+eng_gap_behind_close,"Rywal w zasięgu DRS. Broń się, ale tylko jedna zmiana toru."
 eng_gap_safe,"Bezpieczna przewaga. Trzymaj tempo, bez ryzyka."
 eng_position_gained,Pozycja zyskana. Dobrze.
 eng_position_lost,"Pozycja stracona. Spokojnie, odrobimy."
@@ -156,8 +156,8 @@ eng_fuel_save,"Oszczędzaj paliwo. Krótsze zmiany biegów, wcześniej odpuszcza
 eng_fuel_push,Masz zapas paliwa. Możesz cisnąć.
 eng_ers_deploy,"Baterię używaj na prostych, mamy dużo zapasu."
 eng_ers_save,Oszczędzaj baterię do ataku na następnym okrążeniu.
-eng_rain_coming,Deszcz za kilka minut. Przygotuj się na mokry tor.
-eng_rain_now,"Pada. Hamuj wcześniej, szukaj przyczepności poza linią."
+eng_rain_coming,Deszcz za kilka minut. Bądź gotowy na mokry tor.
+eng_rain_now,"Pada. Zacznij hamować wcześniej, szukaj przyczepności poza linią."
 eng_track_drying,Tor schnie. Linia wyścigowa jest najsuchsza.
 eng_penalty_time,Masz karę czasową. Odjedziesz ją na mecie.
 eng_penalty_warning,Ostrzeżenie za limity toru. Zostaw sobie margines.

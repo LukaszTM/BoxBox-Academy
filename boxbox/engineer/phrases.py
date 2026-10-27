@@ -26,7 +26,7 @@ ENGINEER_TEXTS: dict[str, str] = {
     # pit-stop
     "pit_window_open": "Okno pit-stopu otwarte. Box na tym okrążeniu, potwierdź.",
     "pit_this_lap": "Box, box. Zjeżdżasz na tym okrążeniu.",
-    "pit_next_lap": "Box na następnym okrążeniu. Przygotuj się.",
+    "pit_next_lap": "Box na następnym okrążeniu. Bądź gotowy.",
     "pit_in": "Zjeżdżaj. Limiter przed linią, trafisz w boks.",
     "pit_out": "Wyjazd z boksu. Opony zimne, pierwsze okrążenie ostrożnie.",
     "pit_stay_out": "Zostań na torze, pit za chwilę.",
@@ -45,10 +45,10 @@ ENGINEER_TEXTS: dict[str, str] = {
     "drs_enabled": "DRS dostępny. Używaj go na prostej.",
     "drs_disabled": "DRS wyłączony.",
     # odstępy
-    "gap_ahead_close": "Masz auto przed sobą w zasięgu DRS. Atakuj.",
+    "gap_ahead_close": "Masz auto przed sobą w zasięgu DRS. Do ataku.",
     "gap_ahead": "Do auta z przodu:",
     "gap_behind": "Auto z tyłu:",
-    "gap_behind_close": "Rywal w zasięgu DRS. Broń się, nie blokuj dwa razy.",
+    "gap_behind_close": "Rywal w zasięgu DRS. Broń się, ale tylko jedna zmiana toru.",
     "gap_safe": "Bezpieczna przewaga. Trzymaj tempo, bez ryzyka.",
     "position_gained": "Pozycja zyskana. Dobrze.",
     "position_lost": "Pozycja stracona. Spokojnie, odrobimy.",
@@ -66,8 +66,8 @@ ENGINEER_TEXTS: dict[str, str] = {
     "ers_deploy": "Baterię używaj na prostych, mamy dużo zapasu.",
     "ers_save": "Oszczędzaj baterię do ataku na następnym okrążeniu.",
     # pogoda
-    "rain_coming": "Deszcz za kilka minut. Przygotuj się na mokry tor.",
-    "rain_now": "Pada. Hamuj wcześniej, szukaj przyczepności poza linią.",
+    "rain_coming": "Deszcz za kilka minut. Bądź gotowy na mokry tor.",
+    "rain_now": "Pada. Zacznij hamować wcześniej, szukaj przyczepności poza linią.",
     "track_drying": "Tor schnie. Linia wyścigowa jest najsuchsza.",
     # kary
     "penalty_time": "Masz karę czasową. Odjedziesz ją na mecie.",

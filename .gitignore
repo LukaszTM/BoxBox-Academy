@@ -8,4 +8,4 @@ dist/
 /data/
 *.sqlite
 
-raporty/
+recorder/

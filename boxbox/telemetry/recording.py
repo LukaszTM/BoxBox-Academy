@@ -25,7 +25,7 @@ def is_needed(data: bytes, skipped: frozenset[int] = SKIPPED_PACKET_IDS) -> bool
     return len(data) <= PACKET_ID_OFFSET or data[PACKET_ID_OFFSET] not in skipped
 
 
-SKIPPED_FOR_SHAPE = SKIPPED_PACKET_IDS - {0}  # reporter kształtu toru zachowuje pakiet Motion (pozycja auta)
+SKIPPED_FOR_SHAPE = SKIPPED_PACKET_IDS - {0}  # recorder kształtu toru zachowuje pakiet Motion (pozycja auta)
 
 
 @dataclass(frozen=True)

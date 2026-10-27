@@ -1,6 +1,6 @@
 """Pakiet Motion (id 0): pozycja i orientacja aut w świecie gry.
 
-Potrzebny tylko do rysowania realnego kształtu toru (reporter); trener go nie używa,
+Potrzebny tylko do rysowania realnego kształtu toru (recorder); trener go nie używa,
 więc parsujemy wyłącznie auto gracza. 2025: 60 B na auto (przeciążenia jako float),
 2026: 54 B (przeciążenia skwantowane do int16). Układ z docs/*Output_Structures.txt.
 """

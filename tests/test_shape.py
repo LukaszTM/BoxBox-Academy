@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from boxbox.reporter import ShapeCollector, build_report, main as reporter_main, make_shape
+from boxbox.recorder import ShapeCollector, build_report, main as recorder_main, make_shape
 from boxbox.telemetry.motion import PACKET_SIZE, parse_motion
 from boxbox.telemetry.recording import SKIPPED_FOR_SHAPE, RecordingWriter, is_needed
 from boxbox.telemetry.state import TelemetryState
@@ -79,10 +79,10 @@ def test_collector_picks_complete_lap_and_report_zip(tmp_path: Path, monkeypatch
     (tmp_path / "data").mkdir()
     (tmp_path / "data" / "boxbox.log").write_text("log", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
-    rc = reporter_main(["--replay", str(rec), "--out", str(tmp_path / "raporty"), "--data-dir", str(tmp_path / "data"),
+    rc = recorder_main(["--replay", str(rec), "--out", str(tmp_path / "recorder"), "--data-dir", str(tmp_path / "data"),
                         "--shape-dir", str(tmp_path / "shape")])
     assert rc == 0 and (tmp_path / "shape" / "3.json").exists()
-    zips = list((tmp_path / "raporty").glob("raport-bahrajn-*.zip"))
+    zips = list((tmp_path / "recorder").glob("nagranie-bahrajn-*.zip"))
     assert len(zips) == 1
     names = zipfile.ZipFile(zips[0]).namelist()
     assert "shape/3.json" in names and "shape/3.svg" in names and "tracks/data/3.json" in names
@@ -90,13 +90,13 @@ def test_collector_picks_complete_lap_and_report_zip(tmp_path: Path, monkeypatch
     assert any(n.endswith(".txt") for n in names)
 
 
-def test_reporter_without_motion_reports_missing_shape(tmp_path: Path) -> None:
+def test_recorder_without_motion_reports_missing_shape(tmp_path: Path) -> None:
     rec = tmp_path / "bez.bin"
     with RecordingWriter(rec) as w:
         for i, p in enumerate(circle_packets((1,))):
             if not p[6] == 0:  # bez pakietów Motion
                 w.write(i * 0.016, p)
-    rc = reporter_main(["--replay", str(rec), "--out", str(tmp_path / "r"), "--data-dir", str(tmp_path / "data"),
+    rc = recorder_main(["--replay", str(rec), "--out", str(tmp_path / "r"), "--data-dir", str(tmp_path / "data"),
                         "--shape-dir", str(tmp_path / "shape")])
     assert rc == 2
     assert list((tmp_path / "r").glob("*.zip"))  # raport i tak powstaje (nagranie + podsumowanie)

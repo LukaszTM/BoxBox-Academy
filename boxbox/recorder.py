@@ -1,12 +1,12 @@
-"""Reporter: nagrywa sesję z pozycją auta, wyznacza realny kształt toru i pakuje wszystko do ZIP.
+"""Recorder: nagrywa sesję z pozycją auta, wyznacza realny kształt toru i pakuje wszystko do ZIP.
 
-Jeden program, bez parametrów, także jako BoxBoxReporter.exe. Przebieg:
+Jeden program, bez parametrów, także jako BoxBoxRecorder.exe. Przebieg:
   1. czeka na telemetrię z gry (port 20777), nagrywa pakiety razem z Motion (pozycja auta),
   2. Enter albo Ctrl+C kończy; nagranie trafia do recordings/ i jest kompresowane xz,
   3. z najlepszego pełnego okrążenia liczy kształt toru (JSON + SVG), zapisuje też do boxbox/tracks/shape/,
-  4. zbiera do raporty/raport-<tor>-<data>.zip: nagranie, kształt, plik toru i przewodnik (jeśli są),
+  4. zbiera do recorder/nagranie-<tor>-<data>.zip: nagranie, kształt, plik toru i przewodnik (jeśli są),
      bazę i dziennik z data/, notatki i podsumowanie; ZIP ponad 24 MB dzieli na części.
-Użycie: python -m boxbox.reporter [--replay nagranie.bin[.xz]] [--port N] [--dir recordings] [--out raporty]
+Użycie: python -m boxbox.recorder [--replay nagranie.bin[.xz]] [--port N] [--dir recordings] [--out recorder]
 """
 import argparse
 import json
@@ -139,7 +139,7 @@ def build_report(
     track_id = st.session.track_id if st.session else None
     track_name = (st.session.track_name if st.session else "nieznany").lower().replace(" ", "-")
     stamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-    zip_path = out_dir / f"raport-{track_name}-{stamp}.zip"
+    zip_path = out_dir / f"nagranie-{track_name}-{stamp}.zip"
     files: list[tuple[Path, str]] = []
     if recording is not None and recording.exists():
         files.append((recording, f"recordings/{recording.name}"))
@@ -160,7 +160,7 @@ def build_report(
     for name in ("boxbox.sqlite", "boxbox.log"):
         if (data_dir / name).exists():
             files.append((data_dir / name, f"data/{name}"))
-    notes = out_dir / f"raport-{track_name}-{stamp}.txt"
+    notes = out_dir / f"nagranie-{track_name}-{stamp}.txt"
     laps = [(n, len(p)) for n, p in sorted(collector.samples.items())]
     summary = {
         "tor": st.session.track_name if st.session else None, "track_id": track_id,
@@ -169,7 +169,7 @@ def build_report(
         "okrazenia_z_pozycja": laps, "ksztalt": shape is not None, "nagranie": recording.name if recording else None,
     }
     notes.write_text(
-        "BoxBox Academy - raport sesji\n" + json.dumps(summary, ensure_ascii=False, indent=1)
+        "BoxBox Academy - recorder, podsumowanie sesji\n" + json.dumps(summary, ensure_ascii=False, indent=1)
         + "\n\nNotatki (uzupełnij): tor, asysty, co się działo:\n", encoding="utf-8",
     )
     files.append((notes, notes.name))
@@ -177,7 +177,7 @@ def build_report(
         for src, arc in files:
             z.write(src, arc)
     size_mb = zip_path.stat().st_size / (1 << 20)
-    print(f"Raport: {zip_path} ({size_mb:.1f} MB), plików: {len(files)}")
+    print(f"Paczka: {zip_path} ({size_mb:.1f} MB), plików: {len(files)}")
     if size_mb > LIMIT_MB:
         parts = split(zip_path)
         zip_path.unlink()
@@ -187,16 +187,16 @@ def build_report(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Reporter kształtu toru BoxBox Academy")
+    parser = argparse.ArgumentParser(description="Recorder kształtu toru BoxBox Academy")
     parser.add_argument("--replay", type=Path, help="zamiast nagrywać: policz kształt z istniejącego nagrania (musi mieć pakiety Motion)")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT)
     parser.add_argument("--dir", type=Path, default=Path("recordings"))
-    parser.add_argument("--out", type=Path, default=Path("raporty"))
+    parser.add_argument("--out", type=Path, default=Path("recorder"))
     parser.add_argument("--name", default="ksztalt")
     parser.add_argument("--data-dir", type=Path, default=Path("data"))
     parser.add_argument("--shape-dir", type=Path, default=SHAPE_DIR, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
-    print("BoxBox Academy - reporter kształtu toru")
+    print("BoxBox Academy - recorder kształtu toru")
     collector = ShapeCollector()
     if args.replay:
         replay(args.replay, collector.feed, speed=0)

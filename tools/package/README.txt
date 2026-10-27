@@ -21,9 +21,9 @@ TRENER NA ZYWO Z GLOSEM I NAKLADKA:
   Gra w trybie okna bez ramki (nie pelny ekran). Potrzebny plik toru: Bahrajn, Monza, Suzuka.
   Nie laczyc z nakladka.bat ani nagraj.bat (jeden program na port UDP).
 
-KSZTALT TORU (reporter): raportuj.bat [nazwa]  -> nagrywa sesje z pozycja auta (co najmniej 2 pelne
-  okrazenia, potem Enter), liczy realny ksztalt toru (JSON + SVG) i pakuje raport do raporty\raport-<tor>-<data>.zip
-  razem z nagraniem, plikiem toru, baza i dziennikiem. Wersja .exe bez Pythona: zbuduj_reporter.bat -> dist\BoxBoxReporter.exe
+KSZTALT TORU (recorder): recorder.bat [nazwa]  -> nagrywa sesje z pozycja auta (co najmniej 2 pelne
+  okrazenia, potem Enter), liczy realny ksztalt toru (JSON + SVG) i pakuje raport do recorder\nagranie-<tor>-<data>.zip
+  razem z nagraniem, plikiem toru, baza i dziennikiem. Wersja .exe bez Pythona: zbuduj_recorder.bat -> dist\BoxBoxRecorder.exe
 
 POSTEP: postep.bat  -> krok asyst, czyste okrazenia z rzedu, najlepsze czasy per krok, zakrety opanowane.
 

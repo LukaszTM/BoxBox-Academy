@@ -1,6 +1,6 @@
-"""Buduje BoxBoxReporter (jeden plik) przez PyInstaller.
+"""Buduje BoxBoxRecorder (jeden plik) przez PyInstaller.
 
-Użycie: python tools/build_exe.py  ->  dist/BoxBoxReporter(.exe)
+Użycie: python tools/build_exe.py  ->  dist/BoxBoxRecorder(.exe)
 Plik .exe powstaje tylko na Windows (PyInstaller nie buduje krzyżowo); na Linux/macOS powstaje
 binarka dla tego systemu, co wystarcza do sprawdzenia, czy pakowanie działa.
 """
@@ -9,8 +9,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-ENTRY = ROOT / "boxbox" / "reporter.py"
-NAME = "BoxBoxReporter"
+ENTRY = ROOT / "boxbox" / "recorder.py"
+NAME = "BoxBoxRecorder"
 sep = ";" if sys.platform.startswith("win") else ":"
 
 

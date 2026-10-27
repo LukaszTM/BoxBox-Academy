@@ -1,0 +1,64 @@
+{
+  "track_id": 3,
+  "name": "Bahrajn",
+  "length_m": 5408.0,
+  "source": "recordings/bahrajn-tt_2026-10-26_122816.bin.xz (strefy hamowania gracza, okrążenie 3; nazwy wg numerów zakrętów toru, orientacyjne; T5, T12, T15 bez hamowania)",
+  "corners": [
+    {
+      "number": 1,
+      "entry_m": 586.0,
+      "apex_m": 766.6,
+      "exit_m": 874.5,
+      "name": "T1-T3"
+    },
+    {
+      "number": 2,
+      "entry_m": 1396.8,
+      "apex_m": 1574.4,
+      "exit_m": 1669.7,
+      "name": "T4"
+    },
+    {
+      "number": 3,
+      "entry_m": 1833.7,
+      "apex_m": 1961.9,
+      "exit_m": 2136.8,
+      "name": "T6-T7"
+    },
+    {
+      "number": 4,
+      "entry_m": 2261.7,
+      "apex_m": 2322.0,
+      "exit_m": 2334.3,
+      "name": "T8"
+    },
+    {
+      "number": 5,
+      "entry_m": 2689.6,
+      "apex_m": 2774.6,
+      "exit_m": 2787.7,
+      "name": "T9-T10"
+    },
+    {
+      "number": 6,
+      "entry_m": 3343.6,
+      "apex_m": 3491.6,
+      "exit_m": 3539.6,
+      "name": "T11"
+    },
+    {
+      "number": 7,
+      "entry_m": 4018.6,
+      "apex_m": 4166.3,
+      "exit_m": 4207.7,
+      "name": "T13"
+    },
+    {
+      "number": 8,
+      "entry_m": 4790.4,
+      "apex_m": 4949.4,
+      "exit_m": 5044.3,
+      "name": "T14"
+    }
+  ]
+}

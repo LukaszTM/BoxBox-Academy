@@ -5,5 +5,5 @@ __pycache__/
 build/
 dist/
 *.spec
-data/
+/data/
 *.sqlite

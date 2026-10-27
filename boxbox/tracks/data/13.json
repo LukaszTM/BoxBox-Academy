@@ -1,0 +1,43 @@
+{
+  "track_id": 13,
+  "name": "Suzuka",
+  "length_m": 5809.0,
+  "source": "recordings/suzuka-tt-bez-tc_2026-10-26_181552.bin.xz (strefy hamowania gracza, okrążenie 2; nazwy wg numerów zakrętów toru; esy T3-T7, Dunlop T8, T12 i 130R bez hamowania)",
+  "corners": [
+    {
+      "number": 1,
+      "entry_m": 736.6,
+      "apex_m": 854.7,
+      "exit_m": 1020.7,
+      "name": "T1-T2"
+    },
+    {
+      "number": 2,
+      "entry_m": 2384.7,
+      "apex_m": 2480.2,
+      "exit_m": 2522.2,
+      "name": "T9-T10"
+    },
+    {
+      "number": 3,
+      "entry_m": 2811.9,
+      "apex_m": 2942.7,
+      "exit_m": 3055.0,
+      "name": "T11"
+    },
+    {
+      "number": 4,
+      "entry_m": 3927.2,
+      "apex_m": 3991.3,
+      "exit_m": 4157.9,
+      "name": "T13-T14"
+    },
+    {
+      "number": 5,
+      "entry_m": 5276.2,
+      "apex_m": 5419.0,
+      "exit_m": 5698.4,
+      "name": "T16-T18"
+    }
+  ]
+}

@@ -64,3 +64,13 @@ def test_invalid_tracks_rejected(corners: list[dict], message: str) -> None:
 def test_missing_file_has_clear_error(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError, match="brak pliku toru"):
         load_track(tmp_path / "99.json")
+
+
+def test_track_files_are_tracked_by_git() -> None:
+    """Regresja: reguła data/ w .gitignore ukryła kiedyś pliki torów przed klonem."""
+    import subprocess
+    from boxbox.tracks.model import track_path
+
+    out = subprocess.run(["git", "ls-files", "boxbox/tracks/data"], capture_output=True, text=True, check=True).stdout
+    for tid in (3, 11, 13):
+        assert track_path(tid).name in out, f"brak {track_path(tid)} w git"

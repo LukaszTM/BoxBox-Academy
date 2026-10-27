@@ -1,0 +1,50 @@
+{
+  "track_id": 11,
+  "name": "Monza",
+  "length_m": 5798.0,
+  "source": "recordings/monza-trening_2026-10-26_153411.bin.xz (strefy hamowania gracza, okrążenie 3; nazwy wg numerów zakrętów toru; T3 Curva Grande bez hamowania)",
+  "corners": [
+    {
+      "number": 1,
+      "entry_m": 766.3,
+      "apex_m": 984.4,
+      "exit_m": 1149.3,
+      "name": "T1-T2"
+    },
+    {
+      "number": 2,
+      "entry_m": 2007.6,
+      "apex_m": 2154.4,
+      "exit_m": 2231.3,
+      "name": "T4-T5"
+    },
+    {
+      "number": 3,
+      "entry_m": 2504.3,
+      "apex_m": 2616.2,
+      "exit_m": 2642.2,
+      "name": "T6"
+    },
+    {
+      "number": 4,
+      "entry_m": 2800.4,
+      "apex_m": 2904.6,
+      "exit_m": 2936.1,
+      "name": "T7"
+    },
+    {
+      "number": 5,
+      "entry_m": 3830.3,
+      "apex_m": 3968.0,
+      "exit_m": 4147.9,
+      "name": "T8-T10"
+    },
+    {
+      "number": 6,
+      "entry_m": 5031.7,
+      "apex_m": 5189.0,
+      "exit_m": 5410.2,
+      "name": "T11"
+    }
+  ]
+}

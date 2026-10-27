@@ -161,3 +161,17 @@ def test_engineer_reports_start_after_first_lap() -> None:
         feed(eng, st, [telemetry_packet(speed=min(200, i * 8), throttle=1.0)], 5.0 + i * 0.1)
     keys = feed(eng, st, [lap_packet_race(2, 7)], 120.0)
     assert "start_report" in keys and eng.start_report is not None and eng.start_report.grid_position == 7
+
+
+def test_tyre_temperatures_and_race_summary() -> None:
+    from boxbox.engineer.summary import summarize_race
+
+    eng, st = Engineer(), TelemetryState()
+    feed(eng, st, [race_session(), lap_packet_race(2, 5), status_race()], 0.0)
+    assert feed(eng, st, [telemetry_packet()], 1.0) == ["tyres_window"]  # builder: 90-93 °C = okno pracy
+    assert feed(eng, st, [telemetry_packet()], 2.0) == []  # raz na sesję
+    eng.collisions, eng.penalties = 1, 0
+    s = summarize_race(st, None, 1, 0, 0, 0)
+    assert s.safety_rating == 80 and "Kontakty: 1" in s.lines[-2] and s.to_work.startswith("1 kontakt")
+    s2 = summarize_race(st, None, 0, 0, 0, 1)
+    assert s2.safety_rating == 100 and s2.good.startswith("Wyścig bez kontaktu")

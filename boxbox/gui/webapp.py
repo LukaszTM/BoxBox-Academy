@@ -264,7 +264,7 @@ class WebWindow(QMainWindow):
         name = (ui.get("name") or f"sesja {datetime.now():%d.%m}").strip()
         lesson_id = ui.get("lesson") or None
         return SessionConfig(
-            mode="coach", port=s.port, db=self.db_path, record=name if ui.get("record", s.record) else None,
+            mode="race" if ui.get("mode") == "race" else "coach", port=s.port, db=self.db_path, record=name if ui.get("record", s.record) else None,
             voice=Path(s.voice_dir), volume=s.volume, corner_messages=not ui.get("quiet", s.quiet),
             lesson=lesson_id, lesson_corner=int(ui.get("corner") or 0) or None, explain_mode=s.explain,
         )
@@ -410,7 +410,9 @@ class WebWindow(QMainWindow):
             "name": self.session_ui.get("name", ""), "track": track_name, "laps": len(laps), "elapsed": result.wall_s, "date": datetime.now().strftime("%d.%m.%Y"),
             "coach": result.coach_started, "best": format_time(best_ms) if best_ms else "", "clean": summary.clean_laps if summary else 0, "delta": delta,
             "cpu": f"{result.cpu_percent:.1f}% jednego rdzenia" if not session.cfg.replay and result.wall_s > 1 else "",
-            "good": summary.good if summary else "", "toWork": summary.to_work if summary else "", "lapRows": lap_rows, "cornerRows": corner_rows, "report": report,
+            "good": (result.race.good if result.race else summary.good if summary else ""), "toWork": (result.race.to_work if result.race else summary.to_work if summary else ""),
+            "lapRows": lap_rows, "cornerRows": corner_rows, "report": report,
+            "race": ({"lines": result.race.lines, "rating": result.race.safety_rating} if result.race else None),
             "lesson": ({"title": session.lesson.title, "passed": result.lesson_result[0], "best": result.lesson_result[1], "needed": result.lesson_result[2]} if session.lesson and result.lesson_result else None),
         }
         # zapamiętaj do ekranu Start i stan lekcji

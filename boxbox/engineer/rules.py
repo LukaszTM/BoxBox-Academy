@@ -24,6 +24,9 @@ ENGINE_WARN = 80
 GAP_CLOSE_MS = 1000  # w zasięgu DRS
 GAP_SAFE_MS = 4000
 FUEL_SHORT_LAPS = -0.3  # ujemne = brakuje paliwa
+TYRE_COLD_C = 70  # średnia temperatura powierzchni opon
+TYRE_HOT_C = 118
+TYRE_WINDOW_LOW_C, TYRE_WINDOW_HIGH_C = 85, 110
 FUEL_SPARE_LAPS = 2.0
 
 
@@ -88,6 +91,9 @@ class Engineer:
         self.lights_out_at: float | None = None
         self.start = StartAnalyzer()
         self.start_report: StartReport | None = None
+        self.collisions = 0
+        self.penalties = 0
+        self.prev_pits = 0
 
     def _once(self, key: str) -> bool:
         if key in self.said_once:
@@ -140,10 +146,12 @@ class Engineer:
             elif code == "COLL" and isinstance(ev.details, Collision) and player_idx is not None:
                 if player_idx in (ev.details.vehicle1_index, ev.details.vehicle2_index) and self.cd.ready("collision", now, 10):
                     self.cd.mark("collision", now)
+                    self.collisions += 1
                     out.append(_msg("collision"))
             elif code == "PENA" and isinstance(ev.details, Penalty) and player_idx is not None and ev.details.vehicle_index == player_idx:
                 if ev.details.time_s > 0 and self.cd.ready("penalty_time", now, 15):
                     self.cd.mark("penalty_time", now)
+                    self.penalties += 1
                     out.append(_msg("penalty_time"))
             elif code in ("CHQF", "SEND"):
                 if self._once("race_end"):
@@ -257,6 +265,19 @@ class Engineer:
                 self.cd.mark("gap_safe", now)
                 out.append(_msg("gap_safe", priority=0))
 
+        # temperatury opon (powierzchnia): poza pit lane, nie na 1. okrążeniu
+        if state.telemetry is not None and not lap.pit_status and lap.current_lap_num > 1:
+            temps = state.telemetry.player.tyres_surface_temperature
+            avg = sum(temps) / 4
+            if avg < TYRE_COLD_C and self.cd.ready("tyres_cold", now, 90):
+                self.cd.mark("tyres_cold", now)
+                out.append(_msg("tyres_cold"))
+            elif avg > TYRE_HOT_C and self.cd.ready("tyres_hot", now, 90):
+                self.cd.mark("tyres_hot", now)
+                out.append(_msg("tyres_hot"))
+            elif TYRE_WINDOW_LOW_C <= avg <= TYRE_WINDOW_HIGH_C and self._once("tyres_window"):
+                out.append(_msg("tyres_window", priority=0))
+        self.prev_pits = lap.num_pit_stops
         # kary i ostrzeżenia
         if lap.total_warnings > self.prev_warnings and self.cd.ready("penalty_warning", now, 30):
             self.cd.mark("penalty_warning", now)

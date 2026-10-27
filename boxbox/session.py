@@ -20,6 +20,7 @@ from boxbox.coach.progress import CLEAN_LAPS_TO_ADVANCE, STEPS
 from boxbox.coach.rules import Message
 from boxbox.coach.summary import SessionSummary, summarize
 from boxbox.engineer.rules import Engineer
+from boxbox.engineer.summary import RaceSummary, summarize_race
 from boxbox.storage.db import Database
 from boxbox.telemetry.record import recording_path
 from boxbox.telemetry.recording import RecordingWriter, is_needed
@@ -101,6 +102,7 @@ class SessionResult:
     recording: Path | None = None
     summary: SessionSummary | None = None  # Dobrze / Do pracy (tylko tryb nauki z trenerem)
     lesson_result: tuple[bool, int, int] | None = None  # (zaliczona, najlepsza seria, wymagana)
+    race: RaceSummary | None = None  # tryb wyścigowy
 
 
 class CoachSession:
@@ -312,5 +314,10 @@ class CoachSession:
         if self.lesson is not None and self.coach is not None:
             lesson_result = evaluate_lesson(self.lesson, self.recorder.laps, self.messages_by_lap, self.cfg.lesson_corner)
             log.info("lekcja %s: %s, seria %d/%d", self.lesson.id, "zaliczona" if lesson_result[0] else "nie", lesson_result[1], lesson_result[2])
-        self.result = SessionResult(self.state, self.recorder, wall, cpu_percent, self.coach is not None, errors, self.recording, summary, lesson_result)
+        race = None
+        if self.engineer is not None and self.state.lap is not None:
+            lap = self.state.lap.player
+            race = summarize_race(self.state, self.engineer.start_report, self.engineer.collisions, self.engineer.penalties, lap.total_warnings, lap.num_pit_stops)
+            log.info("wyścig: %s", " | ".join(race.lines))
+        self.result = SessionResult(self.state, self.recorder, wall, cpu_percent, self.coach is not None, errors, self.recording, summary, lesson_result, race)
         return self.result

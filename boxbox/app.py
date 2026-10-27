@@ -135,6 +135,11 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
     if result.summary is not None:
         print(f"Dobrze:   {result.summary.good}")
         print(f"Do pracy: {result.summary.to_work}")
+    if result.race is not None:
+        for line in result.race.lines:
+            print(line)
+        print(f"Dobrze:   {result.race.good}")
+        print(f"Do pracy: {result.race.to_work}")
     if result.lesson_result is not None:
         ok, best, needed = result.lesson_result
         print(f"Lekcja: {'zaliczona' if ok else 'jeszcze nie'}, najlepsza seria {best}/{needed}")

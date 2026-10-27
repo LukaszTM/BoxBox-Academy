@@ -20,6 +20,8 @@ class Settings:
     port: int = DEFAULT_PORT
     voice_dir: str = "assets/voice"
     record: bool = True
+    auto_start: bool = True  # trener startuje sam, gdy gra zacznie wysyłać telemetrię
+    auto_stop_s: int = 20  # sesja kończy się sama po tylu sekundach bez pakietów (menu, wyjście z gry)
     wizard_done: bool = False
     tutorial_done: bool = False
 

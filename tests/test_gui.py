@@ -96,3 +96,44 @@ def test_home_runs_replay_session_and_shows_summary(app, tmp_path: Path) -> None
 def test_probe_result_properties() -> None:
     r = ProbeResult(packets=120, seconds=2.0, fmt=2025, track="Monza")
     assert r.connected and r.rate == 60.0 and r.supported
+
+
+def test_auto_start_when_game_detected_and_auto_stop_without_packets(app, tmp_path: Path, monkeypatch) -> None:
+    import socket
+    from boxbox.telemetry.recording import read_recording
+
+    Settings(wizard_done=True, tutorial_done=True, overlay=False, port=0, auto_stop_s=1).save(tmp_path / "settings.json")
+    w = MainWindow(tmp_path)
+    w.show()
+    pump(app)
+    home = w.pages["home"]
+    home.use_overlay.setChecked(False)
+    home.record.setChecked(False)
+    # udajemy sondę: "gra połączona"
+    class FakeProbe:
+        result = ProbeResult(packets=60, seconds=1.0, fmt=2025, track="Monza")
+        def is_alive(self): return True
+        paused = w.ctx.probe.paused
+        stop = w.ctx.probe.stop
+    w.ctx.stop_probe()
+    w.ctx.probe = FakeProbe()
+    # port 0 -> sesja wybierze wolny port; podmieniamy na konkretny, żeby wysłać pakiety
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+    w.ctx.settings.port = port
+    home.start_session = (lambda orig: (lambda cfg=None: orig(SessionConfig(port=port, db=tmp_path / "b.sqlite", no_voice=True, duration=30))))(home.start_session)
+    pump(app, 0.3)
+    assert home.session is not None and "wystartował sam" in home.l_messages.toPlainText()
+    sender = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    for i, p in enumerate(read_recording(MONZA)):
+        if i > 600:
+            break
+        sender.sendto(p.data, ("127.0.0.1", port))
+    pump(app, 0.5)
+    assert home.session is not None and home.session.shared.packets > 50  # UDP bez potwierdzeń: część pakietów z serii ginie
+    deadline = time.monotonic() + 10
+    while home.session is not None and time.monotonic() < deadline:
+        pump(app, 0.1)
+    assert home.session is None and "zakończona automatycznie" in home.l_messages.toPlainText()
+    w.close()

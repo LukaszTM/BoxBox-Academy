@@ -14,6 +14,9 @@ HOME = {
     "mode_race": "Tryb wyścigowy (inżynier, wkrótce)",
     "record": "Nagrywaj sesję (do analizy i zgłaszania błędów)",
     "overlay": "Nakładka na grę (okno zawsze na wierzchu)",
+    "auto_start": "Start automatyczny: trener rusza sam, gdy gra zacznie wysyłać telemetrię (nie musisz wychodzić z gry)",
+    "auto_started": "Gra wysyła telemetrię: trener wystartował sam.",
+    "auto_stopped": "Brak sygnału z gry od {s} s: sesja zakończona automatycznie.",
     "name": "Nazwa sesji",
     "status_waiting": "Czekam na grę: brak pakietów na porcie {port}",
     "status_busy": "Port {port} zajęty: zamknij inny program z telemetrią",
@@ -95,7 +98,7 @@ SETTINGS = {
 TUTORIAL = [
     ("home", "nav_home", "To jest ekran startu. Tu uruchamiasz trenera, gdy gra działa i telemetria jest włączona."),
     ("home", "status", "Pasek stanu mówi, czy gra jest połączona. Gdy widzisz nazwę toru i liczbę pakietów na sekundę, wszystko gra."),
-    ("home", "go", "JEDŹ uruchamia trenera. Usłyszysz powitanie, a po pierwszym pełnym okrążeniu trener zacznie oceniać zakręty."),
+    ("home", "go", "Nie musisz nic klikać: zostaw to okno, uruchom grę i wyjedź na tor. Trener wystartuje sam, gdy gra wyśle telemetrię. JEDŹ służy do ręcznego startu."),
     ("home", "live", "W trakcie sesji widzisz tu okrążenie, najbliższy zakręt, ostatnie słowa mechanika i cel na okrążenie. To samo pokazuje nakładka na grze."),
     ("profile", "nav_profile", "Karta kierowcy: twój nick, zdjęcie i liczby z wszystkich sesji."),
     ("progress", "nav_progress", "Postęp: krok asyst na każdym torze, seria czystych okrążeń, zakręty opanowane i tabela przejazdów."),

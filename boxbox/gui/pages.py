@@ -1,6 +1,7 @@
 """Strony okna głównego. Każda strona dostaje `ctx` (ustawienia, baza, sonda) i nie otwiera osobnych okien."""
 import shutil
 import threading
+import time
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QTimer, Signal
@@ -90,6 +91,9 @@ class HomePage(QWidget):
         self.record.setChecked(ctx.settings.record)
         self.use_overlay = QCheckBox(texts.HOME["overlay"])
         self.use_overlay.setChecked(ctx.settings.overlay)
+        self.auto_start = QCheckBox(texts.HOME["auto_start"])
+        self.auto_start.setChecked(ctx.settings.auto_start)
+        self.auto_start.toggled.connect(self._save_auto_start)
         grid = QGridLayout()
         grid.addWidget(label("Tryb"), 0, 0)
         grid.addWidget(self.mode, 0, 1)
@@ -97,6 +101,7 @@ class HomePage(QWidget):
         grid.addWidget(self.name, 1, 1)
         grid.addWidget(self.record, 2, 0, 1, 2)
         grid.addWidget(self.use_overlay, 3, 0, 1, 2)
+        grid.addWidget(self.auto_start, 4, 0, 1, 2)
         opts_lay.addLayout(grid)
         self.go = QPushButton(texts.HOME["go"])
         self.go.setObjectName("go")
@@ -136,6 +141,13 @@ class HomePage(QWidget):
         self.timer.timeout.connect(self.refresh)
         self.timer.start(150)
         self._shown_messages = 0
+        self._last_packets = 0
+        self._last_packet_at = 0.0
+        self.auto_stop_enabled = True
+
+    def _save_auto_start(self, on: bool) -> None:
+        self.ctx.settings.auto_start = on
+        self.ctx.save()
 
     # stan połączenia (sonda) i sesji
     def refresh(self) -> None:
@@ -148,6 +160,9 @@ class HomePage(QWidget):
                 self.status.setText(texts.HOME["status_ok"].format(track=r.track or "tor nieznany", fmt=r.fmt, rate=int(r.rate)))
             else:
                 self.status.setText(texts.HOME["status_waiting"].format(port=port))
+            if r.connected and self.auto_start.isChecked():
+                self.start_session()
+                self.l_messages.appendPlainText(texts.HOME["auto_started"])
             return
         sh = self.session.shared
         with sh.lock:
@@ -172,6 +187,14 @@ class HomePage(QWidget):
             self.overlay.apply(view, error)
         if error:
             self.banner.show_text(error)
+        now = time.monotonic()
+        if sh.packets != self._last_packets:
+            self._last_packets = sh.packets
+            self._last_packet_at = now
+        elif (self.auto_stop_enabled and self._last_packets > 0 and not self.session.cfg.replay
+              and now - self._last_packet_at > self.ctx.settings.auto_stop_s):
+            self.l_messages.appendPlainText(texts.HOME["auto_stopped"].format(s=self.ctx.settings.auto_stop_s))
+            self.session.stop()
         if stopped and not self.session.running:
             self.finish_session()
 
@@ -196,6 +219,8 @@ class HomePage(QWidget):
         self.guide = None
         self.guide_track_id = None
         self.session = CoachSession(cfg, on_note=lambda text: None)
+        self._last_packets = 0
+        self._last_packet_at = time.monotonic()
         self.session.start_background()
         self.go.setText(texts.HOME["stop"])
         if self.use_overlay.isChecked() and not cfg.replay:

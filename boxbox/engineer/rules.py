@@ -8,6 +8,7 @@ Teksty klipów: boxbox/engineer/phrases.py (eng_*).
 from dataclasses import dataclass, field
 
 from boxbox.engineer.phrases import ENGINEER_TEXTS, LAPS_TEXTS, SECONDS_TEXTS, seconds_key
+from boxbox.engineer.start import StartAnalyzer, StartReport
 from boxbox.telemetry.event import Collision, Penalty
 from boxbox.telemetry.state import TelemetryState
 
@@ -85,6 +86,8 @@ class Engineer:
         self.said_once: set[str] = set()
         self.events_seen = 0
         self.lights_out_at: float | None = None
+        self.start = StartAnalyzer()
+        self.start_report: StartReport | None = None
 
     def _once(self, key: str) -> bool:
         if key in self.said_once:
@@ -113,6 +116,7 @@ class Engineer:
             code = ev.code
             if code == "LGOT":
                 self.lights_out_at = now
+                self.start.lights_out(now, lap.grid_position if lap is not None else None)
                 out.append(_msg("lights_out", priority=2))
             elif code == "STLG":
                 if self._once("formation_lap"):
@@ -149,6 +153,16 @@ class Engineer:
         if session is None or lap is None:
             return out
         is_race = session.session_type in RACE_SESSION_TYPES
+        # start: próbki gazu/prędkości/obrotów przez 5 s po światłach, raport po 1. okrążeniu
+        if self.start.lights_out_s is not None and not self.start.done and state.telemetry is not None:
+            car = state.telemetry.player
+            if status is not None:
+                self.start.max_rpm = status.max_rpm or self.start.max_rpm
+            self.start.feed(now, car.throttle, car.speed_kmh, car.engine_rpm, lap.current_lap_num, lap.car_position)
+            if self.start.done and self.start_report is None:
+                self.start_report = self.start.report()
+                if self.start_report is not None:
+                    out.append(RadioMessage("start_report", self.start_report.text, (), 0))
 
         # flagi FIA dla gracza (z Car Status)
         if status is not None:

@@ -131,3 +131,33 @@ def test_clips_and_race_mode_on_recording(tmp_path: Path) -> None:
     result = s.finish()
     assert said and said[0].startswith("Inżynier na radiu") and not result.coach_started
     assert all("Hamowanie" not in t for t in said)  # inżynier nie poprawia techniki
+
+
+def test_start_analysis_reaction_wheelspin_positions() -> None:
+    from boxbox.engineer.start import StartAnalyzer
+
+    a = StartAnalyzer(max_rpm=13000)
+    a.lights_out(10.0, grid_position=8)
+    # 0,35 s reakcji, uślizg przez ~1 s, potem jazda
+    for i in range(0, 60):
+        t = 10.0 + i * 0.1
+        thr = 0.0 if i < 4 else 1.0
+        rpm = 12500 if 4 <= i < 14 else 9000
+        speed = 0 if i < 4 else min(250, (i - 4) * 9)
+        a.feed(t, thr, speed, rpm, 1, 8)
+    a.feed(100.0, 0.5, 200, 9000, 2, 6)
+    r = a.report()
+    assert r is not None and abs(r.reaction_s - 0.4) < 0.11 and r.wheelspin_s >= 0.5 and r.position_after_lap1 == 6
+    assert "reakcja" in r.text and "uślizg" in r.text and "2 pozycje do przodu" in r.text and not r.ok
+    b = StartAnalyzer()
+    assert b.report() is None
+
+
+def test_engineer_reports_start_after_first_lap() -> None:
+    eng, st = Engineer(), TelemetryState()
+    feed(eng, st, [race_session(), lap_packet_race(1, 8), status_race(), telemetry_packet(speed=0, throttle=0.0)], 0.0)
+    assert feed(eng, st, [event_packet("LGOT")], 5.0) == ["lights_out"]
+    for i in range(1, 30):
+        feed(eng, st, [telemetry_packet(speed=min(200, i * 8), throttle=1.0)], 5.0 + i * 0.1)
+    keys = feed(eng, st, [lap_packet_race(2, 7)], 120.0)
+    assert "start_report" in keys and eng.start_report is not None and eng.start_report.grid_position == 7

@@ -137,7 +137,7 @@ Siedem etapów, każdy z kryterium ukończenia, które da się sprawdzić bez dy
 
 **Etap 6 – Tryb wyścigowy i wydanie (3 sesje)**
 
-- [ ] Reguły inżyniera: temperatura i zużycie opon, okno pit-stopu, flagi, przewaga/strata do rywali, uszkodzenia, deszcz. (teksty klipów gotowe: `engineer/phrases.py`, generowane razem z resztą)
+- [x] Reguły inżyniera: zużycie opon, okno pit-stopu, flagi, przewaga/strata do rywali, uszkodzenia, deszcz. (`engineer/rules.py`; temperatury opon: później)
 - [ ] Komendy głosowe: 5–8 pytań z lokalnym rozpoznawaniem mowy.
 - [ ] Okno aplikacji z wyborem trybu, instrukcją włączenia telemetrii w grze i sprawdzeniem połączenia.
 - [ ] `PyInstaller` → jeden `.exe`, test na czystym Windowsie.
@@ -186,9 +186,9 @@ początkującego krok po kroku (asysty, start, opony, bateria), a postęp jest w
 **Etap 9 – Opony, start i walka na torze (3 sesje)**
 
 - [ ] Opony: temperatury i zużycie per okrążenie, okno temperatur, uwagi „przegrzewasz tył na wyjściach”, „ziarnienie”, prognoza żywotności zestawu na dystans wyścigu; lekcja oszczędzania opon.
-- [ ] Start: czas reakcji od zgaszenia świateł (zdarzenie LGOT), uślizg kół, pozycje zyskane/stracone do T1; lekcja startu: sprzęgło/gaz, trzymanie linii, zostawianie miejsca, pierwsze okrążenie bez kontaktu.
+- [x] Start: czas reakcji od zgaszenia świateł (LGOT), uślizg kół, pozycje po 1. okrążeniu, raport tekstowy po pierwszym okrążeniu (`engineer/start.py`). Lekcja startu: później.
 - [ ] Walka: kolizje z pakietu Event (kto, gdzie, siła), ocena bezpieczeństwa jazdy (safety rating), zasady obrony i ataku tłumaczone przez trenera po sytuacji, nie w jej trakcie.
-- [ ] Inżynier na radiu (tryb wyścigowy, teksty klipów gotowe): opony, okno pit-stopu, flagi, SC/VSC, odstępy, uszkodzenia, deszcz, paliwo.
+- [x] Inżynier na radiu (tryb wyścigowy): opony, okno pit-stopu, flagi, SC/VSC, DRS, odstępy, uszkodzenia, deszcz, paliwo, kary, kolizje, ostatnie okrążenia (`engineer/rules.py`, `--mode race`; klipy `eng_*` gotowe).
 - [ ] Kryterium: pełny wyścig z AI bez awarii, po wyścigu raport ze startu, kontaktów i zarządzania oponami.
 
 **Etap 10 – Postęp i motywacja (2 sesje)**

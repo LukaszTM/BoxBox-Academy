@@ -171,6 +171,19 @@ polsku). `coach/delta.py`: delta czasu do referencji co 10 m, odcinki największ
 `games/`: adapter gry (F1 25) z nazwami asyst i formatami; baza i pliki torów mają pole gry, żeby
 kolejne gry nie zmieniały okna. `tools/bugreport.py`: raport błędu ZIP.
 
+## 8b. Inżynier na radiu (tryb wyścigowy)
+
+`engineer/rules.py`: klasa `Engineer` dostaje kolejne stany telemetrii i mówi tylko o zmianach, z
+czasami wyciszenia per komunikat. Reaguje na: światła startowe i zgaszenie, flagi FIA (żółta, niebieska,
+czerwona, koniec żółtej), safety car i VSC (ze zdarzeń i ze stanu sesji), DRS włączony/wyłączony,
+okno pit-stopu (idealne i ostatnie okrążenie), ostatnie 3 okrążenia i ostatnie okrążenie, zmiany
+pozycji, odstęp do auta z przodu i z tyłu (w zasięgu DRS / bezpieczny / w sekundach), ostrzeżenia
+i kary czasowe, zużycie opon (przód/tył 60 %, krytyczne 85 %, reset po pit-stopie), uszkodzenia
+skrzydeł, podłogi, silnika, przebicie, paliwo (oszczędzaj / możesz cisnąć), deszcz i schnięcie toru,
+kolizje z udziałem gracza, meta. `engineer/start.py`: po zgaszeniu świateł zbiera 5 s gazu,
+prędkości i obrotów; po pierwszym okrążeniu raport: czas reakcji, uślizg, pozycje. Uruchomienie:
+`python -m boxbox.app --mode race` (okno: po makiecie v2).
+
 ## 9. Postęp i ERS
 
 Kroki: 1 automat/TC pełna/ABS, 2 TC średnia, 3 TC wyłączona, 4 ABS wyłączony. Okrążenie czyste:

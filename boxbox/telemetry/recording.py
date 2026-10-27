@@ -21,8 +21,11 @@ SKIPPED_PACKET_IDS = frozenset({0, 5, 11, 12, 13, 15})
 PACKET_ID_OFFSET = 6  # bajt id pakietu w nagłówku
 
 
-def is_needed(data: bytes) -> bool:
-    return len(data) <= PACKET_ID_OFFSET or data[PACKET_ID_OFFSET] not in SKIPPED_PACKET_IDS
+def is_needed(data: bytes, skipped: frozenset[int] = SKIPPED_PACKET_IDS) -> bool:
+    return len(data) <= PACKET_ID_OFFSET or data[PACKET_ID_OFFSET] not in skipped
+
+
+SKIPPED_FOR_SHAPE = SKIPPED_PACKET_IDS - {0}  # reporter kształtu toru zachowuje pakiet Motion (pozycja auta)
 
 
 @dataclass(frozen=True)

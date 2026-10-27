@@ -161,3 +161,11 @@ def session_packet(fmt: int = 2025) -> bytes:
 def event_packet(code: str, details: bytes = b"", fmt: int = 2025) -> bytes:
     body = code.encode("ascii") + details
     return header_bytes(PacketId.EVENT, fmt) + body.ljust(ev.PACKET_SIZE[fmt] - 29, b"\x00")
+
+
+def motion_packet(fmt: int = 2025, x: float = 0.0, z: float = 0.0, yaw: float = 0.0, y: float = 1.0) -> bytes:
+    if fmt == 2025:
+        player = struct.pack("<6f6h6f", x, y, z, 0.0, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0.1, 0.2, 0.3, yaw, 0.0, 0.0)
+    else:
+        player = struct.pack("<6f9h3f", x, y, z, 0.0, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 1, 2, 3, yaw, 0.0, 0.0)
+    return _cars_packet(PacketId.MOTION, fmt, len(player), player)

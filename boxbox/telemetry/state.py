@@ -11,11 +11,13 @@ from boxbox.telemetry.car_telemetry2 import CarTelemetry2Packet, parse_car_telem
 from boxbox.telemetry.event import EventPacket, parse_event
 from boxbox.telemetry.header import SUPPORTED_FORMATS, PacketId, parse_header
 from boxbox.telemetry.lap_data import LapDataPacket, parse_lap_data
+from boxbox.telemetry.motion import MotionPacket, parse_motion
 from boxbox.telemetry.participants import ParticipantsPacket, parse_participants
 from boxbox.telemetry.session import SessionPacket, parse_session
 
 # id pakietu -> (nazwa pola w TelemetryState, parser)
 _PARSERS: dict[PacketId, tuple[str, Callable[[bytes], Any]]] = {
+    PacketId.MOTION: ("motion", parse_motion),  # tylko pozycja gracza; w nagraniach trenera tego pakietu nie ma
     PacketId.SESSION: ("session", parse_session),
     PacketId.LAP_DATA: ("lap", parse_lap_data),
     PacketId.CAR_TELEMETRY: ("telemetry", parse_car_telemetry),
@@ -28,6 +30,7 @@ _PARSERS: dict[PacketId, tuple[str, Callable[[bytes], Any]]] = {
 
 @dataclass
 class TelemetryState:
+    motion: MotionPacket | None = None
     session: SessionPacket | None = None
     lap: LapDataPacket | None = None
     telemetry: CarTelemetryPacket | None = None

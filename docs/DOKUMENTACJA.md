@@ -40,6 +40,8 @@ Skrypty `.bat` w `tools\package\` (działają z klonu i z paczki ZIP):
 | `spakuj.bat <plik lub folder>` | xz i podział na części po 20 MB (limit GitHuba 25 MB); folder → tar.xz |
 | `wygeneruj_glos.bat` | Generowanie brakujących klipów przez ElevenLabs (klucz wpisywany bez echa) i efekt radia |
 | `popraw_glos.bat` | Ponowne wygenerowanie 8 zdań, które zmieniły brzmienie |
+| `raportuj.bat [nazwa]` | Reporter kształtu toru: nagrywa sesję z pakietem Motion, liczy realny kształt toru i pakuje raport do `raporty\*.zip` |
+| `zbuduj_reporter.bat` | Buduje `dist\BoxBoxReporter.exe` (PyInstaller, jeden plik, bez Pythona u odbiorcy) |
 
 Linia poleceń (`py -3 -m boxbox.app ...`):
 
@@ -103,6 +105,17 @@ prędkości potwierdzonych hamowaniem, łączy zakręty bez pełnego gazu międz
 
 Przewodnik `guide\<id>.json` to lżejsza lista „nazwa + apeks + notatka” dla nakładki; po pierwszym
 pełnym okrążeniu nakładka kalibruje go do stref hamowania gracza.
+
+### Realny kształt toru (reporter)
+
+`python -m boxbox.reporter` (albo `BoxBoxReporter.exe`) nagrywa sesję razem z pakietem Motion
+(pozycja auta w świecie gry, pomijanym w zwykłych nagraniach), łączy pozycję z dystansem okrążenia
+i z najlepszego pełnego okrążenia zapisuje `boxbox\tracks\shape\<id>.json`: punkt co 10 m plus
+pozycje apeksów z pliku toru, oraz SVG z obrysem, metą i numerami zakrętów. Na koniec pakuje do
+`raporty\raport-<tor>-<data>.zip` wszystko, co potrzebne do pracy nad torem: nagranie `.bin.xz`,
+kształt, plik toru i przewodnik, bazę i dziennik z `data\`, podsumowanie z liczbami pakietów.
+ZIP ponad 24 MB jest dzielony na części. Kształt posłuży do mapy toru na nakładce i do
+sprawdzania, czy zakręty z pliku toru leżą tam, gdzie w grze.
 
 ## 6. Okrążenia, metryki i referencja
 

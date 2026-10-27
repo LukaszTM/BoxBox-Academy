@@ -19,6 +19,7 @@ from boxbox.coach.live import LiveCoach
 from boxbox.coach.progress import CLEAN_LAPS_TO_ADVANCE, STEPS
 from boxbox.coach.rules import Message
 from boxbox.coach.summary import SessionSummary, summarize
+from boxbox.engineer.rules import Engineer
 from boxbox.storage.db import Database
 from boxbox.telemetry.record import recording_path
 from boxbox.telemetry.recording import RecordingWriter, is_needed
@@ -125,6 +126,7 @@ class CoachSession:
         self.player: VoicePlayer | None = None
         self.coach: LiveCoach | None = None
         self.coach_failed = False
+        self.engineer: Engineer | None = Engineer() if cfg.mode == "race" else None
         self.writer: RecordingWriter | None = None
         self.recording: Path | None = None
         self._rec_start = time.monotonic()
@@ -136,14 +138,15 @@ class CoachSession:
     # --- przygotowanie -------------------------------------------------
     def make_player(self) -> VoicePlayer | None:
         cfg = self.cfg
-        if cfg.mode != "coach" or cfg.no_voice or (cfg.replay and cfg.speed <= 0):
+        if cfg.mode not in ("coach", "race") or cfg.no_voice or (cfg.replay and cfg.speed <= 0):
             return None
         library = ClipLibrary(cfg.voice)
         if len(library) == 0:
             self.on_note(f"Brak klipów głosu w {cfg.voice}; komunikaty tylko w konsoli.")
             return None
         player = VoicePlayer(library, volume=max(0.1, cfg.volume)).start()
-        player.say(["misc_hello"], "test dźwięku")  # od razu po starcie: słychać, zanim wyjedziesz na tor
+        if cfg.mode == "coach":
+            player.say(["misc_hello"], "test dźwięku")  # od razu po starcie: słychać, zanim wyjedziesz na tor
         self.on_note(f"Głos: {len(library)} klipów, backend {player.backend.name}. Powinieneś teraz słyszeć powitanie.")
         log.info("głos: %d klipów, backend %s, głośność %.1f", len(library), player.backend.name, cfg.volume)
         return player
@@ -202,6 +205,9 @@ class CoachSession:
         with self.shared.lock:
             finished = self.recorder.feed(data)
             self.shared.packets += 1
+            if self.engineer is not None:
+                for radio in self.engineer.update(self.state, time.monotonic() - self._t0):
+                    self.speak(list(radio.ids), radio.text)
             if self.cfg.mode == "coach":
                 self.ensure_coach()
                 if self.coach is not None:

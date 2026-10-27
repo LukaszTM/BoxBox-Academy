@@ -152,6 +152,42 @@ def mockup(out: Path) -> None:
     im.save(out)
 
 
+def badge(out: Path, nick: str = "KIEROWCA", player_id: str = "7AC6-22FF-8242", level: int = 2, tracks: int = 3, laps: int = 148) -> None:
+    """Plakietka kierowcy jak prawo jazdy: na ekranie Start z boku, w karcie kierowcy w powiększeniu."""
+    W, H = 640, 400
+    C = {k: hex_rgb(v) for k, v, _ in PALETTE}
+    im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.rounded_rectangle((0, 0, W - 1, H - 1), 28, fill=C["Graphite"], outline=C["Line"], width=2)
+    d.rounded_rectangle((0, 0, W - 1, 70), 28, fill=C["Steel"])
+    d.rectangle((0, 40, W - 1, 70), fill=C["Steel"])
+    d.rectangle((0, 70, W - 1, 74), fill=C["Signal Red"])
+    mark = Image.open(ROOT / "assets" / "mark.png").convert("RGBA")
+    mark = mark.resize((78, int(78 * mark.size[1] / mark.size[0])), Image.LANCZOS)
+    im.alpha_composite(mark, (24, 10))
+    d.text((112, 18), "BOXBOX ACADEMY", font=font(20, True), fill=C["Chalk"])
+    d.text((112, 44), "LICENCJA KIEROWCY", font=font(13), fill=C["Ash"])
+    d.text((W - 150, 24), f"L{level}", font=font(34, True), fill=C["Telemetry Cyan"])
+    # zdjęcie (koło)
+    cx, cy, r = 110, 215, 80
+    d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=C["Steel"], outline=C["Line"], width=2)
+    d.ellipse((cx - 28, cy - 44, cx + 28, cy + 8), fill=C["Line"])
+    d.pieslice((cx - 56, cy + 4, cx + 56, cy + 108), 180, 360, fill=C["Line"])
+    d.text((220, 108), nick, font=font(36, True), fill=C["Chalk"])
+    d.text((220, 156), "ID " + player_id, font=font(16), fill=C["Telemetry Cyan"])
+    rows = [("Krok asyst", f"{level} · TC średnia"), ("Tory", f"{tracks} · 1 opanowany"), ("Okrążenia", str(laps)), ("Seria", "2 / 3 czystych")]
+    y = 196
+    for k, v in rows:
+        d.text((220, y), k, font=font(14), fill=C["Ash"])
+        d.text((400, y), v, font=font(16, True), fill=C["Chalk"])
+        y += 34
+    d.rounded_rectangle((24, 340, W - 24, 362), 11, fill=C["Line"])
+    d.rounded_rectangle((24, 340, 24 + int((W - 48) * 0.66), 362), 11, fill=C["Track Green"])
+    d.text((24, 368), "do następnego kroku: 1 czyste okrążenie", font=font(13), fill=C["Ash"])
+    d.text((W - 150, 368), "od 10.2026", font=font(13), fill=C["Ash"])
+    im.save(out)
+
+
 def main(argv: list[str]) -> int:
     BRAND.mkdir(parents=True, exist_ok=True)
     if argv and argv[0] == "stempluj":
@@ -164,6 +200,7 @@ def main(argv: list[str]) -> int:
     watermark(ROOT / "assets" / "logo.png", BRAND / "znak-wodny.png")
     watermark(ROOT / "assets" / "mark.png", BRAND / "znak-wodny-znak.png", opacity=0.25, width=900)
     mockup(BRAND / "makieta-start.png")
+    badge(BRAND / "plakietka-kierowcy.png")
     stamp(BRAND / "makieta-start.png", BRAND / "przyklad-stempla.png")
     print(f"Gotowe: {BRAND}")
     return 0

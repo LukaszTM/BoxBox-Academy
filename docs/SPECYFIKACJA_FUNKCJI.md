@@ -133,6 +133,8 @@ Nakładka (osobne okno nad grą, bez przycisków)
 
 ## 9. Rozpiska elementów każdego ekranu (do makiety)
 
+![Wzór ekranu Start (szkło, głębia, poświaty), plakietka kierowcy po prawej](assets/brand/makieta-start-nowoczesna.png)
+
 Układ wspólny: lewa nawigacja 240 px (logo, pozycje: Start, Analiza, Postęp, Lekcje, Karta kierowcy,
 Ustawienia; na dole Pomoc i wersja), nagłówek strony (tytuł, jedno zdanie, po prawej pastylka stanu
 gry), treść w kartach. Wszystkie teksty poniżej są docelowymi tekstami w programie.
@@ -234,7 +236,12 @@ widoczne linie toru. Panele ze szkła (półprzezroczyste, rozmyte tło, cienka 
 cień), zaokrąglone 24 px. Poświaty neonowe na danych na żywo (cyjan #19E6E6), na przycisku JEDŹ
 (gradient czerwieni #FF3C42 → #E1232A z łuną) i na pasku postępu (zieleń #35D07F). Tekst #F4F5F7,
 podpisy #9BA3AD, cel i ostrzeżenie #FFC43D. Czcionka Segoe UI, duże pogrubione liczby, Consolas w
-tabelach. Siatka 8 px, dużo powietrza, przełączniki zamiast pól wyboru, ikony liniowe. Lewa nawigacja 240 px z logo i pozycjami: Start, Analiza, Postęp, Lekcje,
+tabelach. Siatka 8 px, dużo powietrza, przełączniki zamiast pól wyboru, ikony liniowe.
+Animacje: przejścia 200 ms, karty pojawiają się z lekkim przesunięciem, liczby zmieniają się
+płynnie, nic nie miga. Żadnych okien dialogowych: błędy jako pasek w stronie, samouczek jako
+dymki w oknie. Układ: lewa nawigacja ze szkła 240 px (logo z poświatą; Start, Analiza, Postęp,
+Lekcje, Karta kierowcy, Ustawienia; na dole Pomoc), nagłówek z tytułem i pastylką stanu gry,
+treść w panelach. Plakietka kierowcy jak prawo jazdy w prawej kolumnie ekranu Start. Lewa nawigacja 240 px z logo i pozycjami: Start, Analiza, Postęp, Lekcje,
 Karta kierowcy, Ustawienia; na dole Pomoc. Nagłówek każdej strony: tytuł, jedno zdanie, po prawej
 pastylka „Gra połączona · Monza · 60 pakietów/s” z zieloną kropką. Żadnych okien dialogowych:
 błędy jako pasek w stronie. Ekrany: [wklej rozdziały 9.1–9.11].

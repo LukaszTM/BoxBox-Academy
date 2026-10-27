@@ -7,7 +7,7 @@ KROK 0 - GLOS (raz, ElevenLabs Creator):
   wygeneruj_glos.bat   -> pyta o klucz API i ID glosu, pokazuje liczbe znakow (ok. 40 tys.),
                           generuje tylko brakujace klipy, potem sam naklada efekt radia.
   Klucza API nie wpisuj do zadnego pliku i nie wklejaj na czacie.
-  Potem spakuj assets\voice\raw do ZIP i przeslij (klipy trafia do repozytorium).
+  Potem: spakuj.bat assets\voice\raw -> raw.tar.xz podzielone na czesci po 20 MB; wyslij wszystkie czesci.
   popraw_glos.bat -> jesli klipy masz juz z poprzedniej paczki: kasuje 8 zdan z koncowka "-uj"
                      (czytana jako "-uc") i generuje je w nowym brzmieniu (ok. 500 znakow).
 

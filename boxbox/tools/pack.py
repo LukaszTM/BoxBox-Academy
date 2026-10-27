@@ -2,16 +2,28 @@
 
 Użycie:
   python -m boxbox.tools.pack spakuj recordings/plik.bin        -> plik.bin.xz (+ .part001... gdy > 24 MB)
+  python -m boxbox.tools.pack spakuj assets/voice/raw           -> folder: raw.tar.xz (+ części)
   python -m boxbox.tools.pack sklej recordings/plik.bin.xz.part001  -> plik.bin.xz
 """
 import argparse
 import lzma
 import shutil
+import tarfile
 from collections.abc import Sequence
 from pathlib import Path
 
 PART_MB = 20
 LIMIT_MB = 24  # limit przeglądarki GitHub to 25 MB na plik
+
+
+def pack_dir(src: Path) -> Path:
+    """Folder -> jeden plik .tar obok niego (bez kompresji; tę robi compress)."""
+    dst = src.with_name(src.name + ".tar")
+    with tarfile.open(dst, "w") as tar:
+        for path in sorted(src.rglob("*")):
+            if path.is_file():
+                tar.add(path, arcname=path.relative_to(src.parent).as_posix())
+    return dst
 
 
 def compress(src: Path) -> Path:
@@ -58,8 +70,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         if not src.exists():
             print(f"Nie ma pliku {src}")
             return 1
+        if src.is_dir():
+            src = pack_dir(src)
+            print(f"Folder spakowany do {src.name}")
         print(f"Kompresuję {src.name} ({src.stat().st_size >> 20} MB)...")
         xz = compress(src)
+        if src.suffix == ".tar":
+            src.unlink()
         size_mb = xz.stat().st_size / (1 << 20)
         print(f"Gotowe: {xz.name} ({size_mb:.1f} MB)")
         if size_mb > args.limit_mb:

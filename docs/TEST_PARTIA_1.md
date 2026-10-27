@@ -12,7 +12,7 @@ zapisz w `recordings\<plik>.txt` albo w tej liście (skopiuj do notatek i odhacz
    Wpisz `t`. Trwa ok. 10–15 minut. Na końcu sam nakłada efekt radia.
 4. `glos-test.bat`: słychać powitanie i przykładowy komunikat? Głośność w porządku na tle gry?
    Jeśli za cicho, w `trener.bat` zmień `VOLUME=1.5` na `2.0`.
-5. Spakuj `assets\voice\raw` do ZIP i prześlij na GitHub (folder `recordings`), żeby klipy trafiły do repozytorium.
+5. `spakuj.bat assets\voice\raw` → `raw.tar.xz.part001`, `part002`… (po 20 MB). Prześlij wszystkie części na GitHub (folder `recordings`).
 
 ## Sesja 1: Monza, trening, TC średnia, ABS wł. (5–6 okrążeń)
 
@@ -56,5 +56,5 @@ Sprawdź i zapisz:
 
 - `recordings\*.bin.xz` (po `spakuj.bat`) + `.txt` z notatkami,
 - `data\boxbox.sqlite`,
-- ZIP z `assets\voice\raw`,
+- części `raw.tar.xz.part…` z `spakuj.bat assets\voice\raw`,
 - ten plik z odhaczonymi punktami albo zdjęcie/zrzut nakładki, jeśli coś było nieczytelne.

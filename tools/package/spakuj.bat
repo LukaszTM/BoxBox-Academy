@@ -1,8 +1,9 @@
 @echo off
-rem Kompresja nagrania do wysylki (xz); jesli > 24 MB, dzieli na czesci po 20 MB.
-rem Uzycie: spakuj.bat recordings\plik.bin
+rem Kompresja do wysylki (xz); jesli > 24 MB, dzieli na czesci po 20 MB.
+rem Uzycie: spakuj.bat recordings\plik.bin        (nagranie)
+rem         spakuj.bat assets\voice\raw          (caly folder klipow -> raw.tar.xz + czesci)
 if "%~1"=="" (
-  echo Uzycie: spakuj.bat recordings\plik.bin
+  echo Uzycie: spakuj.bat recordings\plik.bin  albo  spakuj.bat assets\voice\raw
   exit /b 1
 )
 cd /d "%~dp0"

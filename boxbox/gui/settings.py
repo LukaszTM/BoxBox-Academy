@@ -25,6 +25,13 @@ class Settings:
     auto_stop_s: int = 20  # sesja kończy się sama po tylu sekundach bez pakietów (menu, wyjście z gry)
     wizard_done: bool = False
     tutorial_done: bool = False
+    quiet: bool = False  # tryb cicho domyślnie (uwagi tylko po okrążeniu)
+    explain: bool = False  # tryb „wytłumacz mi”
+    consent: bool = False  # anonimowe statystyki do przyszłego rankingu (nic nie jest wysyłane w becie)
+    overlay_opacity: int = 86  # krycie nakładki w %
+    since: str = field(default_factory=lambda: __import__("datetime").date.today().strftime("%m.%Y"))
+    last_session: dict = field(default_factory=dict)  # podsumowanie ostatniej sesji do ekranu Start
+    lesson_state: dict = field(default_factory=dict)  # id lekcji -> {"best": n, "passed": bool}
 
     @classmethod
     def load(cls, path: Path = DEFAULT_PATH) -> "Settings":

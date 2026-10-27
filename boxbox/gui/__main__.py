@@ -8,7 +8,7 @@ if getattr(sys, "frozen", False):  # .exe: dane obok programu (data/, recordings
     os.chdir(Path(sys.executable).resolve().parent)
 
 from boxbox.app import setup_log  # noqa: E402
-from boxbox.gui.main import run  # noqa: E402
+from boxbox.gui.webapp import run  # noqa: E402
 
 setup_log(Path("data") / "boxbox.log")
 raise SystemExit(run())

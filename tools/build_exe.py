@@ -30,8 +30,10 @@ def main(target: str = "recorder") -> int:
         "--specpath", str(ROOT / "build"),
     ]
     if target == "gui":
-        # klipy głosu i logo obok .exe (nie w środku): użytkownik może je podmienić, a .exe zostaje mniejszy
-        cmd += ["--add-data", f"{ROOT / 'assets' / 'logo.png'}{sep}assets"]
+        # interfejs (index.html, app.js, style.css) w środku; klipy głosu obok .exe (do podmiany)
+        cmd += ["--add-data", f"{ROOT / 'boxbox' / 'gui' / 'web'}{sep}boxbox/gui/web"]
+        cmd += ["--add-data", f"{ROOT / 'assets' / 'logo.png'}{sep}assets", "--add-data", f"{ROOT / 'assets' / 'icon.png'}{sep}assets"]
+        cmd += ["--collect-all", "PySide6"]  # WebEngine: proces renderujący, zasoby, tłumaczenia
         if (ROOT / "assets" / "logo.ico").exists():
             cmd += ["--icon", str(ROOT / "assets" / "logo.ico")]
     cmd.append(str(entry))

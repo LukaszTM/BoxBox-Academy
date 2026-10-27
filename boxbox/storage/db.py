@@ -341,6 +341,29 @@ class Database:
         ).fetchall()
         return [dict(r) for r in rows]
 
+    def session_list(self, limit: int = 60) -> list[dict]:
+        """Sesje z pełnymi okrążeniami, od najnowszej: id, data, tor, liczba okrążeń, najlepszy czas."""
+        rows = self.conn.execute(
+            "SELECT s.id, s.created_at, s.track_id, s.track_name, COUNT(l.id) AS laps,"
+            " MIN(CASE WHEN l.valid = 1 AND l.pitted = 0 THEN l.lap_time_ms END) AS best"
+            " FROM sessions s JOIN laps l ON l.session_id = s.id AND l.complete = 1"
+            " GROUP BY s.id ORDER BY s.id DESC LIMIT ?", (limit,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def laps_for_session(self, session_id: int) -> list[StoredLap]:
+        rows = self.conn.execute(
+            "SELECT * FROM laps WHERE session_id = ? AND complete = 1 ORDER BY number", (session_id,)
+        ).fetchall()
+        return [self._stored(r) for r in rows]
+
+    def track_hours(self) -> float:
+        row = self.conn.execute("SELECT COALESCE(SUM(lap_time_ms), 0) AS ms FROM laps WHERE complete = 1").fetchone()
+        return row["ms"] / 3_600_000
+
+    def session_dates(self) -> list[str]:
+        return [r["d"] for r in self.conn.execute("SELECT DISTINCT substr(created_at, 1, 10) AS d FROM sessions ORDER BY d").fetchall()]
+
     def reference(self, track_id: int, allow_invalid: bool = True) -> ReferenceLap | None:
         best = self.best_lap(track_id, allow_invalid)
         if best is None:

@@ -31,30 +31,47 @@ Każdy ma tekst, opcjonalny przycisk akcji po prawej (*Sprawdź telemetrię*, *O
 10. **Mapa toru w Analizie** z prawdziwego kształtu: obrys toru, linia mety, numery zakrętów, czerwone punkty hamowania gracza, szare referencji, podświetlenie wybranego zakrętu, mały wskaźnik DRS na prostych. Jako wzorzec kształtu: zdjęcia torów od Ciebie (Bahrajn, Monza, Suzuka). Stan bez kształtu: *„Nagraj jedno okrążenie recorderem, a mapa pojawi się tutaj”*.
 11. **Tabela przejazdów:** nazwy reguł po polsku w kolumnie Uwagi po najechaniu (tooltip w stronie), sortowanie po nagłówku, wiersz najlepszego okrążenia wyróżniony.
 
-## D. Nowa nakładka na grę (osobne okno nad grą)
+## D. Nowa nakładka na grę: HUD w stylu F1, nie okno
 
-Wymagania:
+Zasada: nakładka nie ma tła ani ramki. To zestaw elementów graficznych w stylu grafik telewizyjnych
+F1 (timing tower, pasek nazwiska, wstęgi z ukośnie ściętymi rogami), rozmieszczonych przy krawędziach
+ekranu, tak żeby nie zasłaniać toru, lusterek ani HUD-u gry. Cała reszta ekranu jest przezroczysta
+i klikalna dla gry.
 
-- Okno 600 × ok. 420 px (skala 65–160 %), bez ramki systemowej, przeciągane, krycie 40–100 %, zawsze na wierzchu. Tło ciemne jak panel ze szkła, ale bez rozmycia (nad grą rozmycie nie działa); ramka 2 px Signal Red.
-- Musi być czytelne z fotela przy skali 100 %: zakręt 40 px, metry 20 px, komunikat 16–18 px.
-- Bez przycisków i pól; zamyka się z okna programu albo Esc.
-- Narysować trzy stany: **czekam na telemetrię**, **jazda** (pełna treść), **po okrążeniu** (przez 6 s większe „Dobrze / Do pracy” zamiast listy komunikatów).
+Styl:
 
-Treść stanu „jazda”, od góry:
+- Wstęgi z ukośnym ścięciem jednego rogu (jak paski F1 TV), cienka linia akcentu Signal Red lub
+  Telemetry Cyan na krawędzi, bez zaokrągleń typu „karta”.
+- Tło każdej wstęgi półprzezroczyste ciemne z suwakiem krycia 0–100 % (0 = sam tekst). Tekst ma
+  cienki ciemny obrys lub poświatę, żeby był czytelny nawet przy kryciu 0 na jasnym niebie.
+- Czcionka wąska, wyścigowa, kapitaliki w etykietach (np. Titillium Web / Exo 2 / Rajdhani); liczby w
+  kroju tabelarycznym, żeby nie skakały.
+- Kolory z palety programu; nic nie miga; zmiany przez krótkie przejścia (wjazd wstęgi 200 ms).
+- Wszystko skalowalne 65–160 %, każdy blok z osobna można przesunąć myszą (pozycje zapamiętane),
+  każdy blok można wyłączyć w ustawieniach.
 
-1. Pasek: *BOXBOX ACADEMY* po lewej, *OKRĄŻENIE 4* na środku, po prawej *● NAGRYWAM* (zielone) lub *● TRENER* i czas sesji.
-2. Zakręt: *T8–T10* w cyjanie, obok *za 120 m*; gdy do apeksu mniej niż 15 m: *TERAZ*. Pod spodem cienki pasek odległości (maleje do zera).
-3. Żółta linia celu na okrążenie: *Popraw: T1–T2, hamuj 20 m wcześniej*.
-4. Trzy ostatnie komunikaty mechanika z czasem, najnowszy większy i jaśniejszy.
-5. Cel kroku z paskiem: *3 czyste okrążenia z rzędu · 2/3*.
-6. Dolny pasek w monospace: *245 km/h · bieg 6 · 3 481 m* po lewej, delta do referencji po prawej (*−0,41 s* na zielono, *+0,12 s* na bursztynowo).
-7. Mała mapa toru w prawym górnym rogu (kształt z recordera, punkt auta, znacznik następnego punktu hamowania), 120 × 80 px, do wyłączenia w ustawieniach.
+Bloki (narysować każdy osobno i jedną kompozycję na zrzucie z gry 1920×1080):
 
-Stan „po okrążeniu”: duży czas okrążenia z deltą, pod nim *Dobrze: …* (zielone) i *Do pracy: …* (bursztynowe), po 6 s powrót do stanu „jazda”.
+1. **Zakręt** (góra, środek, pod HUD-em gry): wstęga z *T8–T10* w cyjanie 40 px i *za 120 m* 20 px;
+   pod nią cienki pasek odległości malejący do zera; przy < 15 m napis *TERAZ*. To jedyny duży element.
+2. **Cel na okrążenie** (pod blokiem zakrętu, mniejszy): żółta wstęga *POPRAW · T1–T2 · hamuj 20 m
+   wcześniej*. Znika po przejechaniu tego zakrętu, wraca na kolejnym okrążeniu.
+3. **Radio mechanika** (dół, lewo, nad lusterkiem/nad HUD-em): ostatni komunikat 16–18 px z ikoną
+   radia i czasem; pojawia się na 8 s i zjeżdża; poprzednie dwa jako mniejsze linie nad nim (do
+   wyłączenia).
+4. **Delta i okrążenie** (góra, prawo, jak wieża czasów): *OKRĄŻENIE 4* i delta do referencji
+   *−0,41 s* (zielona) / *+0,12 s* (bursztynowa), pod spodem mały pasek celu kroku *2/3 czystych*.
+5. **Po okrążeniu** (na 6 s, środek dolnej części): wstęga z czasem okrążenia i deltą, pod nią
+   *DOBRZE · …* (zielone) i *DO PRACY · …* (bursztynowe). Potem znika.
+6. **Mini-mapa** (prawy dolny róg, 140×90 px, opcjonalna): obrys toru z recordera, punkt auta,
+   znacznik następnego punktu hamowania, bez tła.
+7. **Stan** (lewy górny róg, bardzo mały): *● TRENER · NAGRYWAM · 00:14:32*; w stanie „czekam na
+   telemetrię” tylko ten blok z napisem *Czekam na grę · port 20777*.
 
-Stan „czekam”: logo, *Czekam na telemetrię z gry*, port.
+Narysować: kompozycję na zrzucie z F1 25 (kokpit, trening), wersję z kryciem 0 % i 70 %, stan
+„po okrążeniu”, stan „czekam”. Wysokość wszystkich bloków razem nie większa niż 25 % ekranu.
 
 ## E. Co dostarczyć
 
-- Makieta v2 jako jeden plik HTML (jak v1) z ekranami A–C oraz osobnym widokiem nakładki w trzech stanach (D).
+- Makieta v2 jako jeden plik HTML (jak v1) z ekranami A–C oraz osobną stroną nakładki HUD (D) na zrzucie z gry; każdy blok nakładki jako osobny element HTML z przezroczystym tłem, bo zostanie użyty 1:1 w programie.
 - Zdjęcia kształtów torów: Bahrajn, Monza, Suzuka (zrzut mapy z gry lub z sieci), do odwzorowania obrysu i numeracji zakrętów.

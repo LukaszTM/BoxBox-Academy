@@ -312,6 +312,28 @@ class Database:
                     issues.setdefault(corner, []).append(rule)
         return issues
 
+    def overview(self) -> dict:
+        """Liczby do karty kierowcy: sesje, okrążenia, tory z najlepszym czasem."""
+        sessions = self.conn.execute("SELECT COUNT(*) AS n FROM sessions").fetchone()["n"]
+        laps = self.conn.execute("SELECT COUNT(*) AS n FROM laps WHERE complete = 1").fetchone()["n"]
+        rows = self.conn.execute(
+            "SELECT track_id, COUNT(*) AS laps, MIN(CASE WHEN valid = 1 AND pitted = 0 THEN lap_time_ms END) AS best,"
+            " COUNT(DISTINCT session_id) AS sessions FROM laps WHERE track_id IS NOT NULL AND complete = 1"
+            " GROUP BY track_id ORDER BY laps DESC"
+        ).fetchall()
+        tracks = [{"track_id": r["track_id"], "laps": r["laps"], "best_ms": r["best"], "sessions": r["sessions"]} for r in rows]
+        return {"sessions": sessions, "laps": laps, "tracks": tracks}
+
+    def lap_table(self, track_id: int, limit: int = 200) -> list[dict]:
+        """Przejazdy toru od najnowszych: do tabeli w oknie."""
+        rows = self.conn.execute(
+            "SELECT l.id, l.number, l.lap_time_ms, l.valid, l.pitted, l.traction_control, l.abs_on, l.gearbox,"
+            " l.created_at, s.source FROM laps l JOIN sessions s ON s.id = l.session_id"
+            " WHERE l.track_id = ? AND l.complete = 1 ORDER BY l.id DESC LIMIT ?",
+            (track_id, limit),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
     def reference(self, track_id: int, allow_invalid: bool = True) -> ReferenceLap | None:
         best = self.best_lap(track_id, allow_invalid)
         if best is None:

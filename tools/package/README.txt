@@ -11,6 +11,10 @@ KROK 0 - GLOS (raz, ElevenLabs Creator):
   popraw_glos.bat -> jesli klipy masz juz z poprzedniej paczki: kasuje 8 zdan z koncowka "-uj"
                      (czytana jako "-uc") i generuje je w nowym brzmieniu (ok. 500 znakow).
 
+OKNO APLIKACJI (nowe): akademia.bat  -> okno z przyciskiem JEDZ, kreatorem pierwszego uruchomienia,
+  karta kierowcy, postepem i ustawieniami (instaluje PySide6 przy pierwszym uruchomieniu).
+  Wersja .exe: zbuduj_akademia.bat -> dist\BoxBoxAcademy.exe (obok skopiuj folder assets\voice).
+
 TEST GLOSNIKOW: glos-test.bat (powitanie + przykladowy komunikat; bez gry)
 
 TRENER NA ZYWO Z GLOSEM I NAKLADKA:

@@ -1,0 +1,37 @@
+"""Ustawienia i profil gracza w data/settings.json (lokalnie, bez chmury)."""
+import json
+import uuid
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+
+from boxbox.telemetry.udp import DEFAULT_PORT
+
+DEFAULT_PATH = Path("data") / "settings.json"
+
+
+@dataclass
+class Settings:
+    player_id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
+    nick: str = ""
+    photo: str = ""  # ścieżka do skopiowanego zdjęcia w data/
+    volume: float = 1.5
+    overlay: bool = True
+    overlay_scale: float = 1.0
+    port: int = DEFAULT_PORT
+    voice_dir: str = "assets/voice"
+    record: bool = True
+    wizard_done: bool = False
+    tutorial_done: bool = False
+
+    @classmethod
+    def load(cls, path: Path = DEFAULT_PATH) -> "Settings":
+        try:
+            doc = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return cls()
+        known = {k: v for k, v in doc.items() if k in cls.__dataclass_fields__}
+        return cls(**known)
+
+    def save(self, path: Path = DEFAULT_PATH) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(asdict(self), ensure_ascii=False, indent=1), encoding="utf-8")

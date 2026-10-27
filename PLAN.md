@@ -152,17 +152,17 @@ początkującego krok po kroku (asysty, start, opony, bateria), a postęp jest w
 
 **Decyzje do podjęcia przed etapem 6**
 
-- [ ] GUI: propozycja `PySide6` (Qt): natywne okno, wykresy (QtCharts), eksport PDF z okna, dymki podpowiedzi, obraz w karcie kierowcy, działa w `.exe`; licencja LGPL dopuszcza użytek komercyjny. Alternatywa: interfejs w przeglądarce (HTML + wykresy JS) w oknie `pywebview`. Obie wymagają nowej zależności, więc wybór należy do właściciela projektu.
+- [x] GUI: `PySide6` (Qt), decyzja 27.10: rozmiar pliku bez znaczenia, zero wyskakujących okien, PDF przez okno drukowania Windows. Propozycja była: natywne okno, wykresy (QtCharts), eksport PDF z okna, dymki podpowiedzi, obraz w karcie kierowcy, działa w `.exe`; licencja LGPL dopuszcza użytek komercyjny. Alternatywa: interfejs w przeglądarce (HTML + wykresy JS) w oknie `pywebview`. Obie wymagają nowej zależności, więc wybór należy do właściciela projektu.
 - [ ] Język: polski na start, teksty w jednym pliku, żeby angielski dało się dodać bez zmian w kodzie.
 - [ ] Identyfikator gracza: lokalny UUID + nick w profilu; ranking (chmura) dopiero po becie, z wyraźną zgodą gracza.
 
 **Etap 6 – Aplikacja okienkowa i profil (3–4 sesje)**
 
-- [ ] Okno główne w stylu wyścigowym (ciemne, czerwony akcent jak logo): panel startowy z wyborem trybu, stanem połączenia z grą i jednym przyciskiem „Jedź”. Trener i nakładka startują z okna, bez terminala.
-- [ ] Kreator pierwszego uruchomienia: sprawdza ustawienia telemetrii w grze (nasłuch pakietów, port, format), podpowiada, co włączyć; test głośników; wybór asyst na start.
-- [ ] Karta kierowcy: nick, zdjęcie, ID gracza, ulubiony tor, liczba sesji i okrążeń, aktualny krok asyst na każdym torze, najlepsze czasy.
-- [ ] Samouczek: dymki z opisem każdego elementu okna przy pierwszym użyciu, do wyłączenia; teksty w jednym pliku, żeby później podłożyć lektora.
-- [ ] Jeden plik `.exe` przez PyInstaller (z klipami głosu i plikami torów), uruchomienie dwuklikiem, test na czystym Windowsie.
+- [x] Okno główne w stylu wyścigowym (ciemne, czerwony akcent jak logo): panel startowy z wyborem trybu, stanem połączenia z grą i jednym przyciskiem „Jedź”. Trener i nakładka startują z okna, bez terminala. (`boxbox/gui`, `akademia.bat`)
+- [x] Kreator pierwszego uruchomienia: sprawdza ustawienia telemetrii w grze (nasłuch pakietów, port, format), podpowiada, co włączyć; test głośników; wybór asyst na start.
+- [x] Karta kierowcy: nick, zdjęcie, ID gracza, liczba sesji i okrążeń, aktualny krok asyst na każdym torze, najlepsze czasy. (ulubiony tor: później)
+- [x] Samouczek: dymki z opisem każdego elementu okna przy pierwszym użyciu, do wyłączenia; teksty w jednym pliku (`gui/texts.py`), żeby później podłożyć lektora.
+- [ ] Jeden plik `.exe` przez PyInstaller (z klipami głosu i plikami torów), uruchomienie dwuklikiem, test na czystym Windowsie. (`zbuduj_akademia.bat` gotowy; klipy obok .exe; test na Windows do zrobienia)
 - [ ] Kryterium: osoba, która nigdy nie widziała projektu, uruchamia `.exe`, przechodzi kreator i jedzie sesję z trenerem bez pomocy.
 
 **Etap 7 – Analiza telemetrii i wykresy (3 sesje)**

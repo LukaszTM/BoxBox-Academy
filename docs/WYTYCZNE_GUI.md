@@ -33,13 +33,18 @@ Paleta pochodzi z logo (czerń, czerwień, cyjan, biel). Używamy dokładnie tyc
 | Track Green | #35D07F | postęp, zaliczone, poprawa czasu |
 | Pit Amber | #FFC43D | cel na okrążenie, ostrzeżenie, „popraw” |
 
-Zasady koloru:
+Zasady koloru i stylu („nowoczesny”, nie „płaski”):
 
-- Czerwony tylko w jednym miejscu na ekranie: przycisk akcji głównej. Gdy jest błąd, pasek błędu też jest czerwony, ale wtedy przycisk akcji jest wyłączony, więc dalej jest jedno czerwone miejsce.
-- Cyjan nigdy jako tło. Tylko tekst i linie danych.
+- Tło to gradient z głębią: granat #141A2E u góry przechodzi w grafit #0B0C0E u dołu, z dwiema miękkimi poświatami (czerwona w lewym górnym rogu, cyjanowa w prawym dolnym) i ledwo widocznymi liniami toru w tle. Nigdy jednolita czerń.
+- Panele są ze szkła: półprzezroczyste (biel 16–20% krycia) z rozmyciem tła pod spodem, cienką jasną krawędzią (1 px, biel 15%), połyskiem na górnej krawędzi i miękkim cieniem pod spodem. Głębia bierze się z warstw, nie z ramek.
+- Poświaty neonowe na tym, co ważne: zakręt i dane na żywo w cyjanie świecą, przycisk JEDŹ ma czerwoną łunę, pasek postępu i zielona delta świecą delikatnie. Jedna poświata na element, nigdy tekst zwykły.
+- Czerwony tylko w jednym miejscu na ekranie: przycisk akcji głównej (gradient #FF3C42 → #E1232A). Gdy jest błąd, pasek błędu też jest czerwony, ale wtedy przycisk akcji jest wyłączony.
+- Cyjan nigdy jako tło. Tylko tekst, linie danych i ich poświata.
 - Zielony i bursztynowy tylko dla znaczenia (lepiej/gorzej, cel), nigdy ozdobnie.
-- Żadnych gradientów, cieni, obramowań z kolorem, przezroczystych paneli. Głębię robi tylko różnica tła: Carbon → Graphite → Steel.
-- Tryb jasny nie istnieje. Gra jest ciemna, nakładka jest ciemna, okno jest ciemne.
+- Ruch: przejścia między stronami 200 ms, pojawianie się kart z lekkim przesunięciem, liczby na żywo zmieniają się płynnie, nic nie miga.
+- Tryb jasny nie istnieje.
+
+![Makieta ekranu Start: docelowy wygląd (szkło, głębia, poświaty)](assets/brand/makieta-start-nowoczesna.png)
 
 ## 3. Typografia
 
@@ -59,14 +64,12 @@ prawej i w kroju o stałej szerokości; nigdy WIELKIE LITERY w zdaniach, tylko w
 ## 4. Siatka, odstępy, kształty
 
 - Siatka 8 px: każdy odstęp to wielokrotność 8 (8, 16, 24, 32). Wewnątrz karty 24 px, między kartami 16 px, margines strony 32 px.
-- Zaokrąglenia: karty 16 px, pola i przyciski 10 px, pastylki stanu 22 px (pełne).
+- Zaokrąglenia: karty 24 px, pola i przyciski 14 px, pastylki stanu pełne.
 - Nawigacja po lewej 240 px, stała. Treść po prawej, maksymalnie 1160 px szerokości, dalej puste tło.
 - Minimalne okno 1180 × 760. Przy mniejszym pokazujemy pasek przewijania, nie ściskamy.
 - Elementy klikalne co najmniej 40 px wysokości. Gracz siedzi daleko od monitora albo używa pada.
 
 ## 5. Układ okna
-
-![Makieta ekranu Start: docelowy wygląd](assets/brand/makieta-start.png)
 
 Stałe elementy:
 
@@ -130,11 +133,11 @@ pasek stanu. Nic więcej. Żadnych przycisków na nakładce; zamyka się z okna 
 
 | Komponent | Wygląd | Zasada |
 | --- | --- | --- |
-| Przycisk główny | tło Signal Red, biały tekst 800, 56 px wysokości, 10 px zaokrąglenie | jeden na ekranie |
+| Przycisk główny | gradient czerwieni, czerwona łuna, biały tekst 800, 72 px wysokości, 18 px zaokrąglenie | jeden na ekranie |
 | Przycisk zwykły | tło Steel, tekst Chalk, bez obramowania; pod kursorem jaśniejsze tło, nie czerwona ramka | dowolna liczba, ale grupowane |
 | Przełącznik | pastylka 44 × 24, zielona gdy włączony | zamiast pól wyboru z ptaszkiem |
 | Pole tekstowe | tło Steel, 44 px, bez ramki, etykieta nad polem w Ash | podpowiedź w polu tylko, gdy etykieta nie wystarcza |
-| Karta | Graphite, 16 px zaokrąglenie, 24 px wnętrze, tytuł 18 px | bez ramki, bez cienia |
+| Karta | szkło: biel 18% z rozmyciem tła, krawędź biel 15% 1 px, cień miękki, 24 px zaokrąglenie, 24 px wnętrze | nigdy jednolite tło |
 | Kafelek liczbowy | liczba 24–28 px 700 nad podpisem 13 px Ash | kolor liczby tylko gdy ma znaczenie (zielony lepiej) |
 | Pastylka stanu | tło Steel, kropka koloru stanu, tekst 15 px | kolory: zielony/szary/czerwony |
 | Tabela | nagłówek Steel 600, wiersze 36 px, linie Line 1 px tylko poziome, liczby monospace do prawej | sortowanie po kliknięciu nagłówka, bez ramki zewnętrznej |
@@ -172,7 +175,7 @@ Ikona aplikacji: `assets/icon.ico` ze znaku (bolid i fala), bez tekstu.
 
 - `paleta.png`: paleta do wklejenia w Figmę lub do grafika.
 - `znak-wodny.png`: logo z kryciem 32% na przezroczystym tle, do nakładania na zrzuty i filmy; `znak-wodny-znak.png`: sam znak (bolid i fala) 25%, do tła miniatur.
-- `makieta-start.png`: docelowy wygląd ekranu Start, wzorzec dla kodu.
+- `makieta-start-nowoczesna.png`: docelowy wygląd ekranu Start (szkło, głębia, poświaty), wzorzec dla kodu; `makieta-start.png`: wcześniejsza wersja płaska, nieaktualna.
 - `email.html` i `email.txt`: szablon e-maila (ciemne tło, baner, jeden czerwony przycisk, stopka z oznaczeniem marki i zastrzeżeniem o EA/F1); pola `{{ }}` do podmiany; `przyklad-stempla.png`: jak wygląda ostemplowana grafika.
 - Stemplowanie grafik do publikacji: `python tools/brand_assets.py stempluj plik.png` wkleja logo w prawym dolnym rogu (18% szerokości, 85% krycia). Każdy zrzut, miniatura i film przed publikacją przechodzi przez stempel.
 - Baner `assets/banner.png` (1536 × 1024) do nagłówków kanału i Patreona; logo `assets/logo.png` tylko na ciemnym tle; minimalna szerokość logo 120 px; wokół logo pusta przestrzeń równa wysokości litery „B”.
@@ -199,7 +202,7 @@ robimy: nagrania sesji, raporty PDF, nowe tory. Patreon pobiera 8–12% plus op�
 
 Lista do wdrożenia w kodzie od razu, zanim powstanie Analiza:
 
-- usunąć wszystkie obramowania paneli i przycisków; głębia tylko tłem (Carbon/Graphite/Steel),
+- tło gradientowe z poświatami, panele ze szkła z cieniem, poświaty na danych na żywo i na JEDŹ,
 - etykiety bez własnego tła, podpisy w Ash 13 px, tytuł strony 28 px,
 - pola wyboru zamienić na przełączniki, pastylka stanu połączenia w nagłówku każdej strony,
 - JEDŹ jako jedyny czerwony element; przyciski zwykłe bez czerwonej ramki pod kursorem,

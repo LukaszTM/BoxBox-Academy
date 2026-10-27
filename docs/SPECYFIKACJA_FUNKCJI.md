@@ -228,10 +228,13 @@ Tekst do wklejenia do narzędzia generującego makiety (po polsku; jeśli narzę
 
 ```
 Aplikacja desktopowa Windows „BoxBox Academy”: trener jazdy do gier wyścigowych z telemetrią,
-dla początkujących. Styl: ciemny, płaski, bez gradientów i cieni; tło #0B0C0E, karty #15171B,
-pola #1F232A, tekst #F4F5F7, podpisy #9BA3AD, jedna czerwona akcja #E8232A, dane na żywo #19E6E6,
-postęp #35D07F, ostrzeżenie #FFC43D. Czcionka Segoe UI, liczby Consolas. Siatka 8 px, karty
-zaokrąglone 16 px. Lewa nawigacja 240 px z logo i pozycjami: Start, Analiza, Postęp, Lekcje,
+dla początkujących. Styl: nowoczesny dashboard wyścigowy. Tło: gradient granat #141A2E → grafit
+#0B0C0E z miękką czerwoną poświatą w lewym górnym rogu i cyjanową w prawym dolnym, w tle ledwo
+widoczne linie toru. Panele ze szkła (półprzezroczyste, rozmyte tło, cienka jasna krawędź, miękki
+cień), zaokrąglone 24 px. Poświaty neonowe na danych na żywo (cyjan #19E6E6), na przycisku JEDŹ
+(gradient czerwieni #FF3C42 → #E1232A z łuną) i na pasku postępu (zieleń #35D07F). Tekst #F4F5F7,
+podpisy #9BA3AD, cel i ostrzeżenie #FFC43D. Czcionka Segoe UI, duże pogrubione liczby, Consolas w
+tabelach. Siatka 8 px, dużo powietrza, przełączniki zamiast pól wyboru, ikony liniowe. Lewa nawigacja 240 px z logo i pozycjami: Start, Analiza, Postęp, Lekcje,
 Karta kierowcy, Ustawienia; na dole Pomoc. Nagłówek każdej strony: tytuł, jedno zdanie, po prawej
 pastylka „Gra połączona · Monza · 60 pakietów/s” z zieloną kropką. Żadnych okien dialogowych:
 błędy jako pasek w stronie. Ekrany: [wklej rozdziały 9.1–9.11].

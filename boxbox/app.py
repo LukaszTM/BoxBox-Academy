@@ -1,8 +1,11 @@
 """Punkt wejścia aplikacji: wybór trybu i spięcie warstw."""
 import argparse
+import logging
 import os
+import sys
 import threading
 import time
+import traceback
 from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
@@ -11,6 +14,7 @@ from boxbox.coach.analyze import report_laps
 from boxbox.coach.laps import LapRecorder
 from boxbox.coach.live import LiveCoach
 from boxbox.coach.progress import CLEAN_LAPS_TO_ADVANCE, STEPS
+from boxbox.coach.rules import Message
 from boxbox.storage.db import Database
 from boxbox.tracks.model import load_track, track_path
 from boxbox.voice.player import ClipLibrary, NullBackend, VoicePlayer
@@ -27,6 +31,34 @@ __all__ = ["NO_DATA_MESSAGE", "main"]
 
 DEFAULT_DB = Path("data") / "boxbox.sqlite"
 DEFAULT_VOICE = Path("assets") / "voice"
+log = logging.getLogger("boxbox")
+
+
+def setup_log(path: Path) -> None:
+    """Dziennik sesji obok bazy: co uruchomiono, co powiedział mechanik, każdy błąd. Do diagnozy bez nagrania."""
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handler = logging.FileHandler(path, encoding="utf-8")
+    except OSError:
+        return
+    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+    log.addHandler(handler)
+    log.setLevel(logging.INFO)
+
+
+def progress_line(step: int, streak: int) -> str:
+    nxt = STEPS.get(step + 1)
+    goal = f"Cel: {CLEAN_LAPS_TO_ADVANCE} czyste okrążenia z rzędu ({streak}/{CLEAN_LAPS_TO_ADVANCE})"
+    return goal + (f", potem: {nxt}" if nxt else ", jedziesz bez asyst: pracujemy nad czasem") + f" | teraz: {STEPS[step]}"
+
+
+def focus_line(messages: list[Message]) -> str:
+    """Co poprawić na następnym okrążeniu: największa strata z podsumowania."""
+    big = [m for m in messages if m.corner]
+    if not big:
+        return ""
+    m = max(big, key=lambda x: x.weight)
+    return f"Na tym okrążeniu popraw: {m.corner_name}, {m.problem.rstrip('.').lower()}"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -89,6 +121,7 @@ def _make_player(args: argparse.Namespace) -> VoicePlayer | None:
     player = VoicePlayer(library, volume=max(0.1, args.volume)).start()
     player.say(["misc_hello"], "test dźwięku")  # od razu po starcie: słychać, zanim wyjedziesz na tor
     print(f"Głos: {len(library)} klipów, backend {player.backend.name}. Powinieneś teraz słyszeć powitanie.")
+    log.info("głos: %d klipów, backend %s, głośność %.1f", len(library), player.backend.name, args.volume)
     return player
 
 
@@ -98,9 +131,14 @@ class _Stopped(Exception):
 
 def _run_overlay(shared: SharedCoachState, args: argparse.Namespace) -> None:
     """Okno nakładki w wątku głównym (tkinter tego wymaga); telemetria chodzi obok."""
-    from boxbox.ui.coach_overlay import CoachOverlayWindow
+    try:
+        from boxbox.ui.coach_overlay import CoachOverlayWindow
 
-    CoachOverlayWindow(shared, scale=args.scale, alpha=args.alpha).run()
+        CoachOverlayWindow(shared, scale=args.scale, alpha=args.alpha).run()
+    except Exception:
+        log.error("nakładka: %s", traceback.format_exc())
+        print("Nakładka nie działa (szczegóły w dzienniku); trener pracuje dalej bez okna. Ctrl+C kończy.")
+        shared.stop.wait()
 
 
 def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
@@ -115,6 +153,7 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
 
     def speak(ids: list[str], text: str) -> None:
         console.note(f"Mechanik: {text}")
+        log.info("mechanik: %s  [%s]", text, " ".join(ids))
         shared.messages.append(text)  # pod blokadą: wywoływane z handle()
         if player is not None:
             player.say(ids, text)
@@ -130,6 +169,7 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
         except FileNotFoundError:
             coach_failed = True
             console.note(f"Brak pliku toru {path}: trener na żywo wyłączony (tabela po sesji nadal będzie).")
+            log.error("brak pliku toru %s (tor %s)", path, state.session.track_id)
             return
         reference = None
         best_time = None
@@ -142,7 +182,9 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
             if ref is not None:
                 reference, best_time = ref.analysis, ref.lap.lap_time_ms
         if progress is not None:
-            shared.progress_line = f"krok {progress.step}: {STEPS[progress.step]}, czyste z rzędu {progress.streak}/{CLEAN_LAPS_TO_ADVANCE}"
+            shared.progress_line = progress_line(progress.step, progress.streak)
+        log.info("trener: tor %s (%s), referencja %s, krok %s", track.name, path,
+                 f"{best_time} ms" if best_time else "brak", progress.step if progress else "-")
         coach = LiveCoach(
             track, speak, reference, corner_messages=args.corner_messages == "on", best_time_ms=best_time,
             said_hello=player is not None,  # powitanie poszło już na starcie aplikacji
@@ -172,10 +214,13 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
             if args.mode == "coach":
                 ensure_coach()
                 if coach is not None:
-                    coach.update(recorder, finished)
-                    if coach.progress is not None:
-                        p = coach.progress
-                        shared.progress_line = f"krok {p.step}: {STEPS[p.step]}, czyste z rzędu {p.streak}/{CLEAN_LAPS_TO_ADVANCE}"
+                    said = coach.update(recorder, finished)
+                    if finished is not None:
+                        log.info("okrążenie %d: %s, %d komunikatów", finished.number,
+                                 f"{finished.lap_time_ms} ms" if finished.lap_time_ms else "bez czasu", len(said))
+                        shared.focus_line = focus_line(said)
+                        if coach.progress is not None:
+                            shared.progress_line = progress_line(coach.progress.step, coach.progress.streak)
         console.update(state)
 
     def loop() -> None:
@@ -190,6 +235,11 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
         except OSError as exc:
             shared.error = f"port {args.port}: {exc}"
             console.note(shared.error)
+            log.error("telemetria: %s", shared.error)
+        except Exception:
+            shared.error = "błąd w trenerze (szczegóły w dzienniku data/boxbox.log)"
+            console.note(shared.error)
+            log.error("wątek telemetrii: %s", traceback.format_exc())
         finally:
             shared.stop.set()
             if writer is not None:
@@ -213,6 +263,8 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
     console.finish()
     if not args.replay and wall > 1:
         print(f"Obciążenie: {100 * cpu / wall:.1f}% jednego rdzenia średnio przez {wall:.0f} s")
+        log.info("obciążenie %.1f%% przez %.0f s, pakietów %d, trener %s", 100 * cpu / wall, wall,
+                 sum(state.packets.values()), "aktywny" if coach is not None else "nie wystartował")
     if coach is not None:
         coach.finish()
     if player is not None:
@@ -231,8 +283,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(render_progress(db))
         db.close()
         return 0
-    state, recorder = run(args)
+    setup_log(args.db.parent / "boxbox.log")
+    log.info("start: %s | cwd %s | python %s | %s", " ".join(argv if argv is not None else sys.argv[1:]),
+             Path.cwd(), sys.version.split()[0], sys.platform)
+    try:
+        state, recorder = run(args)
+    except Exception:
+        log.error("aplikacja: %s", traceback.format_exc())
+        raise
     if state.empty:
+        log.info("koniec: brak danych z gry")
         return 0
     _print_summary(state)
     if args.mode == "coach":

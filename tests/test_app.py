@@ -32,5 +32,21 @@ def test_overlay_runs_telemetry_in_background(tmp_path, monkeypatch, capsys) -> 
     rc = app.main(["--replay", "recordings/monza-trening_2026-10-26_153411.bin.xz", "--speed", "0",
                    "--db", str(tmp_path / "o.sqlite"), "--overlay"])
     assert rc == 0
-    assert seen["packets"] > 1000 and seen["messages"] and seen["progress"].startswith("krok ")
+    assert seen["packets"] > 1000 and seen["messages"] and seen["progress"].startswith("Cel: ")
     assert "Mechanik:" in capsys.readouterr().out
+
+
+def test_log_focus_and_goal_lines(tmp_path) -> None:
+    from boxbox.app import focus_line, main, progress_line
+    from boxbox.coach.rules import Message
+
+    assert progress_line(1, 2).startswith("Cel: 3 czyste okrążenia z rzędu (2/3), potem: TC średnia")
+    assert "bez asyst" in progress_line(4, 0)
+    msgs = [Message(2, 1, "T1-T2", "brake_late", "Hamowanie za późno w T1-T2, o 50 m.", "h", 0.5),
+            Message(2, 3, "T6", "throttle_early", "Gaz za wcześnie w T6.", "h", 1.2)]
+    assert focus_line(msgs) == "Na tym okrążeniu popraw: T6, gaz za wcześnie w t6"
+    assert focus_line([]) == ""
+    db = tmp_path / "d" / "b.sqlite"
+    assert main(["--replay", "recordings/monza-glos-test2_2026-10-26_232722.bin.xz", "--speed", "0", "--db", str(db)]) == 0
+    text = (tmp_path / "d" / "boxbox.log").read_text(encoding="utf-8")
+    assert "start:" in text and "trener: tor Monza" in text and "mechanik:" in text and "okrążenie" in text

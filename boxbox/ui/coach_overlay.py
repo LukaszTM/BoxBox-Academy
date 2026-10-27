@@ -38,9 +38,10 @@ class CoachOverlayWindow:
             tk.Label(inner, text="", fg="#d0d0d0", bg=BG, font=font(14), wraplength=wrap, justify="left"),
             tk.Label(inner, text="", fg="#9a9a9a", bg=BG, font=font(12), wraplength=wrap, justify="left"),
         ]
+        self.l_focus = tk.Label(inner, text="", fg="#ffd34d", bg=BG, font=font(15, True), wraplength=wrap, justify="left")
         self.l_progress = tk.Label(inner, text="", fg="#3ddc3d", bg=BG, font=font(12), wraplength=wrap, justify="left")
         self.l_status = tk.Label(inner, text="", fg="#b0b0b0", bg=BG, font=font(11), wraplength=wrap, justify="left")
-        for w in (self.l_lap, self.l_corner, *self.l_msg, self.l_progress, self.l_status):
+        for w in (self.l_lap, self.l_corner, self.l_focus, *self.l_msg, self.l_progress, self.l_status):
             w.pack(fill="x", **pad)
         tk.Label(inner, text="przeciągnij, aby przesunąć | Esc zamyka i kończy sesję", fg="#808080", bg=BG, font=font(9)).pack(fill="x", padx=16, pady=(2, 8), anchor="w")
         self._drag: tuple[int, int] | None = None
@@ -66,13 +67,14 @@ class CoachOverlayWindow:
             if state.session is not None and state.session.track_id != self.guide_track_id:
                 self.guide_track_id = state.session.track_id
                 self.guide = load_guide_for(state.session.track_id, GUIDE_DIR)
-            view = build_coach_view(state, self.guide, sh.messages, sh.packets, sh.progress_line, sh.recording_name)
+            view = build_coach_view(state, self.guide, sh.messages, sh.packets, sh.progress_line, sh.recording_name, sh.focus_line)
             error = sh.error
             stopped = sh.stop.is_set()
         self.l_lap.configure(text=view.lap_line)
         self.l_corner.configure(text=view.corner_line)
         for label, text in zip(self.l_msg, list(view.messages) + ["", "", ""]):
             label.configure(text=text)
+        self.l_focus.configure(text=view.focus_line)
         self.l_progress.configure(text=view.progress_line)
         self.l_status.configure(text=error or view.status_line, fg=ACCENT if error else "#b0b0b0")
         if stopped and not self.closed:  # replay się skończył albo błąd portu: zamykamy okno

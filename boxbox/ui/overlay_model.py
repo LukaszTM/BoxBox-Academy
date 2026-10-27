@@ -230,6 +230,7 @@ class CoachView:
     messages: tuple[str, ...]  # od najnowszego
     progress_line: str
     status_line: str
+    focus_line: str = ""  # co poprawić na tym okrążeniu
 
 
 def build_coach_view(
@@ -239,12 +240,13 @@ def build_coach_view(
     packets: int,
     progress_line: str = "",
     recording_name: str | None = None,
+    focus_line: str = "",
 ) -> CoachView:
     rec = f"nagrywam: {recording_name}" if recording_name else "bez nagrywania"
     msgs = tuple(reversed(list(messages)[-3:]))
     if state.lap is None or state.telemetry is None:
         waiting = "czekam na telemetrię z gry..." if packets == 0 else f"pakietów: {packets}"
-        return CoachView("", "", msgs, progress_line, f"{waiting} | {rec}")
+        return CoachView("", "", msgs, progress_line, f"{waiting} | {rec}", focus_line)
     lap = state.lap.player
     car = state.telemetry.player
     lap_line = f"OKRĄŻENIE {lap.current_lap_num}"
@@ -258,7 +260,7 @@ def build_coach_view(
         where = f"za {dist:.0f} m" if dist > 15 else ("TERAZ" if dist > -APEX_HOLD_M else "")
         corner_line = f"{corner.name}  {where}".strip()
     status = f"{car.speed_kmh} km/h, bieg {car.gear} | {lap.lap_distance:.0f} m | {rec}"
-    return CoachView(lap_line, corner_line, msgs, progress_line, status)
+    return CoachView(lap_line, corner_line, msgs, progress_line, status, focus_line)
 
 
 MAX_MESSAGES = 3
@@ -274,6 +276,7 @@ class SharedCoachState:
     messages: deque[str] = field(default_factory=lambda: deque(maxlen=MAX_MESSAGES))
     packets: int = 0
     progress_line: str = ""
+    focus_line: str = ""
     recording_name: str | None = None
     error: str | None = None
 

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>BoxBox Academy</title>
+</head>
+<body style="margin:0;padding:0;background:#0B0C0E;font-family:'Segoe UI',Arial,sans-serif;color:#F4F5F7;">
+<!-- Szablon e-mail BoxBox Academy. Zasady: ciemne tło, jeden czerwony przycisk, logo u góry, stopka z oznaczeniem marki.
+     Teksty w nawiasach {{ }} podmieniasz. Obrazy: banner.png (1536x1024) z assets/, hostowany publicznie albo osadzony. -->
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0B0C0E;">
+  <tr><td align="center" style="padding:32px 16px;">
+    <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;width:100%;background:#15171B;border-radius:16px;overflow:hidden;">
+      <tr><td style="padding:0;background:#000;">
+        <img src="{{URL_BANNER}}" alt="BoxBox Academy" width="600" style="display:block;width:100%;height:auto;">
+      </td></tr>
+      <tr><td style="padding:32px 32px 8px 32px;">
+        <p style="margin:0 0 8px 0;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#19E6E6;">{{NADTYTUL, np. BETA · AKTUALIZACJA}}</p>
+        <h1 style="margin:0 0 16px 0;font-size:26px;line-height:1.25;color:#F4F5F7;">{{TYTUŁ}}</h1>
+        <p style="margin:0 0 16px 0;font-size:16px;line-height:1.6;color:#C9CED4;">{{TREŚĆ: krótko, jak mechanik na radiu. Jeden temat, jedna prośba.}}</p>
+      </td></tr>
+      <tr><td style="padding:8px 32px 32px 32px;">
+        <a href="{{URL_AKCJI}}" style="display:inline-block;background:#E8232A;color:#FFFFFF;text-decoration:none;font-weight:700;font-size:16px;padding:14px 28px;border-radius:10px;">{{TEKST PRZYCISKU, np. Pobierz betę}}</a>
+      </td></tr>
+      <tr><td style="padding:0 32px;"><div style="height:1px;background:#2A2F37;"></div></td></tr>
+      <tr><td style="padding:20px 32px 28px 32px;font-size:13px;line-height:1.6;color:#9BA3AD;">
+        <strong style="color:#F4F5F7;">BoxBox Academy</strong> · trener jazdy do F1 25, który mówi do Ciebie jak mechanik na radiu.<br>
+        Ten e-mail dostajesz, bo zapisałeś się na listę bety. <a href="{{URL_WYPIS}}" style="color:#9BA3AD;">Wypisz się</a> · <a href="{{URL_STRONY}}" style="color:#9BA3AD;">boxboxacademy</a><br>
+        <span style="color:#5C6269;">Nie jesteśmy powiązani z EA ani Formula 1. F1 25 jest znakiem towarowym ich właścicieli.</span>
+      </td></tr>
+    </table>
+    <p style="margin:16px 0 0 0;font-size:12px;color:#5C6269;">© {{ROK}} BoxBox Academy</p>
+  </td></tr>
+</table>
+</body>
+</html>

@@ -47,6 +47,7 @@ def _styles() -> dict[str, ParagraphStyle]:
         "h2": ParagraphStyle("h2", parent=base, fontName="DejaVu-Bold", fontSize=13, leading=17, spaceBefore=12, spaceAfter=4, keepWithNext=True),
         "h3": ParagraphStyle("h3", parent=base, fontName="DejaVu-Bold", fontSize=11, leading=15, spaceBefore=8, spaceAfter=2, keepWithNext=True),
         "cell": ParagraphStyle("cell", parent=base, fontSize=9, leading=12),
+        "caption": ParagraphStyle("caption", parent=base, fontSize=8.5, leading=11, textColor=colors.grey, alignment=1),
         "cellhead": ParagraphStyle("cellhead", parent=base, fontName="DejaVu-Bold", fontSize=9, leading=12),
         "code": ParagraphStyle("code", parent=base, fontName="DejaVuMono", fontSize=8.5, leading=11,
                                backColor=colors.whitesmoke, borderPadding=4, leftIndent=4),
@@ -101,6 +102,21 @@ def markdown_to_story(text: str, width: float) -> list:
                 i += 1
             story.append(Preformatted("\n".join(block), st["code"]))
             story.append(Spacer(1, 6))
+            i += 1
+            continue
+        img = re.match(r"^!\[(.*?)\]\((.+?)\)\s*$", line)
+        if img:
+            path = ROOT / img.group(2)
+            if path.exists():
+                with PILImage.open(path) as im:
+                    aspect = im.size[1] / im.size[0]
+                w = min(width, 170 * mm)
+                flow = Image(str(path), width=w, height=w * aspect)
+                flow.hAlign = "CENTER"
+                story += [flow]
+                if img.group(1):
+                    story.append(Paragraph(_inline(img.group(1)), st["caption"]))
+                story.append(Spacer(1, 8))
             i += 1
             continue
         if line.startswith("# "):

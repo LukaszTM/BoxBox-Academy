@@ -1,0 +1,12 @@
+BOXBOX ACADEMY · {{NADTYTUŁ}}
+
+{{TYTUŁ}}
+
+{{TREŚĆ}}
+
+>> {{TEKST PRZYCISKU}}: {{URL_AKCJI}}
+
+--
+BoxBox Academy · trener jazdy do F1 25, który mówi do Ciebie jak mechanik na radiu.
+Wypisz się: {{URL_WYPIS}}
+Nie jesteśmy powiązani z EA ani Formula 1.

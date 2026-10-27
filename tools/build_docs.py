@@ -11,6 +11,7 @@ from build_recorder_package import DIST, ROOT, build_pdf  # noqa: E402
 DOCS = {
     "PLAN_TESTOW.md": ("BoxBox_Academy_plan_testow.pdf", "BoxBox Academy – plan testów"),
     "DOKUMENTACJA.md": ("BoxBox_Academy_dokumentacja.pdf", "BoxBox Academy – dokumentacja"),
+    "WYTYCZNE_GUI.md": ("BoxBox_Academy_wytyczne_GUI_i_marki.pdf", "BoxBox Academy – wytyczne GUI i marki"),
 }
 
 

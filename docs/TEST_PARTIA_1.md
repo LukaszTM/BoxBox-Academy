@@ -6,8 +6,7 @@ zapisz w `recordings\<plik>.txt` albo w tej liście (skopiuj do notatek i odhacz
 ## Przed grą (raz)
 
 1. Rozpakuj paczkę do **nowego, pustego** folderu (np. `C:\boxbox-partia1`). Zamknij stare terminale.
-2. Skopiuj do niego folder `assets\voice` ze starej paczki, jeśli masz już 93 klipy (oszczędza znaki).
-   Jeśli nie, pomiń: generator zrobi wszystko.
+2. Paczka ma już 93 gotowe klipy z poprzedniej tury (`assets\voice`); generator je pominie.
 3. `wygeneruj_glos.bat`: podaj klucz API i ID głosu (`gFl0NeqphJUaoBLtWrqM`, Piotr). Skrypt pokaże
    liczbę brakujących klipów i znaków (ok. 600 klipów, ok. 40 tys. znaków, plan Creator ma 100 tys.).
    Wpisz `t`. Trwa ok. 10–15 minut. Na końcu sam nakłada efekt radia.

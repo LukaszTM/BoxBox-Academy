@@ -39,6 +39,12 @@ class Lap:
         if ers_assist is not None:
             self.ers_assist = ers_assist
 
+    track_length_m: float | None = None  # z pakietu Session, gdy znana
+
+    def is_complete_hint(self) -> bool:
+        """Pełność wg długości toru zapisanej w okrążeniu; bez niej zakładamy, że pełne."""
+        return self.is_complete(self.track_length_m) if self.track_length_m else bool(self.samples)
+
     def is_complete(self, track_length_m: float, tolerance: float = 0.05) -> bool:
         """Czy próbki pokrywają całe okrążenie (od mety do mety)."""
         if not self.samples:
@@ -80,7 +86,10 @@ class LapRecorder:
                 self.laps.append(self.current)
                 finished = self.current
             # okrążenie bez próbek (np. numer z poprzedniej sesji jeszcze w garażu) jest pomijane
-            self.current = Lap(number=lap.current_lap_num)
+            self.current = Lap(
+                number=lap.current_lap_num,
+                track_length_m=float(self.state.session.track_length_m) if self.state.session else None,
+            )
         if lap.current_lap_invalid:
             self.current.invalid = True
         if lap.pit_status != 0:

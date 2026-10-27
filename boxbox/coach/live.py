@@ -8,6 +8,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from boxbox.coach.corners import LapAnalysis, analyze_corner, analyze_lap
+from boxbox.coach.ers import advise_ers, analyze_ers
+from boxbox.coach.progress import TrackProgress
 from boxbox.coach.laps import Lap, LapRecorder
 from boxbox.coach.rules import MIN_TIME_LOSS_S, Message, biggest_loss, evaluate_corner, evaluate_lap, pick_top
 from boxbox.tracks.model import Track
@@ -30,6 +32,8 @@ class LiveCoach:
     said_hello: bool = False
     said_out_lap: bool = False
     available: Callable[[str], bool] | None = None  # czy klip o id jest w bibliotece (wybór v2/v1)
+    progress: TrackProgress | None = None  # ścieżka zdejmowania asyst (z bazy); None = bez śledzenia
+    ers_advice: bool = True
 
     def _say_misc(self, key: str) -> None:
         self.speak([f"misc_{key}"], MISC_TEXTS[key])
@@ -111,6 +115,15 @@ class LiveCoach:
             self.best_time_ms = lap.lap_time_ms
             self.reference = analysis
             self._say_misc("lap_best")
+        if self.progress is not None:
+            clip, text = self.progress.record(lap, messages)
+            if clip is not None and text is not None:
+                self.speak([f"misc_{clip}"], text)
+        if self.ers_advice and lap.ers_assist is False and lap.ers:
+            advice = advise_ers(analyze_ers(lap, lap.ers, self.track), lap.ers_assist)
+            if advice.kind in ("wasted_in_corners", "unused_battery"):
+                key = "ers_wasted" if advice.kind == "wasted_in_corners" else "ers_unused"
+                self.speak([f"misc_{key}"], MISC_TEXTS[key])
         return out
 
     def finish(self) -> None:

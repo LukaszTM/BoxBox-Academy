@@ -55,8 +55,26 @@ def _label(track: Track, corner: int) -> str:
     return (c.name if c and c.name else f"zakręt {corner}")
 
 
+EMPHASIS_NO_TC = {"throttle_early": 1.5, "grip_lost": 1.3}  # bez TC: gaz na wyjściu jest tematem numer jeden
+EMPHASIS_NO_ABS = {"brake_late": 1.3, "brake_release": 1.5, "trail_missing": 1.3}  # bez ABS: praca hamulcem
+
+
+def emphasize(messages: list[Message], assists_tc: int | None, assists_abs: bool | None) -> list[Message]:
+    """Po zdjęciu asysty trener kładzie większy nacisk na reguły, które ta asysta maskowała."""
+    factors: dict[str, float] = {}
+    if assists_tc == 0:
+        factors.update(EMPHASIS_NO_TC)
+    if assists_abs is False:
+        factors.update(EMPHASIS_NO_ABS)
+    if not factors:
+        return messages
+    from dataclasses import replace
+    return [replace(m, weight=round(m.weight * factors.get(m.rule, 1.0), 2)) for m in messages]
+
+
 def evaluate_corner(
-    lap_number: int, m: CornerMetrics, ref: CornerMetrics, track: Track, assists_tc: int | None = None
+    lap_number: int, m: CornerMetrics, ref: CornerMetrics, track: Track, assists_tc: int | None = None,
+    assists_abs: bool | None = None,
 ) -> list[Message]:
     """Wszystkie reguły dla jednego zakrętu. Wagi: strata czasu + dodatek za rodzaj błędu."""
     name = _label(track, m.corner)
@@ -123,7 +141,7 @@ def evaluate_corner(
             msg("gear_low", f"Za niski bieg w {name}.", f"W apeksie {ref.gear_at_apex}. bieg.", 0.1 * (ref.gear_at_apex - m.gear_at_apex), gear=ref.gear_at_apex)
         elif m.gear_at_apex > ref.gear_at_apex:
             msg("gear_high", f"Za wysoki bieg w {name}.", f"W apeksie {ref.gear_at_apex}. bieg, silnik ma wtedy siłę.", 0.1 * (m.gear_at_apex - ref.gear_at_apex), gear=ref.gear_at_apex)
-    return out
+    return emphasize(out, assists_tc, assists_abs)
 
 
 def evaluate_lap(lap: Lap, analysis: LapAnalysis, reference: LapAnalysis | None, track: Track) -> list[Message]:
@@ -134,7 +152,7 @@ def evaluate_lap(lap: Lap, analysis: LapAnalysis, reference: LapAnalysis | None,
     out: list[Message] = []
     for m in analysis.corners:
         if m.corner in ref:
-            out.extend(evaluate_corner(lap.number, m, ref[m.corner], track, lap.traction_control))
+            out.extend(evaluate_corner(lap.number, m, ref[m.corner], track, lap.traction_control, lap.abs_on))
     return out
 
 

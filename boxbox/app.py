@@ -44,6 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="z czym porównać zakręty: własne najlepsze okrążenie albo duch z Time Trial (tylko --replay)",
     )
     parser.add_argument("--record", help="na żywo: zapisz też nagranie sesji pod tą nazwą do recordings/")
+    parser.add_argument("--progress", action="store_true", help="pokaż postęp (kroki asyst, zakręty opanowane) i wyjdź")
     parser.add_argument("--voice", type=Path, default=DEFAULT_VOICE, help="folder z klipami WAV mechanika")
     parser.add_argument("--no-voice", action="store_true", help="bez dźwięku (komunikaty tylko w konsoli)")
     parser.add_argument("--volume", type=float, default=1.0, help="głośność mechanika, np. 1.5 (ponad 1 = wzmocnienie)")
@@ -113,9 +114,11 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
             return
         reference = None
         best_time = None
+        progress = None
         if args.db is not None:
             db = Database(args.db)
             ref = db.reference(track.track_id)
+            progress = db.load_progress(track.track_id)
             db.close()
             if ref is not None:
                 reference, best_time = ref.analysis, ref.lap.lap_time_ms
@@ -123,6 +126,7 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
             track, speak, reference, corner_messages=args.corner_messages == "on", best_time_ms=best_time,
             said_hello=player is not None,  # powitanie poszło już na starcie aplikacji
             available=(lambda i: i in player.library) if player is not None else None,
+            progress=progress,
         )
 
     writer: RecordingWriter | None = None
@@ -172,6 +176,13 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.progress:
+        from boxbox.coach.analyze import render_progress
+
+        db = Database(args.db)
+        print(render_progress(db))
+        db.close()
+        return 0
     state, recorder = run(args)
     if state.empty:
         return 0

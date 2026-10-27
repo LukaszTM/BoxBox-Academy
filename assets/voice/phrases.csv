@@ -95,6 +95,15 @@ misc_reference_loaded,Mam twoje najlepsze okrążenie z poprzednich sesji. Poró
 misc_out_lap,"Okrążenie wyjazdowe. Rozgrzej opony, ocena od następnego."
 misc_biggest_loss,Czyste okrążenie. Najwięcej do zyskania:
 misc_session_end,Koniec sesji. Dobra robota.
+misc_streak_1,"Czyste okrążenie, pierwsze z trzech."
+misc_streak_2,"Czyste okrążenie, drugie z trzech."
+misc_step_tc_medium,Trzy czyste okrążenia z rzędu. Jesteś gotowy na kolejny krok: kontrola trakcji na średnią.
+misc_step_tc_off,Trzy czyste okrążenia z rzędu. Kolejny krok: kontrola trakcji wyłączona. Gaz dawkuj łagodniej na wyjściach.
+misc_step_abs_off,"Trzy czyste okrążenia z rzędu. Kolejny krok: ABS wyłączony. Hamuj mocno, ale nie do zablokowania kół."
+misc_step_done,Jedziesz bez asyst i masz trzy czyste okrążenia. Od teraz pracujemy nad czasem.
+misc_ers_wasted,"Za dużo baterii idzie w zakrętach. Używaj jej na prostych, zaraz po wyjściu."
+misc_ers_unused,Bateria na mecie prawie pełna. Masz zapas na wyjściach z wolnych zakrętów.
+misc_ers_last_lap,"Ostatnie okrążenie. Wciśnij całą baterię, co zostało."
 v2_brake_late_t1_2_20,"Hamowanie za późno w zakrętach pierwszym i drugim, o jakieś dwadzieścia metrów."
 v2_brake_late_t1_2_50,"Hamowanie za późno w zakrętach pierwszym i drugim, o jakieś pięćdziesiąt metrów."
 v2_brake_late_t1_2_100,"Hamowanie za późno w zakrętach pierwszym i drugim, o jakieś sto metrów."

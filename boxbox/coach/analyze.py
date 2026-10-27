@@ -111,8 +111,9 @@ def report_laps(
     if db_path is not None:
         db = Database(db_path)
         session_id = db.save_session(session, source=source)
+        lap_ids = {}
         for lap in laps:
-            db.save_lap(
+            lap_ids[lap.number] = db.save_lap(
                 session_id, lap, analyses[lap.number], track.length_m, track_id=track.track_id,
                 gearbox=lap.gearbox, traction_control=lap.traction_control, abs_on=lap.abs_on,
             )
@@ -121,6 +122,13 @@ def report_laps(
             ref_analysis = ref.analysis if ref else None
             if ref is not None and not ref.lap.valid:
                 ref_label = "referencja: najlepsze okrążenie jest nieważne (brak ważnych), porównanie orientacyjne"
+        if ref_analysis is not None:
+            progress = db.load_progress(track.track_id)
+            for lap in laps:
+                msgs = evaluate_lap(lap, analyses[lap.number], ref_analysis, track)
+                db.save_messages(lap_ids[lap.number], msgs)
+                progress.record(lap, msgs)
+            db.save_progress(progress)
         db.close()
     head = f"{track.name}, {len(track.corners)} zakrętów, {len(laps)} pełnych okrążeń"
     lines = [head + (f"; {ref_label}" if ref_label else ""), ""]
@@ -132,6 +140,37 @@ def report_laps(
             top = pick_top(evaluate_lap(lap, analyses[lap.number], ref_analysis, track))
             lines += ["  Trener: " + (" | ".join(f"{m.corner_name}: {m.problem} {m.hint}" for m in top) if top else "czyste okrążenie, nic do poprawy.")]
         lines += [""]
+    return "\n".join(lines)
+
+
+def render_progress(db: Database, track_ids: list[int] | None = None) -> str:
+    """Ekran postępu: tor, krok asyst, seria czystych okrążeń, najlepsze czasy per krok, zakręty opanowane."""
+    from boxbox.coach.progress import CLEAN_LAPS_TO_ADVANCE, STEPS
+    from boxbox.tracks.model import load_track_by_id
+
+    if track_ids is None:
+        rows = db.conn.execute("SELECT DISTINCT track_id FROM laps WHERE track_id IS NOT NULL ORDER BY track_id").fetchall()
+        track_ids = [r["track_id"] for r in rows]
+    if not track_ids:
+        return "Brak zapisanych okrążeń."
+    lines = []
+    for tid in track_ids:
+        try:
+            track = load_track_by_id(tid)
+        except FileNotFoundError:
+            continue
+        p = db.load_progress(tid)
+        best = db.best_time_per_step(tid)
+        issues = db.recent_corner_issues(tid)
+        lines.append(f"{track.name}: krok {p.step} ({STEPS[p.step]}), czyste z rzędu {p.streak}/{CLEAN_LAPS_TO_ADVANCE}"
+                     + (f", osiągnięte kroki: {sorted(p.achieved_steps)}" if p.achieved_steps else ""))
+        for step, ms in sorted(best.items()):
+            lines.append(f"  najlepszy czas, krok {step} ({STEPS[step]}): {format_time(ms)}")
+        mastered = [c.name for c in track.corners if c.number not in issues]
+        todo = [f"{c.name} ({', '.join(sorted(set(issues[c.number])))})" for c in track.corners if c.number in issues]
+        lines.append(f"  zakręty opanowane (ostatnie 3 ważne okrążenia bez uwag): {', '.join(mastered) or 'jeszcze żaden'}")
+        if todo:
+            lines.append(f"  do pracy: {'; '.join(todo)}")
     return "\n".join(lines)
 
 

@@ -80,6 +80,15 @@ MISC_TEXTS: dict[str, str] = {
     "out_lap": "Okrążenie wyjazdowe. Rozgrzej opony, ocena od następnego.",
     "biggest_loss": "Czyste okrążenie. Najwięcej do zyskania:",
     "session_end": "Koniec sesji. Dobra robota.",
+    "streak_1": "Czyste okrążenie, pierwsze z trzech.",
+    "streak_2": "Czyste okrążenie, drugie z trzech.",
+    "step_tc_medium": "Trzy czyste okrążenia z rzędu. Jesteś gotowy na kolejny krok: kontrola trakcji na średnią.",
+    "step_tc_off": "Trzy czyste okrążenia z rzędu. Kolejny krok: kontrola trakcji wyłączona. Gaz dawkuj łagodniej na wyjściach.",
+    "step_abs_off": "Trzy czyste okrążenia z rzędu. Kolejny krok: ABS wyłączony. Hamuj mocno, ale nie do zablokowania kół.",
+    "step_done": "Jedziesz bez asyst i masz trzy czyste okrążenia. Od teraz pracujemy nad czasem.",
+    "ers_wasted": "Za dużo baterii idzie w zakrętach. Używaj jej na prostych, zaraz po wyjściu.",
+    "ers_unused": "Bateria na mecie prawie pełna. Masz zapas na wyjściach z wolnych zakrętów.",
+    "ers_last_lap": "Ostatnie okrążenie. Wciśnij całą baterię, co zostało.",
 }
 
 

@@ -58,6 +58,19 @@ CREATE TABLE IF NOT EXISTS lap_samples (
     lap_id INTEGER PRIMARY KEY REFERENCES laps(id) ON DELETE CASCADE,
     data BLOB NOT NULL
 );
+CREATE TABLE IF NOT EXISTS lap_messages (
+    lap_id INTEGER NOT NULL REFERENCES laps(id) ON DELETE CASCADE,
+    corner INTEGER NOT NULL,
+    rule TEXT NOT NULL,
+    weight REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS progress (
+    track_id INTEGER PRIMARY KEY,
+    step INTEGER NOT NULL,
+    streak INTEGER NOT NULL,
+    achieved_steps TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
 CREATE INDEX IF NOT EXISTS laps_track ON laps(track_id, valid, complete, lap_time_ms);
 """
 
@@ -239,6 +252,65 @@ class Database:
     def samples(self, lap_id: int) -> tuple[Sample, ...]:
         row = self.conn.execute("SELECT data FROM lap_samples WHERE lap_id = ?", (lap_id,)).fetchone()
         return unpack_samples(row["data"]) if row else ()
+
+    def save_messages(self, lap_id: int, messages: list) -> None:
+        self.conn.execute("DELETE FROM lap_messages WHERE lap_id = ?", (lap_id,))
+        self.conn.executemany(
+            "INSERT INTO lap_messages VALUES (?, ?, ?, ?)",
+            [(lap_id, m.corner, m.rule, m.weight) for m in messages],
+        )
+        self.conn.commit()
+
+    def lap_messages(self, lap_id: int) -> list[tuple[int, str, float]]:
+        rows = self.conn.execute("SELECT corner, rule, weight FROM lap_messages WHERE lap_id = ?", (lap_id,)).fetchall()
+        return [(r["corner"], r["rule"], r["weight"]) for r in rows]
+
+    def load_progress(self, track_id: int) -> "TrackProgress":
+        from boxbox.coach.progress import TrackProgress
+
+        row = self.conn.execute("SELECT * FROM progress WHERE track_id = ?", (track_id,)).fetchone()
+        if row is None:
+            return TrackProgress(track_id)
+        achieved = {int(x) for x in row["achieved_steps"].split(",") if x}
+        return TrackProgress(track_id, row["step"], row["streak"], achieved)
+
+    def save_progress(self, progress: "TrackProgress") -> None:
+        self.conn.execute(
+            "INSERT INTO progress (track_id, step, streak, achieved_steps, updated_at) VALUES (?, ?, ?, ?, ?)"
+            " ON CONFLICT(track_id) DO UPDATE SET step = excluded.step, streak = excluded.streak,"
+            " achieved_steps = excluded.achieved_steps, updated_at = excluded.updated_at",
+            (
+                progress.track_id, progress.step, progress.streak,
+                ",".join(str(s) for s in sorted(progress.achieved_steps or set())), _now(),
+            ),
+        )
+        self.conn.commit()
+
+    def best_time_per_step(self, track_id: int) -> dict[int, int]:
+        """Najlepszy ważny czas dla każdego kroku asyst (wg TC/ABS zapisanych przy okrążeniu)."""
+        from boxbox.coach.progress import step_for
+
+        out: dict[int, int] = {}
+        for lap in self.laps_for_track(track_id):
+            if lap.valid and lap.complete and not lap.pitted and lap.lap_time_ms:
+                step = step_for(lap.traction_control, lap.abs_on)
+                if step not in out or lap.lap_time_ms < out[step]:
+                    out[step] = lap.lap_time_ms
+        return out
+
+    def recent_corner_issues(self, track_id: int, laps: int = 3, min_weight: float = 0.3) -> dict[int, list[str]]:
+        """Zakręt -> reguły z ostatnich `laps` ważnych okrążeń. Zakręt bez wpisu = opanowany."""
+        rows = self.conn.execute(
+            "SELECT id FROM laps WHERE track_id = ? AND valid = 1 AND complete = 1 AND pitted = 0"
+            " ORDER BY id DESC LIMIT ?",
+            (track_id, laps),
+        ).fetchall()
+        issues: dict[int, list[str]] = {}
+        for r in rows:
+            for corner, rule, weight in self.lap_messages(r["id"]):
+                if weight >= min_weight:
+                    issues.setdefault(corner, []).append(rule)
+        return issues
 
     def reference(self, track_id: int, allow_invalid: bool = True) -> ReferenceLap | None:
         best = self.best_lap(track_id, allow_invalid)

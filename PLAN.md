@@ -130,10 +130,10 @@ Siedem etapów, każdy z kryterium ukończenia, które da się sprawdzić bez dy
 
 **Etap 5 – Bateria, asysty, postęp (2 sesje)**
 
-- [ ] Analiza ERS: deploy na odcinek toru, zysk czasu, bateria na ostatnim okrążeniu.
-- [ ] Ścieżka zdejmowania asyst z celami (np. 3 czyste okrążenia z rzędu) i komunikat, kiedy przejść dalej. Trener zmienia nacisk reguł po zdjęciu asysty.
-- [ ] Ekran postępu: tor, zakręty opanowane, aktualny krok asyst.
-- [ ] Kryterium: po nagraniu sesji aplikacja pokazuje postęp i proponuje kolejny krok.
+- [x] Analiza ERS: deploy na odcinek toru, zysk czasu, bateria na ostatnim okrążeniu. (`coach/ers.py`, rada po okrążeniu bez asysty ERS)
+- [x] Ścieżka zdejmowania asyst z celami (np. 3 czyste okrążenia z rzędu) i komunikat, kiedy przejść dalej. Trener zmienia nacisk reguł po zdjęciu asysty. (`coach/progress.py`, `rules.emphasize`, tabela `progress`)
+- [x] Ekran postępu: tor, zakręty opanowane, aktualny krok asyst. (`python -m boxbox.app --progress`)
+- [ ] Kryterium: po nagraniu sesji aplikacja pokazuje postęp i proponuje kolejny krok. (do potwierdzenia na żywo – protokół testu partii 1)
 
 **Etap 6 – Tryb wyścigowy i wydanie (3 sesje)**
 

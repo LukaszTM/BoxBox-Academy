@@ -38,17 +38,23 @@ F1 (timing tower, pasek nazwiska, wstęgi z ukośnie ściętymi rogami), rozmies
 ekranu, tak żeby nie zasłaniać toru, lusterek ani HUD-u gry. Cała reszta ekranu jest przezroczysta
 i klikalna dla gry.
 
-Styl:
+Styl: **jak HUD F1 25, nie jak nasz program.** Nakładka ma wyglądać, jakby była częścią gry.
+Wzorcem nie jest makieta programu, tylko grafika z F1 25 i transmisji F1:
 
-- Wstęgi z ukośnym ścięciem jednego rogu (jak paski F1 TV), cienka linia akcentu Signal Red lub
-  Telemetry Cyan na krawędzi, bez zaokrągleń typu „karta”.
-- Tło każdej wstęgi półprzezroczyste ciemne z suwakiem krycia 0–100 % (0 = sam tekst). Tekst ma
-  cienki ciemny obrys lub poświatę, żeby był czytelny nawet przy kryciu 0 na jasnym niebie.
-- Czcionka wąska, wyścigowa, kapitaliki w etykietach (np. Titillium Web / Exo 2 / Rajdhani); liczby w
-  kroju tabelarycznym, żeby nie skakały.
-- Kolory z palety programu; nic nie miga; zmiany przez krótkie przejścia (wjazd wstęgi 200 ms).
-- Wszystko skalowalne 65–160 %, każdy blok z osobna można przesunąć myszą (pozycje zapamiętane),
-  każdy blok można wyłączyć w ustawieniach.
+- wieża czasów i tabliczki z HUD-u gry: czarne, lekko przezroczyste płaskie paski z ostro ściętymi
+  narożnikami (45°), bez zaokrągleń, bez szkła i poświat; cienki pionowy pasek koloru na lewej
+  krawędzi (u nas Signal Red lub Telemetry Cyan zamiast barwy zespołu),
+- tekst biały, wielkie litery, krój w stylu Formula 1 Display (zamiennik darmowy: Titillium Web
+  Bold lub Barlow Condensed SemiBold), liczby tabelaryczne; sektory i delty jak w grze: zielony
+  (lepiej), fioletowy (najlepszy), żółty (gorzej), czerwony (ostrzeżenie),
+- rozmiary i proporcje jak w HUD-zie gry (wysokość paska wieży czasów to nasz moduł),
+- krycie tła regulowane 0–100 %; przy 0 % sam tekst z cienkim ciemnym obrysem,
+- każdy blok osobno przesuwany i wyłączany, skala 65–160 %, zmiany przez krótkie wjazdy 200 ms,
+- kolory programu tylko jako akcent na pasku krawędziowym; całość w szarościach i bieli jak gra.
+
+Przed rysowaniem: zrób zrzuty HUD-u z F1 25 (wieża czasów, tabliczka czasu okrążenia po mecie,
+sektory, komunikat inżyniera na radiu, pit board) i dołącz je do makiety jako wzorzec. Nakładka
+ma być od nich nieodróżnialna stylem.
 
 Bloki (narysować każdy osobno i jedną kompozycję na zrzucie z gry 1920×1080):
 

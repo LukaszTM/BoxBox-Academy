@@ -120,8 +120,11 @@ def save_track(track: Track, path: Path) -> None:
     path.write_text(json.dumps(track_to_dict(track), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
-def track_path(track_id: int) -> Path:
-    return DATA_DIR / f"{track_id}.json"
+def track_path(track_id: int, game_id: str = "f1_25") -> Path:
+    """Plik toru: F1 25 leży wprost w data/, inne gry w podfolderze o id gry (bez zmian w kodzie trenera)."""
+    if game_id == "f1_25":
+        return DATA_DIR / f"{track_id}.json"
+    return DATA_DIR / game_id / f"{track_id}.json"
 
 
 def load_track_by_id(track_id: int) -> Track:

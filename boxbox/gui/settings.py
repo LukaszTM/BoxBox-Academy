@@ -18,6 +18,7 @@ class Settings:
     overlay: bool = True
     overlay_scale: float = 1.0
     port: int = DEFAULT_PORT
+    game: str = "f1_25"  # adapter gry (boxbox/games); wybór w oknie ukryty, dopóki jest jedna gra
     voice_dir: str = "assets/voice"
     record: bool = True
     auto_start: bool = True  # trener startuje sam, gdy gra zacznie wysyłać telemetrię

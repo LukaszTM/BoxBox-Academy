@@ -15,6 +15,7 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS sessions (
     id INTEGER PRIMARY KEY,
     session_uid TEXT,  -- uint64 z gry nie mieści się w INTEGER SQLite (max 2^63-1)
+    game TEXT NOT NULL DEFAULT 'f1_25',
     source TEXT NOT NULL,
     track_id INTEGER,
     track_name TEXT,
@@ -26,6 +27,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE TABLE IF NOT EXISTS laps (
     id INTEGER PRIMARY KEY,
     session_id INTEGER NOT NULL REFERENCES sessions(id),
+    game TEXT NOT NULL DEFAULT 'f1_25',
     track_id INTEGER,
     number INTEGER NOT NULL,
     lap_time_ms INTEGER,
@@ -66,6 +68,7 @@ CREATE TABLE IF NOT EXISTS lap_messages (
 );
 CREATE TABLE IF NOT EXISTS progress (
     track_id INTEGER PRIMARY KEY,
+    game TEXT NOT NULL DEFAULT 'f1_25',
     step INTEGER NOT NULL,
     streak INTEGER NOT NULL,
     achieved_steps TEXT NOT NULL,
@@ -133,6 +136,10 @@ class Database:
         ):
             if column not in have:
                 self.conn.execute(f"ALTER TABLE corner_metrics ADD COLUMN {column} {ddl}")
+        for table in ("sessions", "laps", "progress"):  # gra: bazy sprzed adapterów gier dostają F1 25
+            cols = {row["name"] for row in self.conn.execute(f"PRAGMA table_info({table})")}
+            if "game" not in cols:
+                self.conn.execute(f"ALTER TABLE {table} ADD COLUMN game TEXT NOT NULL DEFAULT 'f1_25'")
         self.conn.commit()
 
     def close(self) -> None:

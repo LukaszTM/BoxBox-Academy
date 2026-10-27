@@ -58,6 +58,7 @@ def _inline(text: str) -> str:
     """Markdown inline -> znaczniki reportlab."""
     text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     text = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", text)
+    text = re.sub(r"(?<![*\w])\*(?!\s)(.+?)(?<!\s)\*(?![*\w])", r"<i>\1</i>", text)  # *kursywa*
     text = re.sub(r"`(.+?)`", r'<font face="DejaVuMono">\1</font>', text)
     text = re.sub(r"(https?://[^\s)]+)", r'<link href="\1" color="blue">\1</link>', text)
     return text

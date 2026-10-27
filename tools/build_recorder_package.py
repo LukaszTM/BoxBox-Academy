@@ -159,17 +159,41 @@ def build_pdf(target: Path) -> None:
     doc.build(story + markdown_to_story(SOURCE.read_text(encoding="utf-8"), width))
 
 
-def _add(z: zipfile.ZipFile, path: Path, arcname: str) -> None:
-    """Dodaje plik z wyrównanymi atrybutami (zwykły plik 0644), żeby kreator Windows nie marudził."""
-    info = zipfile.ZipInfo.from_file(path, arcname)
-    info.external_attr = (0o644 << 16)
+_WIN_FILE = 0x20  # FILE_ATTRIBUTE_ARCHIVE: tak znakuje pliki sam Windows
+_WIN_DIR = 0x10  # FILE_ATTRIBUTE_DIRECTORY
+_dirs_added: set[str] = set()
+
+
+def _ensure_dirs(z: zipfile.ZipFile, arcname: str) -> None:
+    """Jawne wpisy folderów (jak w ZIP-ie z Eksploratora): kreator Windows nie musi ich zgadywać."""
+    parts = arcname.split("/")[:-1]
+    for i in range(1, len(parts) + 1):
+        d = "/".join(parts[:i]) + "/"
+        if d in _dirs_added:
+            continue
+        info = zipfile.ZipInfo(d)
+        info.create_system = 0
+        info.external_attr = _WIN_DIR
+        z.writestr(info, b"")
+        _dirs_added.add(d)
+
+
+def _add(z: zipfile.ZipFile, path: Path, arcname: str, data: bytes | None = None) -> None:
+    """Dodaje plik z atrybutami jak z Windows (system 0, atrybut archiwum), bez bitów uniksowych."""
+    _ensure_dirs(z, arcname)
+    info = zipfile.ZipInfo.from_file(path, arcname) if data is None else zipfile.ZipInfo(arcname)
+    info.create_system = 0
+    info.external_attr = _WIN_FILE
     info.compress_type = zipfile.ZIP_DEFLATED
-    with open(path, "rb") as f:
-        z.writestr(info, f.read())
+    if data is None:
+        with open(path, "rb") as f:
+            data = f.read()
+    z.writestr(info, data)
 
 
 def build_zip(pdf: Path, target: Path) -> None:
     package_dir = ROOT / "tools" / "package"
+    _dirs_added.clear()
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as z:
         _add(z, pdf, pdf.name)
         for extra in sorted(package_dir.rglob("*")):
@@ -183,7 +207,7 @@ def build_zip(pdf: Path, target: Path) -> None:
         _add(z, ROOT / "tools" / "generate_voice_elevenlabs.py", "wygeneruj_glos.py")
         _add(z, ROOT / "assets" / "voice" / "phrases.csv", "phrases.csv")
         _add(z, ROOT / "docs" / "TEST_PARTIA_1.md", "TEST_PARTIA_1.txt")
-        z.writestr("recordings/.gitkeep", "")
+        _add(z, ROOT, "recordings/README-tu-trafiaja-nagrania.txt", b"Nagrania z trener.bat i nagraj.bat zapisuja sie w tym folderze.\r\n")
 
 
 def main() -> None:

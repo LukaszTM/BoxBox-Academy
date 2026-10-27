@@ -143,6 +143,73 @@ Siedem etapów, każdy z kryterium ukończenia, które da się sprawdzić bez dy
 - [ ] `PyInstaller` → jeden `.exe`, test na czystym Windowsie.
 - [ ] Kryterium: pełny wyścig na żywo bez awarii, `.exe` uruchamia się u drugiej osoby.
 
+## Droga do bety: platforma dla początkujących w simracingu (dodane 27.10.2026)
+
+Cel: wersja beta, którą każdy uruchomi dwuklikiem, obsługująca F1 25 i 2026 Season Pack, użyteczna
+na poziomie Trophy AI albo lepsza. Różnica względem konkurencji: trener mówi i tłumaczy, prowadzi
+początkującego krok po kroku (asysty, start, opony, bateria), a postęp jest widoczny na każdym kroku,
+żeby gracz chciał wracać. Etapy 0–5 (silnik, głos, postęp) są fundamentem; poniżej plan bety.
+
+**Decyzje do podjęcia przed etapem 6**
+
+- [ ] GUI: propozycja `PySide6` (Qt): natywne okno, wykresy (QtCharts), eksport PDF z okna, dymki podpowiedzi, obraz w karcie kierowcy, działa w `.exe`; licencja LGPL dopuszcza użytek komercyjny. Alternatywa: interfejs w przeglądarce (HTML + wykresy JS) w oknie `pywebview`. Obie wymagają nowej zależności, więc wybór należy do właściciela projektu.
+- [ ] Język: polski na start, teksty w jednym pliku, żeby angielski dało się dodać bez zmian w kodzie.
+- [ ] Identyfikator gracza: lokalny UUID + nick w profilu; ranking (chmura) dopiero po becie, z wyraźną zgodą gracza.
+
+**Etap 6 – Aplikacja okienkowa i profil (3–4 sesje)**
+
+- [ ] Okno główne w stylu wyścigowym (ciemne, czerwony akcent jak logo): panel startowy z wyborem trybu, stanem połączenia z grą i jednym przyciskiem „Jedź”. Trener i nakładka startują z okna, bez terminala.
+- [ ] Kreator pierwszego uruchomienia: sprawdza ustawienia telemetrii w grze (nasłuch pakietów, port, format), podpowiada, co włączyć; test głośników; wybór asyst na start.
+- [ ] Karta kierowcy: nick, zdjęcie, ID gracza, ulubiony tor, liczba sesji i okrążeń, aktualny krok asyst na każdym torze, najlepsze czasy.
+- [ ] Samouczek: dymki z opisem każdego elementu okna przy pierwszym użyciu, do wyłączenia; teksty w jednym pliku, żeby później podłożyć lektora.
+- [ ] Jeden plik `.exe` przez PyInstaller (z klipami głosu i plikami torów), uruchomienie dwuklikiem, test na czystym Windowsie.
+- [ ] Kryterium: osoba, która nigdy nie widziała projektu, uruchamia `.exe`, przechodzi kreator i jedzie sesję z trenerem bez pomocy.
+
+**Etap 7 – Analiza telemetrii i wykresy (3 sesje)**
+
+- [ ] Wykresy okrążenia względem dystansu: prędkość, gaz, hamulec, bieg, kierownica, ERS, DRS; nałożenie na okrążenie referencyjne (własne najlepsze, duch Time Trial, AI) i delta czasu w każdym punkcie toru.
+- [ ] Mapa toru z realnego kształtu (recorder) z punktami hamowania, apeksami, strefami DRS i miejscem każdej uwagi trenera; mapa także na nakładce.
+- [ ] Tabela przejazdów dla każdego toru: sesje, okrążenia, czasy, sektory, asysty, ważność, uwagi trenera; filtry i sortowanie; porównanie dwóch okrążeń obok siebie.
+- [ ] Eksport: telemetria okrążenia do CSV, raport sesji do PDF z wykresami, mapą i uwagami trenera (jeden przycisk).
+- [ ] Kryterium: po sesji gracz widzi, gdzie traci czas i dlaczego, bez słuchania komunikatów.
+
+**Etap 8 – Trener 2.0: optymalne punkty i wyjaśnianie (3–4 sesje)**
+
+- [ ] Optymalny punkt hamowania w każdym zakręcie: z najlepszych własnych okrążeń, ducha i AI; trener mówi „hamuj przy tablicy 100 m”, a na mapie i nakładce widać znacznik; „próbuj 5 m później” jako cel na następne okrążenie.
+- [ ] Optymalne dodanie gazu i trail-braking: punkt pełnego gazu, krzywa puszczania hamulca, bieg w apeksie; porównanie z referencją jako cel na zakręt.
+- [ ] DRS: wykrywanie stref z pakietu Session, czas reakcji na włączenie, uwaga „DRS włączony o 0,4 s za późno”, ćwiczenie na prostych.
+- [ ] Bateria: plan deployu na okrążenie (gdzie zyskuje najwięcej), tryb przeglądu/hotlap, ostrzeżenie o pustej baterii przed prostą, ocena po okrążeniu z liczbą.
+- [ ] Tryb „wytłumacz mi”: przy pierwszym wystąpieniu każdej uwagi trener mówi dłuższą wersję (co to jest trail-braking, czemu TC pomaga, jak czytać deltę); później krótko. Słownik pojęć w oknie.
+- [ ] Lekcje: zestaw krótkich ćwiczeń (np. „hamowanie w T1: 5 okrążeń, cel 10 m później co okrążenie”), postęp lekcji widoczny w karcie kierowcy.
+- [ ] Kryterium: na nagraniu początkującego trener wskazuje punkt hamowania i gazu w każdym zakręcie z celem na kolejne okrążenie; na nagraniu szybkiego gracza milczy.
+
+**Etap 9 – Opony, start i walka na torze (3 sesje)**
+
+- [ ] Opony: temperatury i zużycie per okrążenie, okno temperatur, uwagi „przegrzewasz tył na wyjściach”, „ziarnienie”, prognoza żywotności zestawu na dystans wyścigu; lekcja oszczędzania opon.
+- [ ] Start: czas reakcji od zgaszenia świateł (zdarzenie LGOT), uślizg kół, pozycje zyskane/stracone do T1; lekcja startu: sprzęgło/gaz, trzymanie linii, zostawianie miejsca, pierwsze okrążenie bez kontaktu.
+- [ ] Walka: kolizje z pakietu Event (kto, gdzie, siła), ocena bezpieczeństwa jazdy (safety rating), zasady obrony i ataku tłumaczone przez trenera po sytuacji, nie w jej trakcie.
+- [ ] Inżynier na radiu (tryb wyścigowy, teksty klipów gotowe): opony, okno pit-stopu, flagi, SC/VSC, odstępy, uszkodzenia, deszcz, paliwo.
+- [ ] Kryterium: pełny wyścig z AI bez awarii, po wyścigu raport ze startu, kontaktów i zarządzania oponami.
+
+**Etap 10 – Postęp i motywacja (2 sesje)**
+
+- [ ] Panel postępu na każdy tor: krok asyst, seria, trend czasów (wykres), zakręty opanowane, spójność (rozrzut czasów), odsetek czystych okrążeń.
+- [ ] Odznaki i cele dnia: pierwsze czyste okrążenie, pierwsze okrążenie bez TC, 10 sesji, tor opanowany; seria dni z treningiem.
+- [ ] Historia: każda sesja z podsumowaniem i raportem PDF do pobrania; porównanie „ty miesiąc temu vs dziś”.
+- [ ] Kryterium: po każdej sesji gracz widzi co najmniej jedną rzecz, która się poprawiła.
+
+**Etap 11 – Wydanie beta (2 sesje)**
+
+- [ ] Test na 3–5 początkujących z formularzem z `docs/PLAN_TESTOW.md`; lista błędów i poprawki.
+- [ ] Zgłaszanie błędów z aplikacji: przycisk „wyślij raport” pakuje dziennik, bazę i ostatnie nagranie (recorder).
+- [ ] Sprawdzenie aktualizacji z GitHub Releases, podpis `.exe` albo instrukcja dla antywirusa.
+- [ ] Oba formaty telemetrii (2025 i 2026) przetestowane na żywo na 3 torach; pozostałe tory: pliki torów z recordera i automatycznego wykrywania zakrętów.
+- [ ] Kryterium: beta na GitHub Releases, instalacja i pierwsza sesja u obcej osoby bez pomocy.
+
+**Po becie** (nie w zakresie bety): ranking i konta w chmurze (nick + ID z karty kierowcy), lektor w samouczku, swobodna rozmowa z mechanikiem (model językowy), wersja mobilna jako podgląd, więcej gier.
+
+**Pomysły od Claude** (dopisane do etapów wyżej, tu dla przejrzystości): kreator sprawdzający telemetrię gry zamiast instrukcji; delta czasu na żywo na nakładce; mapa toru z realnego kształtu z punktami hamowania; cel „5 m później” na następne okrążenie zamiast ogólnych uwag; tryb „wytłumacz mi” z dłuższą wersją uwagi przy pierwszym wystąpieniu; lekcje z jednym celem; ocena bezpieczeństwa jazdy ze zdarzeń kolizji; czas reakcji na start ze zdarzenia LGOT; spójność i odsetek czystych okrążeń jako miary postępu; odznaki; raport sesji PDF jednym przyciskiem; przycisk „wyślij raport błędu” oparty na recorderze; teksty w jednym pliku pod angielski i lektora.
+
 ## Zasady pracy z Claude Code
 
 Jedna sesja = jedno zadanie z listy etapu, zaczynane od testu, kończone commitem. Dzięki temu Claude Code nie gubi kontekstu, a Ty uczysz się po kawałku.

@@ -8,6 +8,7 @@ import pytest
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 os.environ.setdefault("QTWEBENGINE_CHROMIUM_FLAGS", "--no-sandbox --disable-gpu")
 pytest.importorskip("PySide6.QtWebEngineWidgets")
+from PySide6.QtCore import Qt  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
 from boxbox.gui.data import DataBuilder, map_for  # noqa: E402
@@ -121,4 +122,57 @@ def test_window_wizard_session_and_screens(app, tmp_path: Path) -> None:
     assert abs(w.settings.volume - 2.0) < 1e-6 and w.settings.nick == "Nowy"
     w.export_csv()
     assert list((tmp_path / "eksport").glob("okrazenie-*.csv"))
+    w.close()
+
+
+def test_hud_overlay_follows_session(app, tmp_path: Path) -> None:
+    """Nakładka HUD nad grą: przezroczyste okno, treść z sesji, minimapa po dopasowaniu atlasu, plansza po okrążeniu."""
+    from boxbox.gui.hud import HudWindow, demo_frame
+
+    Settings(nick="Driver77", wizard_done=True, tutorial_done=True, auto_start=False).save(tmp_path / "settings.json")
+    w = WebWindow(tmp_path)
+    w.show()
+    wait_loaded(w, app)
+    w.start_session_cfg(SessionConfig(replay=MONZA, speed=12.0, db=tmp_path / "boxbox.sqlite", no_voice=True), overlay=True, name="monza hud")
+    ov = w.overlay
+    assert isinstance(ov, HudWindow) and ov.windowFlags() & Qt.WindowType.WindowTransparentForInput
+
+    def ovjs(code: str):
+        box: dict = {}
+        ov.page().runJavaScript(code, lambda r: box.setdefault("r", r))
+        end = time.monotonic() + 5
+        while "r" not in box and time.monotonic() < end:
+            pump(app, 0.05)
+        return box.get("r")
+
+    deadline = time.monotonic() + 150
+    fit_done = seen_finish = False
+    while w.session is not None and time.monotonic() < deadline:
+        pump(app, 0.2)
+        if w.session is None:
+            break
+        with w.session.shared.lock:
+            n = len(w.session.shape_sampler.all_samples())
+        if not fit_done and n > 1500:
+            w.fit_atlas_now(wait=True)
+            fit_done = True
+            pump(app, 0.6)
+            assert (tmp_path / "atlas_fit" / "11.json").exists()
+            assert ovjs("document.querySelector('.block.minimap').className") == "block minimap"  # minimapa widoczna
+            assert ovjs("(document.getElementById('track-outline').getAttribute('d')||'').length") > 100
+            assert "TRENER · MONZA" in ovjs("document.getElementById('status-value').textContent")
+        if not seen_finish and "finish" in (ovjs("document.getElementById('hud').className") or ""):
+            seen_finish = True
+            assert "OKRĄŻENIE" in ovjs("document.querySelector('.lapend-head').textContent")
+            assert ovjs("document.querySelector('.timing-label').textContent").startswith("OKRĄŻENIE")
+            assert "CZYSTYCH" in ovjs("document.querySelector('.timing-foot').textContent")
+            assert ovjs("document.querySelector('.radio-line').textContent")  # mechanik mówił
+    assert fit_done and seen_finish
+    pump(app, 1.0)
+    assert w.session is None and w.overlay is None  # po sesji nakładka znika
+    # podgląd na 5 s bez sesji
+    w.preview_overlay()
+    pump(app, 1.5)
+    assert w._preview.isVisible() and demo_frame().corner == "T8–T10"
+    w._preview.close()
     w.close()

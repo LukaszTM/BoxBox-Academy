@@ -5,11 +5,13 @@ Zasada „bez wyskakujących okien”: jedyne systemowe okno to drukowanie (Wind
 """
 import base64
 import json
+import logging
 import os
 import subprocess
 import sys
 import threading
 import time
+import traceback
 from datetime import datetime
 from pathlib import Path
 
@@ -21,20 +23,23 @@ from PySide6.QtWidgets import QApplication, QMainWindow
 
 from boxbox.coach.analyze import format_time, report_laps
 from boxbox.coach.delta import lap_csv
-from boxbox.coach.lessons import lesson as lesson_by_id
 from boxbox.coach.progress import CLEAN_LAPS_TO_ADVANCE
 from boxbox.gui import texts
-from boxbox.gui.data import DataBuilder, _norm, _resample, to_json
-from boxbox.gui.overlay import QtOverlay
+from boxbox.gui.data import DataBuilder, _norm, _resample, _shape_for, to_json
+from boxbox.gui.hud import HudFrame, HudWindow, demo_frame
 from boxbox.gui.probe import ProbeResult, ProbeWorker, probe
 from boxbox.gui.settings import Settings
 from boxbox.session import CoachSession, SessionConfig
 from boxbox.storage.db import Database
 from boxbox.tools.bugreport import build_bug_report
+from boxbox.tracks.atlas import MIN_FIT_M, fit_path, load_atlas
+from boxbox.tracks.atlas import fit as fit_atlas
 from boxbox.tracks.model import load_track_by_id
+from boxbox.tracks.shape import SHAPE_DIR, shape_path
 from boxbox.ui.overlay_model import GUIDE_DIR, build_coach_view, load_guide_for
 from boxbox.voice.player import ClipLibrary, VoicePlayer
 
+log = logging.getLogger("boxbox.gui")
 WEB_DIR = Path(__file__).resolve().parent / "web"
 ROOT = Path(__file__).resolve().parent.parent.parent
 IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
@@ -181,7 +186,8 @@ class WebWindow(QMainWindow):
         self.session: CoachSession | None = None
         self.session_started_at = 0.0
         self.session_ui: dict = {}
-        self.overlay: QtOverlay | None = None
+        self.overlay: HudWindow | None = None
+        self.hud_shape: dict | None = None  # minimapa: obrys 0..1 i kształt w świecie gry (do pozycji auta)
         self.guide = None
         self.guide_track_id: int | None = None
         self.player: VoicePlayer | None = None
@@ -220,8 +226,10 @@ class WebWindow(QMainWindow):
                 s.volume = max(0.3, min(3.0, float(value) / 100))
             elif key == "scale":
                 s.overlay_scale = float(value) / 100
+                s.hud_layout = {**s.hud_layout, "scale": int(value)}
             elif key == "opacity":
                 s.overlay_opacity = int(value)
+                s.hud_layout = {**s.hud_layout, "opacity": int(value)}
             elif key == "port":
                 s.port = int(value)
                 self.data.status["port"] = s.port
@@ -236,6 +244,8 @@ class WebWindow(QMainWindow):
                     s.overlay_opacity = int(value["opacity"])
                 if "scale" in value:
                     s.overlay_scale = float(value["scale"]) / 100
+                if self.overlay is not None:
+                    self.overlay.set_layout(value)
             elif key == "quietDefault":
                 s.quiet = bool(value)
             elif key == "autoStart":
@@ -309,9 +319,12 @@ class WebWindow(QMainWindow):
         self.session_started_at = time.monotonic()
         self.session_ui = {"name": name or cfg.record or "sesja", "overlay": self.settings.overlay if overlay is None else overlay, "auto": auto}
         self.session.start_background()
-        if self.session_ui["overlay"] and not cfg.replay:
-            self.overlay = QtOverlay(scale=self.settings.overlay_scale)
-            self.overlay.setWindowOpacity(self.settings.overlay_opacity / 100)
+        self.hud_shape = None
+        self._hud_laps = 0
+        self._fit_thread: threading.Thread | None = None
+        self._fit_at = time.monotonic()
+        if self.session_ui["overlay"]:
+            self.overlay = HudWindow(self.settings.hud_layout, self.settings.overlay_opacity, self.settings.overlay_scale)
             self.overlay.show()
         self.data.summary = None
         if auto:
@@ -374,7 +387,10 @@ class WebWindow(QMainWindow):
             "cpu": "liczone po sesji", "statusLine": view.status_line, "error": error, "chart": self.chart_cache,
         }
         if self.overlay is not None:
-            self.overlay.apply(view, error)
+            self.overlay.apply(self._hud_frame(session, state, view, new, lap_count, best, progress))
+        if time.monotonic() - self._fit_at > 20 and (self._fit_thread is None or not self._fit_thread.is_alive()):
+            self._fit_at = time.monotonic()
+            self.fit_atlas_now()
         # koniec bez sygnału
         now = time.monotonic()
         if packets != self._last_packets:
@@ -390,11 +406,127 @@ class WebWindow(QMainWindow):
         if stopped and not session.running:
             self.finish_session()
 
+    # --- dopasowanie atlasu w trakcie sesji (minimapa i mapa działają bez pełnego okrążenia) ---
+    def fit_atlas_now(self, wait: bool = False) -> None:
+        session = self.session
+        if session is None or session.state.session is None:
+            return
+        track_id = session.state.session.track_id
+        length = float(session.state.session.track_length_m)
+        fit_file = fit_path(track_id, self.data.fit_dir)
+        if fit_file.exists() or shape_path(track_id, self.data.shape_dir).exists() or shape_path(track_id, SHAPE_DIR).exists():
+            return
+        atlas = load_atlas(track_id)
+        if atlas is None:
+            return
+        with session.shared.lock:
+            samples = list(session.shape_sampler.all_samples())
+        if not samples or samples[-1][0] - samples[0][0] < MIN_FIT_M:
+            return
+
+        def work() -> None:
+            try:
+                result = fit_atlas(atlas, samples, length)
+                if result is not None:
+                    result.save(fit_file)
+                    self.hud_shape = None  # następna klatka wczyta minimapę
+                    log.info("obrys toru %d dopasowany w trakcie sesji: błąd %.1f m", track_id, result.error_m)
+            except Exception:  # dopasowanie nie może zepsuć sesji
+                log.error("dopasowanie atlasu: %s", traceback.format_exc())
+
+        self._fit_thread = threading.Thread(target=work, daemon=True, name="boxbox-atlas-fit")
+        self._fit_thread.start()
+        if wait:
+            self._fit_thread.join(timeout=30)
+
+    # --- nakładka HUD: klatka z danych sesji ---
+    def _hud_shape_for(self, track_id: int) -> dict | None:
+        """Obrys do minimapy (0..1, proporcje zachowane) plus kształt w świecie gry; tylko gdy dystans wskazuje punkt obrysu."""
+        if self.hud_shape is not None and self.hud_shape.get("track_id") == track_id:
+            return self.hud_shape
+        shape, source = _shape_for(track_id, [self.data.shape_dir, SHAPE_DIR], self.data.fit_dir)
+        self.hud_shape = {"track_id": track_id, "shape": None, "norm": None}
+        if shape is not None and shape.points and source != "outline":
+            xs = [p.x for p in shape.points]
+            zs = [p.z for p in shape.points]
+            span = max(max(xs) - min(xs), max(zs) - min(zs)) or 1.0
+            ox, oz = (span - (max(xs) - min(xs))) / 2, (span - (max(zs) - min(zs))) / 2
+            step = max(1, len(shape.points) // 240)
+            pts = shape.points[::step]
+            self.hud_shape.update({"shape": shape, "step": step, "n": len(pts),
+                                   "norm": {"points": [[round((p.x - min(xs) + ox) / span, 4), round((p.z - min(zs) + oz) / span, 4)] for p in pts]}})
+        return self.hud_shape
+
+    def _hud_frame(self, session: CoachSession, state, view, new: list, lap_count: int, best: int | None, progress) -> HudFrame:
+        lap = state.lap.player if state.lap is not None else None
+        elapsed = time.monotonic() - self.session_started_at
+        track = state.session.track_name.upper() if state.session else ""
+        rec = " · NAGRYWAM" if session.recording is not None else ""
+        if lap is None:
+            return HudFrame(mode="waiting", status=f"● CZEKAM NA GRĘ · PORT {self.settings.port}")
+        status = f"● TRENER · {track} · {int(elapsed) // 60:02d}:{int(elapsed) % 60:02d}{rec}" if track else f"● TRENER{rec}"
+        corner, meters = "", None
+        if view.corner_line:
+            parts = view.corner_line.split("  ")
+            corner = parts[0]
+            rest = parts[1] if len(parts) > 1 else ""
+            meters = 0.0 if rest == "TERAZ" else (float(rest.replace("za ", "").replace(" m", "")) if rest.startswith("za ") else None)
+        goal, goal_meters, passed = "", None, False
+        focus = view.focus_line.replace("Na tym okrążeniu popraw: ", "")
+        if focus:
+            name, _, what = focus.partition(", ")
+            goal = f"POPRAW · {name} · {what}".upper()
+            if self.guide is not None and lap.lap_distance >= 0:
+                gc = next((c for c in self.guide.corners if c.name == name), None)
+                if gc is not None:
+                    length = self.guide.length_m
+                    goal_meters = (gc.apex_m - lap.lap_distance) % length
+                    passed = (lap.lap_distance - gc.apex_m) % length < 400
+        last_delta = "—"
+        laps = [l for l in session.recorder.laps if l.lap_time_ms and not l.pitted]
+        ref_ms = session.best_before_ms or (min((l.lap_time_ms for l in laps[:-1] if not l.invalid), default=None) if len(laps) > 1 else None)
+        if laps and ref_ms:
+            last_delta = f"{(laps[-1].lap_time_ms - ref_ms) / 1000:+.2f} s".replace(".", ",").replace("-", "−")
+        streak = progress.streak if progress is not None else 0
+        lap_end = None
+        if lap_count != getattr(self, "_hud_laps", 0):
+            self._hud_laps = lap_count
+            if laps and session.recorder.laps and session.recorder.laps[-1] is laps[-1]:
+                done = laps[-1]
+                msgs = session.messages_by_lap.get(done.number, [])
+                warn = f"{msgs[0].corner_name}: {msgs[0].problem.rstrip('.')}" if msgs else ""
+                good = "czyste okrążenie" if not msgs and not done.invalid else ""
+                lap_end = {"lap": f"OKRĄŻENIE {done.number:02d}", "time": format_time(done.lap_time_ms), "delta": last_delta if last_delta != "—" else "",
+                           "good": good, "warn": warn, "complete": not done.invalid, "out_lap": done.pitted}
+            elif session.recorder.laps and session.recorder.laps[-1].pitted:
+                lap_end = {"lap": f"OKRĄŻENIE {session.recorder.laps[-1].number:02d}", "time": "", "delta": "", "good": "", "warn": "", "complete": False, "out_lap": True}
+        shape = car = None
+        if state.session is not None:
+            hs = self._hud_shape_for(state.session.track_id)
+            if hs and hs.get("norm") and lap.lap_distance >= 0:
+                shape = hs["norm"]
+                sh = hs["shape"]
+                idx = int((lap.lap_distance % sh.length_m) / sh.step_m / hs["step"]) % hs["n"]
+                brake = None
+                if self.guide is not None and corner:
+                    gc = next((c for c in self.guide.corners if c.name == corner), None)
+                    if gc is not None:
+                        brake = int(((gc.apex_m - 80) % sh.length_m) / sh.step_m / hs["step"]) % hs["n"]
+                car = (idx, brake)
+        return HudFrame(
+            mode="normal", status=status, corner=corner, meters=meters, passed=passed, goal=goal,
+            lap=f"OKRĄŻENIE {lap.current_lap_num:02d}" + (" · PIT" if lap.pit_status else ""), delta=last_delta,
+            streak_text=f"{streak} / {CLEAN_LAPS_TO_ADVANCE} CZYSTYCH" if progress is not None else "",
+            streak_pct=100 * streak / CLEAN_LAPS_TO_ADVANCE, radio=(new[-1] if new else None), lap_end=lap_end, shape=shape, car=car,
+            extra={"goalMeters": goal_meters},
+        )
+
     def finish_session(self) -> None:
         session, self.session = self.session, None
         if session is None:
             return
         result = session.finish()
+        self._hud_laps = 0
         if self.overlay is not None:
             self.overlay.close()
             self.overlay = None
@@ -514,13 +646,11 @@ class WebWindow(QMainWindow):
         self.player.say(["misc_hello"], "test")
 
     def preview_overlay(self) -> None:
+        """Pokazuje nakładkę z przykładową treścią na 5 s (bez sesji)."""
         if self.overlay is not None:
             return
-        ov = QtOverlay(scale=self.settings.overlay_scale)
-        ov.setWindowOpacity(self.settings.overlay_opacity / 100)
-        from boxbox.ui.overlay_model import CoachView
-
-        ov.apply(CoachView("OKRĄŻENIE 4", "T8-T10  za 120 m", ("T1-T2: hamowanie za późno, o jakieś dwadzieścia metrów.", "Pierwsze okrążenie zapisane jako odniesienie.", "Mechanik na radiu, słyszę cię."), "Cel: 3 czyste okrążenia z rzędu (2/3)", "245 km/h, bieg 6 | 3481 m | podgląd", "Na tym okrążeniu popraw: T1-T2, hamuj 20 m wcześniej"))
+        ov = HudWindow(self.settings.hud_layout, self.settings.overlay_opacity, self.settings.overlay_scale)
+        ov.apply(demo_frame())
         ov.show()
         self._preview = ov
         QTimer.singleShot(5000, ov.close)

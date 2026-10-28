@@ -31,7 +31,8 @@ class HudFrame:
     streak_pct: float = 0.0
     radio: tuple[float, str] | None = None  # (sekundy sesji, tekst) nowego komunikatu
     lap_end: dict | None = None  # {"lap", "time", "delta", "good", "warn", "out_lap"}
-    shape: dict | None = None  # {"points": [[0..1, 0..1], ...], "carIndex": i, "brakeIndex": j} albo None = ukryj
+    shape: dict | None = None  # {"points": [[0..1, 0..1], ...]} albo None = ukryj minimapę
+    car: tuple[int, int | None] | None = None  # (indeks punktu auta, indeks punktu hamowania przed następnym zakrętem)
     extra: dict = field(default_factory=dict)
 
 
@@ -99,11 +100,12 @@ class HudWindow(QWebEngineView):
             js.append(f"BoxBoxHUD.setMode({_js(f.mode)})")
         if p is None or f.status != p.status:
             js.append(f"BoxBoxHUD.setStatus({_js(f.status)})")
-        if p is None or (f.corner, f.meters, f.passed) != (p.corner, p.meters, p.passed):
-            js.append(f"BoxBoxHUD.setCorner({_js(f.corner or '—')}, {_js(f.meters if f.meters is not None else 0)})")
-            js.append(f"BoxBoxHUD.setGoal({_js(f.meters if f.meters is not None else 9999)}, {_js(bool(f.passed) or not f.goal)}, {_js(f.goal or ' ')})")
-        elif p is None or f.goal != p.goal:
-            js.append(f"BoxBoxHUD.setGoal({_js(f.meters if f.meters is not None else 9999)}, {_js(bool(f.passed) or not f.goal)}, {_js(f.goal or ' ')})")
+        gm = f.extra.get("goalMeters", f.meters)
+        pgm = p.extra.get("goalMeters", p.meters) if p is not None else None
+        if p is None or (f.corner, f.meters) != (p.corner, p.meters):
+            js.append(f"BoxBoxHUD.setCorner({_js(f.corner or '')}, {_js(f.meters if f.meters is not None else -1)})")
+        if p is None or (f.goal, f.passed, None if gm is None else round(gm, -1)) != (p.goal, p.passed, None if pgm is None else round(pgm, -1)):
+            js.append(f"BoxBoxHUD.setGoal({_js(gm if gm is not None else 9999)}, {_js(bool(f.passed) or not f.goal)}, {_js(f.goal or ' ')})")
         if p is None or (f.lap, f.delta, f.streak_text, round(f.streak_pct)) != (p.lap, p.delta, p.streak_text, round(p.streak_pct)):
             js.append(f"BoxBoxHUD.setTiming({_js(f.lap)}, {_js(f.delta)}, {_js(f.streak_text)}, {_js(round(f.streak_pct))})")
         if f.radio is not None and (p is None or f.radio != p.radio):
@@ -116,6 +118,8 @@ class HudWindow(QWebEngineView):
             js.append("BoxBoxHUD.newLap()")
         if p is None or f.shape != p.shape:
             js.append(f"BoxBoxHUD.setTrackShape({_js(f.shape)})")
+        if f.car is not None and (p is None or f.car != p.car or f.shape != p.shape):
+            js.append(f"BoxBoxHUD.setCar({_js(f.car[0])}, {_js(f.car[1])})")
         if js:
             self.run(";".join(js))
         self._last = f
@@ -126,5 +130,5 @@ def demo_frame() -> HudFrame:
     return HudFrame(
         mode="normal", status="● TRENER · PODGLĄD", corner="T8–T10", meters=120, goal="POPRAW · T1–T2 · HAMUJ 20 M WCZEŚNIEJ",
         lap="OKRĄŻENIE 04", delta="−0,41 s", streak_text="2 / 3 CZYSTYCH", streak_pct=67, radio=(257, "T1–T2: hamowanie za późno, o jakieś dwadzieścia metrów."),
-        shape={"points": [[0.15, 0.35], [0.57, 0.10], [0.9, 0.45], [0.54, 0.9], [0.13, 0.68]], "carIndex": 1, "brakeIndex": 3},
+        shape={"points": [[0.15, 0.35], [0.57, 0.10], [0.9, 0.45], [0.54, 0.9], [0.13, 0.68]]}, car=(1, 3),
     )

@@ -25,6 +25,7 @@ def main(target: str = "recorder") -> int:
         "--add-data", f"{ROOT / 'boxbox' / 'tracks' / 'data'}{sep}boxbox/tracks/data",
         "--add-data", f"{ROOT / 'boxbox' / 'tracks' / 'guide'}{sep}boxbox/tracks/guide",
         "--add-data", f"{ROOT / 'boxbox' / 'tracks' / 'shape'}{sep}boxbox/tracks/shape",
+        "--add-data", f"{ROOT / 'boxbox' / 'tracks' / 'atlas'}{sep}boxbox/tracks/atlas",
         "--hidden-import", "boxbox.telemetry.motion",
         "--distpath", str(ROOT / "dist"), "--workpath", str(ROOT / "build" / "pyinstaller"),
         "--specpath", str(ROOT / "build"),

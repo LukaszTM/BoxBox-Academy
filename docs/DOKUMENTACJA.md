@@ -25,7 +25,7 @@ Ton komunikatów: spokojny instruktor, konkretnie, bez krzyku. Komunikaty po pol
 | System | Windows 10/11 (dźwięk przez winsound, nakładka przez tkinter); Linux/macOS: konsola i replay, dźwięk przez `aplay`/`afplay` |
 | Python | 3.12 lub nowszy, z tkinter (instalator z python.org). Bez dodatkowych bibliotek w aplikacji |
 | Gra | F1 25, Ustawienia → Telemetria: UDP wł., broadcast wył., IP 127.0.0.1, port 20777, 60 Hz, format 2025 lub 2026, „Twoja telemetria: publiczna”; tryb okna bez ramki przy nakładce |
-| Projekt | klon repozytorium `projekt (GitHub)`, gałąź `claude/new-session-t6gmj8`, praca z katalogu głównego |
+| Projekt | klon repozytorium projektu (GitHub), gałąź `claude/new-session-t6gmj8`, praca z katalogu głównego |
 
 Skrypty `.bat` w `tools\package\` (działają z klonu i z paczki ZIP):
 

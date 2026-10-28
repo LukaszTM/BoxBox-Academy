@@ -12,6 +12,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import BinaryIO
 
+from boxbox.telemetry.header import PacketId
+from boxbox.telemetry.participants import anonymize_participants
+
 MAGIC = b"BBXREC01"
 _RECORD_HEADER = struct.Struct("<dH")
 
@@ -35,13 +38,18 @@ class RecordedPacket:
 
 
 class RecordingWriter:
-    def __init__(self, path: Path) -> None:
+    """Zapis pakietów; nazwy graczy (własna i innych online) są zamieniane na GRACZ-NN, żeby nagranie nie niosło danych osobowych."""
+
+    def __init__(self, path: Path, anonymize: bool = True) -> None:
         self._file: BinaryIO = open(path, "wb")
         self._file.write(MAGIC)
         self.count = 0
         self.size = 0
+        self.anonymize = anonymize
 
     def write(self, timestamp: float, data: bytes) -> None:
+        if self.anonymize and len(data) > 6 and data[6] == PacketId.PARTICIPANTS:
+            data = anonymize_participants(data)
         self._file.write(_RECORD_HEADER.pack(timestamp, len(data)))
         self._file.write(data)
         self.count += 1

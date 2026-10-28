@@ -4,6 +4,7 @@ Układ zgodny z docs/F1_25_Telemetry_Output_Structures.txt (2025, 57 B na auto)
 i docs/2026_Season_Pack_Telemetry_Output_Structures.txt (2026: driverId, networkId
 i teamId to uint16, 60 B na auto).
 """
+import re
 import struct
 from dataclasses import dataclass
 
@@ -67,3 +68,42 @@ def parse_participants(data: bytes) -> ParticipantsPacket:
     base = HEADER_SIZE + _HEAD.size
     cars = tuple(_parse_car(layout, data, base + i * layout.size) for i in range(header.num_cars))
     return ParticipantsPacket(header, num_active, cars)
+
+
+ANON_PREFIX = "GRACZ-"
+_AI_NAME = re.compile(r"^[A-Z][A-Z .'\-]{1,30}$")  # nazwiska kierowców AI z gry (HAMILTON, DE VRIES); gamertagi mają cyfry/małe litery
+
+
+def is_ai_name(name: str) -> bool:
+    return bool(_AI_NAME.match(name))
+
+
+def anonymize_participants(data: bytes) -> bytes:
+    """Zwraca kopię pakietu Participants z nazwami ludzi (gracz i inni online) zamienionymi na GRACZ-NN.
+
+    Zostają tylko nazwiska kierowców AI z gry (same wielkie litery); gracz, duchy i rywale online dostają GRACZ-NN. Pakiet innego typu albo o złym rozmiarze wraca bez zmian, żeby nagrywanie
+    nigdy nie padło przez anonimizację.
+    """
+    if len(data) < HEADER_SIZE or data[6] != PacketId.PARTICIPANTS:
+        return data
+    try:
+        header = check_packet(data, PacketId.PARTICIPANTS, PACKET_SIZE)
+    except ValueError:
+        return data
+    layout = _CAR[header.packet_format]
+    base = HEADER_SIZE + _HEAD.size
+    name_offset = struct.calcsize("<BBBBBBB") if header.packet_format == 2025 else struct.calcsize("<BHHHBBB")
+    out = bytearray(data)
+    for i in range(header.num_cars):
+        car = base + i * layout.size
+        raw = bytes(out[car + name_offset:car + name_offset + 32]).split(b"\x00", 1)[0]
+        if not raw:
+            continue
+        current = raw.decode("utf-8", errors="replace")
+        if out[car] != 0 and is_ai_name(current):  # kierowca AI z gry: nazwisko zostaje
+            continue
+        if current.startswith(ANON_PREFIX):
+            continue
+        name = f"{ANON_PREFIX}{i:02d}".encode("ascii")
+        out[car + name_offset:car + name_offset + 32] = name.ljust(32, b"\x00")
+    return bytes(out)

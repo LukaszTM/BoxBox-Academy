@@ -157,7 +157,7 @@ def main() -> None:
     d.ellipse((1086, 226, 1126, 266), fill=(80, 88, 104))
     d.pieslice((1070, 262, 1142, 334), 180, 360, fill=(80, 88, 104))
     d.text((1180, 212), "KIEROWCA", font=font(32, True), fill=WHITE)
-    d.text((1180, 256), "ID 7AC6-22FF-8242", font=font(14), fill=CYAN)
+    d.text((1180, 256), "ID DEMO-0000-0000", font=font(14), fill=CYAN)
     for i, (k, v) in enumerate([("Krok asyst", "2 · TC średnia"), ("Tory", "3 · 1 opanowany"), ("Okrążenia", "148"), ("Seria", "2 / 3 czystych")]):
         x = 1056 + (i % 2) * 260
         y = 338 + (i // 2) * 52

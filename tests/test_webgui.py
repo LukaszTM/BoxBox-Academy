@@ -129,7 +129,7 @@ def test_hud_overlay_follows_session(app, tmp_path: Path) -> None:
     """Nakładka HUD nad grą: przezroczyste okno, treść z sesji, minimapa po dopasowaniu atlasu, plansza po okrążeniu."""
     from boxbox.gui.hud import HudWindow, demo_frame
 
-    Settings(nick="Driver77", wizard_done=True, tutorial_done=True, auto_start=False).save(tmp_path / "settings.json")
+    Settings(nick="Tester", wizard_done=True, tutorial_done=True, auto_start=False).save(tmp_path / "settings.json")
     w = WebWindow(tmp_path)
     w.show()
     wait_loaded(w, app)

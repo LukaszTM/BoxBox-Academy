@@ -152,7 +152,7 @@ def mockup(out: Path) -> None:
     im.save(out)
 
 
-def badge(out: Path, nick: str = "KIEROWCA", player_id: str = "7AC6-22FF-8242", level: int = 2, tracks: int = 3, laps: int = 148) -> None:
+def badge(out: Path, nick: str = "KIEROWCA", player_id: str = "DEMO-0000-0000", level: int = 2, tracks: int = 3, laps: int = 148) -> None:
     """Plakietka kierowcy jak prawo jazdy: na ekranie Start z boku, w karcie kierowcy w powiększeniu."""
     W, H = 640, 400
     C = {k: hex_rgb(v) for k, v, _ in PALETTE}

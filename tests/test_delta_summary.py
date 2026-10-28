@@ -44,6 +44,16 @@ def test_lap_csv_polish_format() -> None:
     lines = text.splitlines()
     assert lines[0] == "dystans_m;czas_s;predkosc_kmh;gaz;hamulec;bieg;kierownica;delta_s;predkosc_ref_kmh"
     assert len(lines) == 51 and "," in lines[1] and ";" in lines[1]
+    # kanały DRS i ERS: kolumny dołączane tylko, gdy są próbki; wartość z próbki najbliższej dystansowi
+    from boxbox.coach.ers_sample import ErsSample
+    from boxbox.coach.lap_samples import DrsSample
+    drs = [DrsSample(d, 0, d >= 40, d >= 50) for d in range(0, 120, 10)]
+    ers = [ErsSample(0.0, 4_000_000.0, 0.0, 0.0, 1), ErsSample(60.0, 2_500_000.0, 0.0, 0.0, 1)]
+    text = lap_csv(ref[:50], None, drs, ers)
+    lines = text.splitlines()
+    assert lines[0] == "dystans_m;czas_s;predkosc_kmh;gaz;hamulec;bieg;kierownica;drs;bateria_mj"
+    first, last = lines[1].split(";"), lines[-1].split(";")
+    assert first[7:] == ["0", "4,00"] and last[7:] == ["1", "2,50"]  # ostatnia próbka: 98 m, DRS otwarty od 50 m, bateria z próbki 60 m
 
 
 def test_summary_good_and_to_work() -> None:

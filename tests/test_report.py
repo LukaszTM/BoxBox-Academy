@@ -4,7 +4,9 @@ from boxbox.gui.report import radar_svg, session_report_html
 SUMMARY = {
     "name": "monza test", "track": "Monza", "trackId": 11, "laps": 5, "elapsed": 420.0, "date": "28.10.2026", "coach": True,
     "best": "1:26.918", "clean": 2, "delta": -0.4, "good": "Nowe najlepsze okrążenie", "toWork": "T1-T2: hamowanie za późno",
-    "lapRows": [{"number": 2, "time": "1:33.476", "delta": "+6.558", "valid": True, "notes": 2}, {"number": 6, "time": "1:26.918", "delta": "+0.000", "valid": True, "notes": 0}],
+    "lapRows": [{"number": 2, "time": "1:33.476", "delta": "+6.558", "valid": True, "notes": 2},
+                {"number": 6, "time": "1:26.918", "delta": "+0.000", "valid": True, "notes": 0, "sectors": ["28.038", "29.112", "29.768"], "bestSectors": [True, True, False]}],
+    "idealLap": "1:26.908",
     "cornerRows": [["T1-T2", "62 km/h", "1", "779 m", "1024 m", "–"]],
 }
 PROFILE = {
@@ -28,6 +30,8 @@ def test_report_with_profile_has_radar_rows_task_and_tables() -> None:
     assert "Monza · 28.10.2026 · 5 okrążeń · najlepsze 1:26.918 · Tester" in page
     assert "Nowe najlepsze okrążenie" in page and "T1-T2: hamowanie za późno" in page
     assert '<tr class="best"><td>6</td>' in page and "<td>779 m</td>" in page and "Poprzednie 10" in page
+    assert '<td class="best-sector">28.038</td><td class="best-sector">29.112</td><td class="">29.768</td>' in page  # sektory z wyróżnieniem
+    assert "z najlepszych sektorów 1:26.908" in page and page.count('<td class="">-</td>') == 3  # okrążenie 2 bez sektorów
     assert "&lt;" not in page.split("<body>")[0]  # bez wycieków HTML w nagłówku
 
 

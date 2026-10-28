@@ -769,10 +769,11 @@ class WebWindow(QMainWindow):
             own = db.samples(lap.id)
             best = db.best_lap(session["track_id"], allow_invalid=True) if session["track_id"] is not None else None
             ref = db.samples(best.id) if best and best.id != lap.id else None
+            drs, ers = db.drs_samples(lap.id), db.ers_samples(lap.id)
         finally:
             db.close()
         out = self.export_dir() / f"okrazenie-{lap.id}-{datetime.now():%Y-%m-%d_%H%M%S}.csv"
-        out.write_text(lap_csv(own, ref), encoding="utf-8-sig")
+        out.write_text(lap_csv(own, ref, drs, ers), encoding="utf-8-sig")
         self.bridge.notice.emit("success", f"Zapisano CSV: {out}")
 
     def save_session_report(self) -> None:

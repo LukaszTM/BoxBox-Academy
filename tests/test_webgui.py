@@ -185,7 +185,8 @@ def test_window_wizard_session_and_screens(app, tmp_path: Path) -> None:
     pump(app, 0.5)
     assert abs(w.settings.volume - 2.0) < 1e-6 and w.settings.nick == "Nowy"
     w.export_csv()
-    assert list((tmp_path / "eksport").glob("okrazenie-*.csv"))
+    csv_files = list((tmp_path / "eksport").glob("okrazenie-*.csv"))
+    assert csv_files and csv_files[0].read_text(encoding="utf-8-sig").splitlines()[0].endswith(";drs;bateria_mj")  # kanały z bazy w CSV
     w.close()
 
 

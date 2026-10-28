@@ -8,6 +8,8 @@ from bisect import bisect_left
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from boxbox.coach.ers_sample import ErsSample
+from boxbox.coach.lap_samples import DrsSample
 from boxbox.coach.laps import Sample
 
 GRID_M = 10.0
@@ -106,13 +108,31 @@ def biggest_losses(trace: Sequence[DeltaPoint], window_m: float = 150.0, top: in
 CSV_COLUMNS = ("dystans_m", "czas_s", "predkosc_kmh", "gaz", "hamulec", "bieg", "kierownica")
 
 
-def lap_csv(samples: Sequence[Sample], reference: Sequence[Sample] | None = None) -> str:
-    """CSV okrążenia (średnik, przecinek dziesiętny jak w polskim Excelu); z referencją dokłada deltę."""
+def _nearest(samples: Sequence[object], distance_m: float, cursor: list[int]) -> object | None:
+    """Próbka kanału najbliższa dystansowi; `cursor` pamięta pozycję, bo oba ciągi rosną."""
+    if not samples:
+        return None
+    i = cursor[0]
+    while i + 1 < len(samples) and getattr(samples[i + 1], "distance_m") <= distance_m:
+        i += 1
+    cursor[0] = i
+    return samples[i]
+
+
+def lap_csv(
+    samples: Sequence[Sample], reference: Sequence[Sample] | None = None,
+    drs: Sequence[DrsSample] = (), ers: Sequence[ErsSample] = (),
+) -> str:
+    """CSV okrążenia (średnik, przecinek dziesiętny jak w polskim Excelu); z referencją dokłada deltę,
+    z kanałami DRS i ERS kolumny drs (0/1) i bateria_mj."""
     buf = io.StringIO()
     w = csv.writer(buf, delimiter=";", lineterminator="\n")
-    cols = list(CSV_COLUMNS) + (["delta_s", "predkosc_ref_kmh"] if reference else [])
+    cols = list(CSV_COLUMNS) + (["delta_s", "predkosc_ref_kmh"] if reference else []) + (["drs"] if drs else []) + (["bateria_mj"] if ers else [])
     w.writerow(cols)
     deltas = {p.distance_m: p for p in delta_trace(samples, reference)} if reference else {}
+    drs_sorted = sorted(drs, key=lambda d: d.distance_m)
+    ers_sorted = sorted(ers, key=lambda e: e.distance_m)
+    drs_cur, ers_cur = [0], [0]
 
     def num(x: float, nd: int = 3) -> str:
         return f"{x:.{nd}f}".replace(".", ",")
@@ -123,5 +143,11 @@ def lap_csv(samples: Sequence[Sample], reference: Sequence[Sample] | None = None
             key = round(s.distance_m / GRID_M) * GRID_M
             p = deltas.get(key)
             row += [num(p.delta_s) if p else "", num(p.ref_speed_kmh, 0) if p else ""]
+        if drs_sorted:
+            d = _nearest(drs_sorted, s.distance_m, drs_cur)
+            row.append("1" if d is not None and d.active else "0")  # type: ignore[attr-defined]
+        if ers_sorted:
+            e = _nearest(ers_sorted, s.distance_m, ers_cur)
+            row.append(num(e.store_j / 1_000_000, 2) if e is not None else "")  # type: ignore[attr-defined]
         w.writerow(row)
     return buf.getvalue()

@@ -28,7 +28,7 @@ svg.radar{width:100%;height:auto;display:block}.legend{display:flex;gap:16px;col
 .task b{color:#19e6e6;letter-spacing:.1em;font-size:11px;text-transform:uppercase;white-space:nowrap}.task span{font-size:14px;font-weight:700}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}.two .panel b{font-size:11px;letter-spacing:.1em}.two .panel p{font-size:14px;font-weight:700;margin:8px 0 0}
 table{width:100%;border-collapse:collapse;margin-top:10px;font-size:11px}th{text-align:left;color:#8fa0b3;font-weight:600;padding:6px 8px;border-bottom:1px solid #2a3a50}
-td{padding:6px 8px;border-bottom:1px solid #1f2c3f}tr.best td{color:#19e6e6;font-weight:700}.foot{margin-top:18px;color:#7f8fa3;font-size:10px;display:flex;justify-content:space-between}
+td{padding:6px 8px;border-bottom:1px solid #1f2c3f}tr.best td{color:#19e6e6;font-weight:700}td.best-sector{color:#b388ff;font-weight:700}.foot{margin-top:18px;color:#7f8fa3;font-size:10px;display:flex;justify-content:space-between}
 @page{size:A4;margin:0}
 """
 
@@ -89,10 +89,12 @@ def session_report_html(summary: dict, profile: dict | None, nick: str = "", gam
     weakest = min((skills[k] for k, _ in DIMENSIONS if skills.get(k, {}).get("score") is not None), key=lambda s: (s["score"], s.get("trend") or 0), default=None)
     task = _cap(weakest["hint"]) if weakest and weakest.get("hint") else (summary.get("toWork") or "Powtórz swoje najlepsze okrążenie.")
     lap_rows = "".join(
-        f'<tr class="{"best" if r.get("delta") in ("+0.000", "0.000") else ""}"><td>{r["number"]}</td><td>{_esc(r["time"])}</td><td>{_esc(r.get("delta", ""))}</td>'
-        f'<td>{"tak" if r.get("valid") else "nie"}</td><td>{r.get("notes", 0)}</td></tr>'
+        f'<tr class="{"best" if r.get("delta") in ("+0.000", "0.000") else ""}"><td>{r["number"]}</td><td>{_esc(r["time"])}</td>'
+        + "".join(f'<td class="{"best-sector" if (r.get("bestSectors") or [False] * 3)[i] else ""}">{_esc(sv)}</td>' for i, sv in enumerate(r.get("sectors") or ["-", "-", "-"]))
+        + f'<td>{_esc(r.get("delta", ""))}</td><td>{"tak" if r.get("valid") else "nie"}</td><td>{r.get("notes", 0)}</td></tr>'
         for r in summary.get("lapRows", [])
     )
+    ideal = f' <span class="muted">· z najlepszych sektorów {_esc(summary["idealLap"])}</span>' if summary.get("idealLap") else ""
     corner_rows = "".join("<tr>" + "".join(f"<td>{_esc(c)}</td>" for c in row) + "</tr>" for row in summary.get("cornerRows", []))
     lap_count = summary.get("laps", 0)
     sub = " · ".join(x for x in (summary.get("track", ""), summary.get("date", ""), f"{lap_count} okrążeń", f"najlepsze {summary['best']}" if summary.get("best") else "", nick) if x)
@@ -107,7 +109,7 @@ def session_report_html(summary: dict, profile: dict | None, nick: str = "", gam
 <div class="panel"><h2>SZEŚĆ UMIEJĘTNOŚCI</h2>{rows}</div></div>
 <div class="task"><b>Zadanie na następną sesję</b><span>{_esc(task)}</span></div>
 <div class="two"><div class="panel"><b class="pos">✓ DOBRZE</b><p>{_esc(summary.get("good") or "Sesja zapisana")}</p></div><div class="panel"><b class="neg">◎ DO PRACY</b><p>{_esc(summary.get("toWork") or "Nic pilnego")}</p></div></div>
-{f'<div class="panel" style="margin-top:18px"><h2>OKRĄŻENIA</h2><table><thead><tr><th>Nr</th><th>Czas</th><th>Δ do najlepszego</th><th>Ważne</th><th>Uwagi</th></tr></thead><tbody>{lap_rows}</tbody></table></div>' if lap_rows else ''}
+{f'<div class="panel" style="margin-top:18px"><h2>OKRĄŻENIA{ideal}</h2><table><thead><tr><th>Nr</th><th>Czas</th><th>S1</th><th>S2</th><th>S3</th><th>Δ do najlepszego</th><th>Ważne</th><th>Uwagi</th></tr></thead><tbody>{lap_rows}</tbody></table></div>' if lap_rows else ''}
 {f'<div class="panel" style="margin-top:18px"><h2>ZAKRĘTY REFERENCJI</h2><table><thead><tr><th>Zakręt</th><th>Min. prędkość</th><th>Bieg</th><th>Hamowanie</th><th>Pełny gaz</th><th>Δ czasu vs poprzednie</th></tr></thead><tbody>{corner_rows}</tbody></table></div>' if corner_rows else ''}
 <div class="foot"><span>BoxBox Academy · wszystkie dane zostają na tym komputerze</span><span>wysoki wynik = powtarzasz swoje najlepsze zachowania; to mapa pracy, nie ranking</span></div>
 </div></body></html>"""

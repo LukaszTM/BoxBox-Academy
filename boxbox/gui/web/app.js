@@ -207,7 +207,7 @@ function render(){ if(!D) return;
   if(keep){const el=document.getElementById(keep.id); if(el){el.focus(); try{el.setSelectionRange(keep.pos,keep.pos)}catch(e){}}} }
 function navigate(next){ui.view=next;ui.overlayVisible=false;ui.photoPicker=false;ui.hudPhotoPicker=false;render();window.scrollTo({top:0,behavior:'instant'});}
 const call=(name,...args)=>{ if(bridge&&bridge[name]) return bridge[name](...args); };
-function tutorialGo(step){ ui.tutorialStep=step; ui.tutorial=true; const view=TUTORIAL[step][0]; if(ui.view!==view) navigate(view); else render(); }
+function tutorialGo(step){ ui.tutorialStep=step; ui.tutorial=true; const view=TUTORIAL[step][0]; if(ui.view!==view) navigate(view); else render(); call('tutorialStep',String(step)); }
 function tutorialEnd(){ ui.tutorial=false; if(!D.settings.tutorialDone){ D.settings.tutorialDone=true; call('setSetting', JSON.stringify({tutorialDone:true})); } render(); }
 
 function action(a){switch(a){

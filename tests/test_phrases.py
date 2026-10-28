@@ -32,7 +32,8 @@ def test_catalog_covers_rules_tracks_and_fits_free_plan() -> None:
         assert f"corner_{corner_key(name)}" in entries
     for rule in RULE_TEXTS:
         assert f"rule_{rule}_a" in entries
-    chars_v1 = sum(len(t) for k, t in entries.items() if not k.startswith(("v2_", "eng_", "misc_")))
+    assert all(f"tutorial_{i}" in entries for i in range(7)) and not any(w.endswith("uj") for t in [entries[f"tutorial_{i}"] for i in range(7)] for w in t.replace(".", "").split())  # lektor samouczka, bez końcówki „-uj” (TTS czyta „-uć”)
+    chars_v1 = sum(len(t) for k, t in entries.items() if not k.startswith(("v2_", "eng_", "misc_", "tutorial_")))
     assert chars_v1 < 5000, chars_v1  # część składana (v1) mieściła się w planie free
     assert sum(len(t) for t in entries.values()) < 60_000  # całość (v1+v2+misc+inżynier) w jednym miesiącu Creator
     assert "eng_pit_this_lap" in entries and "eng_laps_3" in entries

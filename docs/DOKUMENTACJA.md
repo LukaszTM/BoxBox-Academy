@@ -270,6 +270,8 @@ hamulca.”, „Lekki hamulec.”, „Pół gazu.”, „Pełny gaz.”), DRS i 
 Generowanie raz, offline: ElevenLabs, głos „Piotr”, model multilingual v2, stability 0,36,
 similarity 0,68, PCM 22 050 Hz mono. Klucz API tylko w zmiennej środowiskowej, nigdy w plikach.
 Znana wada głosu: końcówkę „-uj” czyta jako „-uć”, dlatego zdania są pisane bez niej.
+Lektor samouczka: klipy `tutorial_0`–`tutorial_6` (po jednym na krok samouczka w oknie); gdy są w bibliotece,
+mechanik czyta krok przy jego otwarciu, bez klipów dymek zostaje tylko tekstem.
 
 Efekt radia (`boxbox.voice.radio`): dwa filtry górnoprzepustowe 300 Hz, dwa dolnoprzepustowe 3400 Hz,
 miękkie ograniczenie (drive 4,5), szczyt 0,98, szum −48 dB, klik PTT, przycięcie ciszy. Odtwarzacz
@@ -291,6 +293,11 @@ Pokazuje: OKRĄŻENIE N (pit/nieważne), najbliższy zakręt z metrami lub TERAZ
 okrążeniu popraw: …” po każdym okrążeniu, trzy ostatnie komunikaty mechanika, zielone
 „Cel: 3 czyste okrążenia z rzędu (n/3), potem: …”, pasek stanu (prędkość, bieg, dystans, nagrywanie),
 czerwony komunikat o błędzie portu lub wątku. Gra musi być w trybie okna bez ramki.
+
+Nakładka HUD (zakładka HUD F1, `gui/hud.py` + `web/hud.html`): osiem modułów przeciąganych w edytorze
+(stan, zakręt, cel, delta, DRS · bateria · sektory, radio, minimapa, plansza po okrążeniu). Moduł
+DRS · bateria · sektory pokazuje lampkę i skrzydło DRS (GOTOWY / OTWARTY), baterię w procentach z paskiem
+oraz S1 i S2 bieżącego okrążenia; sektor lepszy od najlepszego z sesji jest fioletowy.
 
 Nakładka do nagrań (`nakladka.bat`): cel na okrążenie i zadanie w zakręcie z planu sesji, lista
 zadań z automatycznym odhaczaniem.

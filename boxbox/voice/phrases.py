@@ -104,6 +104,16 @@ MISC_TEXTS: dict[str, str] = {
 
 # Prowadzenie w zakręcie (boxbox/coach/guide_live.py): krótkie komendy przed punktem z okrążenia referencyjnego.
 # "intro" idzie po klipie zakrętu: "Zakręt czwarty. Prowadzę." Reszta to pojedyncze słowa, bo liczy się czas.
+TUTORIAL_TEXTS: dict[str, str] = {  # lektor samouczka w oknie: jeden klip na krok (kolejność jak TUTORIAL w app.js)
+    "0": "Witaj w akademii. Tu zaczynasz każdy trening. Zostaw to okno otwarte i uruchom grę.",
+    "1": "Zielona pastylka w rogu znaczy, że gra wysyła telemetrię. Szara: program czeka na grę.",
+    "2": "Przycisk Jedź rozpoczyna sesję od razu. Przy starcie automatycznym ruszam sam, gdy przyjdzie telemetria.",
+    "3": "W trakcie jazdy w tym panelu zobaczysz zbliżający się zakręt, bieżący cel i moje ostatnie komunikaty.",
+    "4": "To twoja karta kierowcy: nick, identyfikator, poziom i statystyki. Plakietka na Starcie prowadzi tutaj.",
+    "5": "Postęp: czyste okrążenia, trend czasów i krok asyst. Tu widzisz, co już opanowałeś i nad czym pracować.",
+    "6": "Ustawienia: mój głos, nakładka HUD i zapis danych. Nakładka wymaga gry w oknie bez ramki. Do zobaczenia na torze.",
+}
+
 GUIDE_TEXTS: dict[str, str] = {
     "intro": "Prowadzę.",
     "lift": "Puść gaz.",
@@ -211,6 +221,8 @@ def catalog(corner_names: Sequence[str] = ()) -> dict[str, str]:
         out[f"misc_{key}"] = text
     for key, text in GUIDE_TEXTS.items():
         out[f"guide_{key}"] = text
+    for key, text in TUTORIAL_TEXTS.items():
+        out[f"tutorial_{key}"] = text
     out.update(engineer_catalog())  # inżynier (etap 6): generujemy razem, w jednym miesiącu planu
     from boxbox.coach.glossary import EXPLAIN  # tryb "wytłumacz mi": dłuższe wersje uwag (etap 8)
 

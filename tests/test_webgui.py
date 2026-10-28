@@ -177,6 +177,7 @@ def test_window_wizard_session_and_screens(app, tmp_path: Path) -> None:
         js(w, app, "document.querySelector('[data-action=tutorial-next]').click(); 1")
         pump(app, 0.3)
     assert js(w, app, "!document.querySelector('.tutorial')") and w.settings.tutorial_done, seen
+    assert w.say_tutorial(0) is False  # lektor samouczka: bez klipów w bibliotece cicho, bez błędu
     js(w, app, "window.boxbox.navigate('hud'); 1")
     pump(app, 2.5)
     assert js(w, app, "document.querySelector('#hud-frame').contentDocument.querySelectorAll('.block').length") == 8  # z modułem DRS · bateria · sektory

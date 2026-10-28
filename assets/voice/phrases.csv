@@ -120,6 +120,13 @@ guide_brake_medium,Pół hamulca.
 guide_brake_light,Lekki hamulec.
 guide_half,Pół gazu.
 guide_full,Pełny gaz.
+tutorial_0,Witaj w akademii. Tu zaczynasz każdy trening. Zostaw to okno otwarte i uruchom grę.
+tutorial_1,"Zielona pastylka w rogu znaczy, że gra wysyła telemetrię. Szara: program czeka na grę."
+tutorial_2,"Przycisk Jedź rozpoczyna sesję od razu. Przy starcie automatycznym ruszam sam, gdy przyjdzie telemetria."
+tutorial_3,"W trakcie jazdy w tym panelu zobaczysz zbliżający się zakręt, bieżący cel i moje ostatnie komunikaty."
+tutorial_4,"To twoja karta kierowcy: nick, identyfikator, poziom i statystyki. Plakietka na Starcie prowadzi tutaj."
+tutorial_5,"Postęp: czyste okrążenia, trend czasów i krok asyst. Tu widzisz, co już opanowałeś i nad czym pracować."
+tutorial_6,"Ustawienia: mój głos, nakładka HUD i zapis danych. Nakładka wymaga gry w oknie bez ramki. Do zobaczenia na torze."
 eng_hello,"Inżynier na radiu. Pełny wyścig, spokojnie, trzymaj swoje tempo."
 eng_formation_lap,"Okrążenie formacyjne. Grzej opony i hamulce, trzymaj pozycję."
 eng_lights_out,"Start. Czysto przez pierwszy zakręt, pozycje odrobisz później."

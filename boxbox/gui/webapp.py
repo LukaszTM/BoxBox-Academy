@@ -131,6 +131,10 @@ class Bridge(QObject):
         self.w.play_sample()
 
     @Slot(str)
+    def tutorialStep(self, step: str) -> None:
+        self.w.say_tutorial(int(step or 0))
+
+    @Slot(str)
     def bugReport(self, description: str) -> None:
         files = build_bug_report(description, self.w.data_dir, Path("recordings"), Path("raporty-bledow"))
         self.w.data.wizard["bugResult"] = "Gotowe: " + ", ".join(str(f) for f in files)
@@ -752,6 +756,20 @@ class WebWindow(QMainWindow):
             self.player = VoicePlayer(library, volume=self.settings.volume).start()
         self.player.volume = self.settings.volume
         self.player.say(["misc_hello"], "test")
+
+    def say_tutorial(self, step: int) -> bool:
+        """Lektor samouczka: klip `tutorial_<krok>`, gdy jest w bibliotece; bez klipów cicho (tekst jest w dymku)."""
+        if self.session is not None:
+            return False
+        library = ClipLibrary(Path(self.settings.voice_dir))
+        clip = f"tutorial_{step}"
+        if len(library) == 0 or clip not in library:
+            return False
+        if self.player is None:
+            self.player = VoicePlayer(library, volume=self.settings.volume).start()
+        self.player.volume = self.settings.volume
+        self.player.say([clip], f"samouczek {step + 1}", urgent=True)
+        return True
 
     def preview_overlay(self) -> None:
         """Pokazuje nakładkę z przykładową treścią na 5 s (bez sesji)."""

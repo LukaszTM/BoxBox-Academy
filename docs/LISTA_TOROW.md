@@ -25,7 +25,7 @@ kształt = obrys z recordera do mapy (`boxbox/tracks/shape/<id>.json`).
 | 9 | Hungaroring | Węgry | 4,38 | tak | tak | brak |
 | 26 | Zandvoort | Holandia | 4,26 | tak | tak | brak |
 | 11 | Monza | Włochy | 5,79 | tak | tak | plik toru: tak, kształt: brak |
-| 42 | Madrid (Madring) | Hiszpania | 5,47 | nie (tylko 2026 Season Pack) | tak | brak |
+| 42 | Madrid (Madring) | Hiszpania | 5,47 | nie (tylko 2026 Season Pack) | tak | obrys z atlasu: tak |
 | 20 | Baku | Azerbejdżan | 6,00 | tak | tak | brak |
 | 12 | Singapore (Marina Bay) | Singapur | 4,94 | tak | tak | brak |
 | 15 | Texas (COTA, Austin) | USA | 5,51 | tak | tak | brak |

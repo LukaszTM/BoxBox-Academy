@@ -24,7 +24,7 @@ LENGTH = 5412.0  # Bahrajn (track_id 3) z session_packet()
 
 def test_atlas_files_cover_f1_25_and_match_lengths() -> None:
     files = sorted(int(p.stem) for p in ATLAS_DIR.glob("*.json"))
-    assert len(files) == 27 and {3, 11, 13, 42 - 42} <= set(files)  # Bahrajn, Monza, Suzuka, Melbourne
+    assert len(files) == 28 and {0, 3, 11, 13, 42} <= set(files)  # Melbourne, Bahrajn, Monza, Suzuka, Madryt (sezon 2026)
     for tid in files:
         a = load_atlas(tid)
         assert a is not None and len(a.points) >= 40 and a.name

@@ -16,6 +16,7 @@ DOCS = {
     "LISTA_TOROW.md": ("BoxBox_Academy_lista_torow.pdf", "BoxBox Academy – lista torów F1 25 i sezon 2026"),
     "MAKIETA_V2_BRIEF.md": ("BoxBox_Academy_makieta_v2_wytyczne.pdf", "BoxBox Academy – makieta v2 i nakładka HUD: wytyczne"),
     "MAKIETA_V2_OCENA.md": ("BoxBox_Academy_makieta_v2_ocena.pdf", "BoxBox Academy – makieta v2 i HUD v2: ocena i zmiany"),
+    "LOGO_WYTYCZNE.md": ("BoxBox_Academy_logo_wytyczne.pdf", "BoxBox Academy – logo: wytyczne do przeróbki"),
 }
 
 

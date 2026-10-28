@@ -3,8 +3,10 @@
 Bierzemy wyłącznie geometrię (polilinia z projektu f1-circuits, licencja MIT). Zakręty, sektory i DRS
 z paczki pomijamy: mają inną licencję (CC BY-NC-SA) i nie zgadzają się z grą (sprawdzone na nagraniach).
 Użycie: python tools/import_atlas.py <folder_paczki_z_katalog_torow_2025.json>
+       python tools/import_atlas.py --geojson <plik.geojson> <track_id> <nazwa_pl>   (np. Madring z f1-circuits dla sezonu 2026)
 """
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -45,5 +47,34 @@ def main(src: Path) -> None:
         print(f"{track_id:>3} {slug:<24} {len(doc['points'])} punktów")
 
 
+def from_geojson(path: Path, track_id: int, name: str) -> None:
+    """GeoJSON (lon/lat) z f1-circuits -> ten sam układ co paczka: 0..1000, y w dół, północ u góry, proporcje zachowane."""
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    feat = doc["features"][0]
+    geom = feat["geometry"]
+    coords = geom["coordinates"] if geom["type"] == "LineString" else geom["coordinates"][0]
+    if coords[0] == coords[-1]:
+        coords = coords[:-1]  # polilinia zamknięta: ostatni punkt dubluje pierwszy
+    lat0 = sum(c[1] for c in coords) / len(coords)
+    xs = [c[0] * math.cos(math.radians(lat0)) for c in coords]
+    ys = [-c[1] for c in coords]
+    span = max(max(xs) - min(xs), max(ys) - min(ys))
+    k = 920.0 / span
+    pts = [[round(40 + (x - min(xs)) * k, 2), round(40 + (y - min(ys)) * k, 2)] for x, y in zip(xs, ys)]
+    out = {
+        "track_id": track_id, "slug": feat["properties"].get("id", path.stem), "name": name, "full_name": feat["properties"].get("Name", name),
+        "length_m": int(feat["properties"].get("length", 0)),
+        "coords": "0..1000, y w dół, północ u góry; ta sama orientacja co świat F1 25 (x, z)",
+        "source": "f1-circuits (Tomislav Bacinger, MIT), plik " + path.name,
+        "points": pts,
+    }
+    ATLAS_DIR.mkdir(parents=True, exist_ok=True)
+    (ATLAS_DIR / f"{track_id}.json").write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
+    print(f"{track_id:>3} {out['slug']:<24} {len(pts)} punktów, {out['length_m']} m")
+
+
 if __name__ == "__main__":
-    main(Path(sys.argv[1]))
+    if sys.argv[1] == "--geojson":
+        from_geojson(Path(sys.argv[2]), int(sys.argv[3]), sys.argv[4])
+    else:
+        main(Path(sys.argv[1]))

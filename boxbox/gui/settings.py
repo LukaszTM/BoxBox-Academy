@@ -32,6 +32,7 @@ class Settings:
     since: str = field(default_factory=lambda: __import__("datetime").date.today().strftime("%m.%Y"))
     last_session: dict = field(default_factory=dict)  # podsumowanie ostatniej sesji do ekranu Start
     lesson_state: dict = field(default_factory=dict)  # id lekcji -> {"best": n, "passed": bool}
+    hud_layout: dict = field(default_factory=dict)  # układ nakładki HUD: positions, visible, opacity, scale (edytor w zakładce HUD F1)
 
     @classmethod
     def load(cls, path: Path = DEFAULT_PATH) -> "Settings":

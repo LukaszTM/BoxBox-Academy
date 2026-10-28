@@ -24,7 +24,7 @@ from boxbox.coach.delta import lap_csv
 from boxbox.coach.lessons import lesson as lesson_by_id
 from boxbox.coach.progress import CLEAN_LAPS_TO_ADVANCE
 from boxbox.gui import texts
-from boxbox.gui.data import DataBuilder, _resample, _norm, to_json
+from boxbox.gui.data import DataBuilder, _norm, _resample, to_json
 from boxbox.gui.overlay import QtOverlay
 from boxbox.gui.probe import ProbeResult, ProbeWorker, probe
 from boxbox.gui.settings import Settings
@@ -45,7 +45,8 @@ class Bridge(QObject):
 
     dataChanged = Signal(str)
     liveChanged = Signal(str)
-    toast = Signal(str)
+    toast = Signal(str)  # informacja na 6 s (pasek pod nagłówkiem)
+    notice = Signal(str, str)  # (error|info|success, tekst): błąd zostaje do zamknięcia
     navigateTo = Signal(str)
     photos = Signal(str)
 
@@ -94,7 +95,7 @@ class Bridge(QObject):
     def bugReport(self, description: str) -> None:
         files = build_bug_report(description, self.w.data_dir, Path("recordings"), Path("raporty-bledow"))
         self.w.data.wizard["bugResult"] = "Gotowe: " + ", ".join(str(f) for f in files)
-        self.toast.emit(f"Raport błędu: {files[0]}")
+        self.notice.emit("success", f"Raport błędu zapisany: {files[0]}")
         self.w.push_all()
 
     @Slot()
@@ -110,7 +111,7 @@ class Bridge(QObject):
         head, _, payload = data_url.partition(",")
         out = self.w.export_dir() / f"plakietka-{datetime.now():%Y-%m-%d_%H%M%S}.png"
         out.write_bytes(base64.b64decode(payload))
-        self.toast.emit(f"Zapisano plakietkę: {out}")
+        self.notice.emit("success", f"Zapisano plakietkę: {out}")
 
     @Slot()
     def listPhotos(self) -> None:
@@ -131,7 +132,15 @@ class Bridge(QObject):
 
     @Slot()
     def openDataDir(self) -> None:
-        path = str(self.w.data_dir.resolve())
+        self._open_folder(self.w.data_dir)
+
+    @Slot()
+    def openRecordingsDir(self) -> None:
+        self._open_folder(Path("recordings"))
+
+    def _open_folder(self, folder: Path) -> None:
+        folder.mkdir(parents=True, exist_ok=True)
+        path = str(folder.resolve())
         try:
             if sys.platform.startswith("win"):
                 os.startfile(path)  # type: ignore[attr-defined]
@@ -219,6 +228,14 @@ class WebWindow(QMainWindow):
                 self.start_probe(restart=True)
             elif key == "overlayDefault":
                 s.overlay = bool(value)
+            elif key == "tutorialDone":
+                s.tutorial_done = bool(value)
+            elif key == "hud" and isinstance(value, dict):
+                s.hud_layout = value
+                if "opacity" in value:
+                    s.overlay_opacity = int(value["opacity"])
+                if "scale" in value:
+                    s.overlay_scale = float(value["scale"]) / 100
             elif key == "quietDefault":
                 s.quiet = bool(value)
             elif key == "autoStart":
@@ -267,7 +284,6 @@ class WebWindow(QMainWindow):
             mode="race" if ui.get("mode") == "race" else "coach", port=s.port, db=self.db_path, record=name if ui.get("record", s.record) else None,
             voice=Path(s.voice_dir), volume=s.volume, corner_messages=not ui.get("quiet", s.quiet),
             lesson=lesson_id, lesson_corner=int(ui.get("corner") or 0) or None, explain_mode=s.explain,
-            shape_dir=self.data.shape_dir, fit_dir=self.data.fit_dir,
         )
 
     def start_from_ui(self, ui: dict) -> None:
@@ -283,6 +299,10 @@ class WebWindow(QMainWindow):
         self.guide = None
         self.guide_track_id = None
         self.chart_cache = {"own": [], "ref": [], "mid": "", "end": ""}
+        if cfg.shape_dir is None:  # każda sesja z okna zostawia kształt toru (albo dopasowanie atlasu) do mapy
+            cfg.shape_dir = self.data.shape_dir
+        if cfg.fit_dir is None:
+            cfg.fit_dir = self.data.fit_dir
         self.session = CoachSession(cfg, on_note=lambda text: None)
         self._last_packets = 0
         self._last_packet_at = time.monotonic()
@@ -508,7 +528,7 @@ class WebWindow(QMainWindow):
     def set_photo(self, path: str) -> None:
         src = Path(path)
         if not src.is_file() or src.suffix.lower() not in IMAGE_SUFFIXES:
-            self.bridge.toast.emit("To nie jest obraz (png, jpg, webp).")
+            self.bridge.notice.emit("error", "To nie jest obraz (png, jpg, webp).")
             return
         dst = self.data_dir / f"profil{src.suffix.lower()}"
         dst.parent.mkdir(parents=True, exist_ok=True)
@@ -516,7 +536,7 @@ class WebWindow(QMainWindow):
         self.settings.photo = str(dst)
         self.save_settings()
         self.push_all()
-        self.bridge.toast.emit("Zdjęcie zapisane")
+        self.bridge.notice.emit("success", "Zdjęcie zapisane")
 
     def export_csv(self) -> None:
         sel = self.data.analysis_sel
@@ -539,19 +559,19 @@ class WebWindow(QMainWindow):
             db.close()
         out = self.export_dir() / f"okrazenie-{lap.id}-{datetime.now():%Y-%m-%d_%H%M%S}.csv"
         out.write_text(lap_csv(own, ref), encoding="utf-8-sig")
-        self.bridge.toast.emit(f"Zapisano CSV: {out}")
+        self.bridge.notice.emit("success", f"Zapisano CSV: {out}")
 
     def print_pdf(self) -> None:
         """Systemowe okno drukowania Windows (jedyny wyjątek od zasady „bez osobnych okien”)."""
         try:
             from PySide6.QtPrintSupport import QPrintDialog, QPrinter
         except ImportError:
-            self.bridge.toast.emit("Drukowanie niedostępne w tej instalacji")
+            self.bridge.notice.emit("error", "Drukowanie niedostępne w tej instalacji")
             return
         printer = QPrinter(QPrinter.PrinterMode.HighResolution)
         dialog = QPrintDialog(printer, self)
         if dialog.exec():
-            self.view.page().print(printer, lambda ok: self.bridge.toast.emit("Wydruk wysłany" if ok else "Drukowanie nie powiodło się"))
+            self.view.page().print(printer, lambda ok: self.bridge.notice.emit("success" if ok else "error", "Wydruk wysłany" if ok else "Drukowanie nie powiodło się"))
 
     def closeEvent(self, event) -> None:  # noqa: N802
         if self.session is not None:

@@ -4,7 +4,7 @@ from dataclasses import replace
 from boxbox.coach.corners import CornerMetrics, analyze_lap
 from boxbox.coach.rules import evaluate_lap
 from boxbox.coach.skills import (
-    DIMENSIONS, MIN_LAPS, WINDOW, LapRecord, combine, profile_for_track, profiles_from_db, render, skill_profile,
+    DIMENSIONS, MIN_LAPS, WINDOW, LapRecord, combine, profile_for_track, profile_past, profiles_from_db, render, skill_profile,
 )
 from boxbox.storage.db import Database
 from tests.conftest import RecordedSession
@@ -118,4 +118,15 @@ def test_profile_from_database_and_combined(tmp_path, monza: RecordedSession) ->
     assert both.by_key("braking").hint == profiles[0].by_key("braking").hint  # podpowiedź z najsłabszego toru
     empty = combine([skill_profile([], None, track_id=3, track_name="Bahrajn")])
     assert all(s.score is None for s in empty.skills)
+    # „ty miesiąc temu”: profil z okrążeń zapisanych do danej chwili; za mało okrążeń wtedy = None
+    assert profile_past(db, 11) is None  # wszystko zapisane dziś
+    db.conn.execute("UPDATE laps SET created_at = '2026-09-01 10:00:00' WHERE number <= 3")
+    db.conn.commit()
+    old = profile_for_track(db, 11, "Monza", until="2026-09-02 00:00:00")
+    assert old.laps_used == 3 and old.note.startswith("za mało danych")
+    db.conn.execute("UPDATE laps SET created_at = '2026-09-01 10:00:00'")
+    db.conn.commit()
+    past = profile_past(db, 11, track_name="Monza")
+    assert past is not None and past.laps_used == 5 and past.by_key("braking").score == profiles[0].by_key("braking").score
+    assert "[" in render(profiles[0], past) and render(profiles[0]).count("[") == 0
     db.close()

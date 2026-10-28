@@ -58,7 +58,12 @@ Linia poleceń (`py -3 -m boxbox.app ...`):
 | `--corner-messages on/off` | krótki komunikat tuż po zakręcie |
 | `--guidance on/off` | prowadzenie w nieopanowanych zakrętach: puść gaz, hamuj (jak mocno), pół gazu, pełny gaz |
 | `--skills` | profil umiejętności 0–100 na każdym torze (hamowanie, praca hamulcem, gaz, powtarzalność, tempo, samodzielność) i wyjdź; wzory: `coach/skills.py`, wytyczne zakładki: `docs/ANALIZA_UMIEJETNOSCI.md`; w oknie zakładka Umiejętności |
-| `--badges` | odznaki (12, z celem i postępem) i trzy cele dnia z bazy; `coach/badges.py` |
+| `--badges` | odznaki (12, z celem i postępem) i trzy cele dnia z bazy; `coach/badges.py`; te same odznaki na stronie Postęp w oknie |
+
+Raport PDF sesji: na podsumowaniu sesji przycisk „Zapisz raport PDF” zapisuje `data\raporty\raport-<tor>-<data>.pdf`
+(radar umiejętności z poprzednim oknem, sześć wskazówek, zadanie na następną sesję, „Dobrze / Do pracy”, tabela
+okrążeń i zakrętów referencji). Strona HTML (`gui/report.py`) jest drukowana do PDF przez Qt bez okna dialogowego.
+„Drukuj” nadal otwiera systemowe okno drukowania (jedyny wyjątek od zasady „bez osobnych okien”).
 | `--overlay`, `--scale`, `--alpha` | nakładka trenera, skala napisów, krycie |
 | `--progress` | ekran postępu i wyjście |
 

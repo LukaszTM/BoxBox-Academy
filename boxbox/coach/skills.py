@@ -347,10 +347,20 @@ def combine(profiles: Sequence[SkillProfile]) -> SkillProfile:
     return SkillProfile(None, "wszystkie tory", tuple(skills), sum(p.laps_used for p in profiles))
 
 
-def profile_for_track(db: Any, track_id: int, track_name: str = "", corner_names: dict[int, str] | None = None) -> SkillProfile:
-    """Profil toru z bazy (`boxbox.storage.db.Database`): okrążenia, metryki, uwagi, postęp."""
+def profile_for_track(
+    db: Any, track_id: int, track_name: str = "", corner_names: dict[int, str] | None = None, until: str | None = None,
+) -> SkillProfile:
+    """Profil toru z bazy (`boxbox.storage.db.Database`): okrążenia, metryki, uwagi, postęp.
+
+    `until` (ISO data/czas): tylko okrążenia zapisane do tej chwili, do porównania „miesiąc temu vs dziś”;
+    referencja zostaje dzisiejsza, żeby oba profile miały tę samą podstawę.
+    """
     laps: list[LapRecord] = []
-    for lap in db.laps_for_track(track_id):
+    stored = db.laps_for_track(track_id)
+    if until is not None:
+        ids = {r["id"] for r in db.conn.execute("SELECT id FROM laps WHERE track_id = ? AND created_at <= ?", (track_id, until)).fetchall()}
+        stored = [lap for lap in stored if lap.id in ids]
+    for lap in stored:
         laps.append(LapRecord(
             lap.lap_time_ms, lap.valid, lap.complete, lap.pitted, db.corner_metrics(lap.id),
             tuple(db.lap_messages(lap.id)), lap.traction_control, lap.abs_on,
@@ -361,6 +371,18 @@ def profile_for_track(db: Any, track_id: int, track_name: str = "", corner_names
         laps, ref.corners if ref else None, ref.lap.lap_time_ms if ref else None, corner_names, track_id, track_name,
         step=progress.step if progress else None, streak=progress.streak if progress else 0,
     )
+
+
+PAST_DAYS = 30
+
+
+def profile_past(db: Any, track_id: int, days: int = PAST_DAYS, track_name: str = "", corner_names: dict[int, str] | None = None) -> SkillProfile | None:
+    """Profil sprzed `days` dni („ty miesiąc temu”) albo None, gdy wtedy nie było jeszcze dość okrążeń."""
+    from datetime import datetime, timedelta
+
+    until = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
+    past = profile_for_track(db, track_id, track_name, corner_names, until=until)
+    return past if past.laps_used >= MIN_LAPS else None
 
 
 def profiles_from_db(db: Any) -> list[SkillProfile]:
@@ -384,12 +406,17 @@ def profiles_from_db(db: Any) -> list[SkillProfile]:
     return out
 
 
-def render(profile: SkillProfile) -> str:
-    lines = [f"{profile.track_name}: {profile.laps_used} okrążeń" + (f" ({profile.note})" if profile.note else "")]
+def render(profile: SkillProfile, past: SkillProfile | None = None) -> str:
+    lines = [f"{profile.track_name}: {profile.laps_used} okrążeń" + (f" ({profile.note})" if profile.note else "")
+             + (f"; {PAST_DAYS} dni temu w nawiasie kwadratowym" if past else "")]
     for s in profile.skills:
         score = "  —" if s.score is None else f"{s.score:3d}"
         trend = "" if s.trend is None else f" ({s.trend:+d})"
-        lines.append(f"  {s.name:<16}{score}{trend:<6}  {s.hint}".rstrip())
+        ago = ""
+        if past is not None:
+            p = past.by_key(s.key).score
+            ago = f" [{p:3d}]" if p is not None else " [  —]"
+        lines.append(f"  {s.name:<16}{score}{trend:<6}{ago}  {s.hint}".rstrip())
     return "\n".join(lines)
 
 
@@ -411,7 +438,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     if not profiles:
         print("brak okrążeń w bazie")
         return 1
-    print("\n\n".join(render(p) for p in profiles))
+    db = Database(args.db)
+    pasts = {p.track_id: profile_past(db, p.track_id, track_name=p.track_name) for p in profiles if p.track_id is not None}
+    db.close()
+    print("\n\n".join(render(p, pasts.get(p.track_id)) for p in profiles))
     return 0
 
 

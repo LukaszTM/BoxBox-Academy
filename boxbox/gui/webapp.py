@@ -25,8 +25,10 @@ from boxbox.coach.analyze import format_time, report_laps
 from boxbox.coach.delta import lap_csv
 from boxbox.coach.progress import CLEAN_LAPS_TO_ADVANCE
 from boxbox.gui import texts
+from boxbox.games import adapter
 from boxbox.gui.data import DataBuilder, _norm, _resample, _shape_for, to_json
 from boxbox.gui.hud import HudFrame, HudWindow, demo_frame
+from boxbox.gui.report import session_report_html
 from boxbox.gui.probe import ProbeResult, ProbeWorker, probe
 from boxbox.gui.settings import Settings
 from boxbox.session import CoachSession, SessionConfig
@@ -102,6 +104,10 @@ class Bridge(QObject):
     @Slot()
     def previewOverlay(self) -> None:
         self.w.preview_overlay()
+
+    @Slot()
+    def sessionReport(self) -> None:
+        self.w.save_session_report()
 
     @Slot(str)
     def finishWizard(self, nick: str) -> None:
@@ -222,6 +228,8 @@ class WebWindow(QMainWindow):
         self.session_started_at = 0.0
         self.session_ui: dict = {}
         self.overlay: HudWindow | None = None
+        self.report_path: Path | None = None  # ostatni zapisany raport PDF sesji
+        self._report_page = None
         self.hud_shape: dict | None = None  # minimapa: obrys 0..1 i kształt w świecie gry (do pozycji auta)
         self.guide = None
         self.guide_track_id: int | None = None
@@ -623,7 +631,8 @@ class WebWindow(QMainWindow):
         if best_ms and session.best_before_ms:
             delta = (best_ms - session.best_before_ms) / 1000
         self.data.summary = {
-            "name": self.session_ui.get("name", ""), "track": track_name, "laps": len(laps), "elapsed": result.wall_s, "date": datetime.now().strftime("%d.%m.%Y"),
+            "name": self.session_ui.get("name", ""), "track": track_name, "trackId": result.state.session.track_id if result.state.session else None,
+            "laps": len(laps), "elapsed": result.wall_s, "date": datetime.now().strftime("%d.%m.%Y"),
             "coach": result.coach_started, "best": format_time(best_ms) if best_ms else "", "clean": summary.clean_laps if summary else 0, "delta": delta,
             "cpu": f"{result.cpu_percent:.1f}% jednego rdzenia" if not session.cfg.replay and result.wall_s > 1 else "",
             "good": (result.race.good if result.race else summary.good if summary else ""), "toWork": (result.race.to_work if result.race else summary.to_work if summary else ""),
@@ -753,6 +762,42 @@ class WebWindow(QMainWindow):
         out = self.export_dir() / f"okrazenie-{lap.id}-{datetime.now():%Y-%m-%d_%H%M%S}.csv"
         out.write_text(lap_csv(own, ref), encoding="utf-8-sig")
         self.bridge.notice.emit("success", f"Zapisano CSV: {out}")
+
+    def save_session_report(self) -> None:
+        """Raport sesji (radar umiejętności, sześć wskazówek, okrążenia) do PDF przez Qt, bez okna drukowania."""
+        summary = self.data.summary
+        if not summary:
+            self.bridge.notice.emit("info", "Raport powstaje po zakończonej sesji")
+            return
+        try:
+            from PySide6.QtWebEngineCore import QWebEnginePage
+        except ImportError:
+            self.bridge.notice.emit("error", "Zapis PDF niedostępny w tej instalacji")
+            return
+        skills = self.data.build()["skills"]
+        profile = next((t for t in skills["tracks"] if t.get("trackId") == summary.get("trackId")), None) or skills.get("all")
+        html = session_report_html(summary, profile, self.settings.nick, adapter(self.settings.game).name)
+        out_dir = self.data_dir / "raporty"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        track = (summary.get("track") or "sesja").lower().replace(" ", "-")
+        out = out_dir / f"raport-{track}-{datetime.now():%Y-%m-%d_%H%M%S}.pdf"
+        page = QWebEnginePage(self)
+        self._report_page = page  # żyje do końca zapisu
+
+        def on_loaded(ok: bool) -> None:
+            if not ok:
+                self.bridge.notice.emit("error", "Raport nie powstał: strona nie wczytała się")
+                return
+            page.printToPdf(str(out))
+
+        def on_done(path: str, ok: bool) -> None:
+            self.bridge.notice.emit("success" if ok else "error", f"Zapisano raport: {path}" if ok else "Raport nie powstał")
+            self.report_path = Path(path) if ok else None
+            self._report_page = None
+
+        page.loadFinished.connect(on_loaded)
+        page.pdfPrintingFinished.connect(on_done)
+        page.setHtml(html, QUrl("file:///raport.html"))
 
     def print_pdf(self) -> None:
         """Systemowe okno drukowania Windows (jedyny wyjątek od zasady „bez osobnych okien”)."""

@@ -5,13 +5,14 @@ from datetime import date, datetime
 from pathlib import Path
 
 from boxbox.coach.analyze import format_time
+from boxbox.coach.badges import badges, collect, goal_text
 from boxbox.coach.corners import analyze_lap
 from boxbox.coach.delta import delta_trace
 from boxbox.coach.glossary import GLOSSARY
 from boxbox.coach.laps import Lap, Sample
 from boxbox.coach.lessons import LESSONS
 from boxbox.coach.progress import CLEAN_LAPS_TO_ADVANCE, STEPS
-from boxbox.coach.skills import MIN_LAPS, WINDOW, SkillProfile, combine, profile_for_track
+from boxbox.coach.skills import MIN_LAPS, PAST_DAYS, WINDOW, SkillProfile, combine, profile_for_track, profile_past
 from boxbox.coach.summary import rule_pl
 from boxbox.games import adapter
 from boxbox.gui import texts
@@ -62,24 +63,18 @@ def _resample(samples: tuple[Sample, ...] | list[Sample], attr: str, n: int = 12
     return out
 
 
+BADGE_ICONS = {"first_clean": "flag", "clean_10": "flag", "clean_50": "flag", "no_tc": "shield", "no_assists": "shield", "sessions_10": "clock",
+               "laps_100": "layers", "tracks_3": "target", "track_mastered": "target", "streak_7": "spark", "faster": "bolt", "hours_10": "clock"}
+
+
 def _badges(db: Database, overview: dict, tracks_progress: dict) -> list[dict]:
-    any_clean = any(p["streak"] > 0 or p["achieved"] for p in tracks_progress.values())
-    no_tc = db.conn.execute("SELECT 1 FROM laps WHERE traction_control = 0 AND complete = 1 LIMIT 1").fetchone() is not None
-    mastered_track = any(p["mastered_all"] for p in tracks_progress.values())
-    dates = [date.fromisoformat(d) for d in db.session_dates() if len(d) == 10]
-    streak_days = best = 0
-    prev = None
-    for d in dates:
-        streak_days = streak_days + 1 if prev is not None and (d - prev).days == 1 else 1
-        best = max(best, streak_days)
-        prev = d
-    return [
-        {"icon": "flag", "name": "Pierwsze czyste", "got": any_clean, "hint": "Pierwsze czyste okrążenie"},
-        {"icon": "shield", "name": "Jazda bez TC", "got": no_tc, "hint": "Okrążenie bez kontroli trakcji"},
-        {"icon": "clock", "name": "10 sesji", "got": overview["sessions"] >= 10, "hint": f"{overview['sessions']}/10 sesji"},
-        {"icon": "target", "name": "Tor opanowany", "got": mastered_track, "hint": "Wszystkie zakręty bez uwag w 3 okrążeniach"},
-        {"icon": "spark", "name": "Seria 7 dni", "got": best >= 7, "hint": f"najdłuższa seria: {best} dni"},
-    ]
+    """Rząd odznak na stronie Postęp: z silnika coach/badges.py (ten sam, co `--badges`)."""
+    out = []
+    for b in badges(collect(db)):
+        hint = b.description if b.earned else f"{b.description} ({min(b.value, b.target)}/{b.target} {b.unit}; {goal_text(b).split(': ', 1)[1]})"
+        out.append({"icon": BADGE_ICONS.get(b.key, "target"), "name": b.name, "got": b.earned, "hint": hint, "key": b.key,
+                    "value": min(b.value, b.target), "target": b.target})
+    return out
 
 
 def _photo_data_url(path: str) -> str:
@@ -195,13 +190,16 @@ class DataBuilder:
                 names, name = None, f"tor {tid}"
             profile = profile_for_track(db, tid, name, names)
             profiles.append(profile)
+            past = profile_past(db, tid, track_name=name, corner_names=names)
             best = db.best_lap(tid)
             ref = ""
             if best is not None:
                 row = db.conn.execute("SELECT created_at FROM laps WHERE id = ?", (best.id,)).fetchone()
                 when = f" ({row['created_at'][8:10]}.{row['created_at'][5:7]})" if row and row["created_at"] else ""
                 ref = f"twoje najlepsze {format_time(best.lap_time_ms).replace('.', ',')}{when}"
-            tracks.append(self._profile_dict(profile, ref, names))
+            d = self._profile_dict(profile, ref, names)
+            d["past"] = {"days": PAST_DAYS, "scores": {s.key: s.score for s in past.skills}} if past else None  # „ty miesiąc temu”
+            tracks.append(d)
         all_dict = self._profile_dict(combine(profiles), "twoje najlepsze okrążenia na poszczególnych torach", None) if profiles else None
         return {"tracks": tracks, "all": all_dict, "minLaps": MIN_LAPS, "window": WINDOW}
 

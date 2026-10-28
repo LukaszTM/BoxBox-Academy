@@ -81,6 +81,14 @@ def test_window_wizard_session_and_screens(app, tmp_path: Path) -> None:
     assert w.session is None and w.data.summary is not None and w.data.summary["laps"] >= 5
     assert "Podsumowanie" in js(w, app, "document.title")
     assert w.settings.last_session["track"] == "Monza"
+    # raport PDF sesji przez Qt (bez okna drukowania): plik w data/raporty
+    js(w, app, "document.querySelector('[data-action=session-report]').click(); 1")
+    end = time.monotonic() + 30
+    while w.report_path is None and time.monotonic() < end:
+        pump(app, 0.2)
+    assert w.report_path is not None and w.report_path.exists() and w.report_path.stat().st_size > 10_000 and w.report_path.name.startswith("raport-monza-")
+    assert w.report_path.read_bytes()[:5] == b"%PDF-"
+    assert any(r["key"] == "first_clean" and r["got"] for r in w.data.build()["progress"]["badges"])  # odznaki z silnika
     for view, title in (("analysis", "Analiza"), ("progress", "Postęp"), ("skills", "Umiejętności"), ("lessons", "Lekcje"), ("driver", "Karta kierowcy"), ("settings", "Ustawienia"), ("help", "Pomoc")):
         js(w, app, f"window.boxbox.navigate('{view}'); 1")
         pump(app, 0.4)

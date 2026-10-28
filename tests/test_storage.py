@@ -48,6 +48,15 @@ def test_save_and_query_laps(tmp_path: Path) -> None:
     assert len(ref.samples) == len(fast.samples)
     assert ref.samples[10] == fast.samples[10]
     assert db.best_lap(99) is None and db.reference(99) is None
+    # sektory: zapis, odczyt i suma najlepszych z ważnych okrążeń
+    fast.sector1_ms, fast.sector2_ms, fast.sector3_ms = 30_000, 31_000, 29_000
+    slow.sector1_ms, slow.sector2_ms, slow.sector3_ms = 29_500, 32_000, 28_900
+    invalid.sector1_ms, invalid.sector2_ms, invalid.sector3_ms = 20_000, 20_000, 45_000
+    for lap in (fast, slow, invalid):
+        db.save_lap(sid, lap, analyze_lap(lap, t), t.length_m)
+    assert [s.sectors_ms for s in db.laps_for_track(3)][:2] == [(30_000, 31_000, 29_000), (29_500, 32_000, 28_900)]
+    assert db.best_sectors(3) == (29_500, 31_000, 28_900) and db.best_sectors(99) == (None, None, None)
+    assert db.lap_table(3)[0]["sector3_ms"] in (29_000, 28_900, 45_000, None)
 
 
 def test_session_uid_above_int64_is_stored(tmp_path: Path) -> None:

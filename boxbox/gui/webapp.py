@@ -21,7 +21,7 @@ from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QApplication, QMainWindow
 
-from boxbox.coach.analyze import format_time, report_laps
+from boxbox.coach.analyze import format_sector, format_time, report_laps
 from boxbox.coach.delta import lap_csv
 from boxbox.coach.progress import CLEAN_LAPS_TO_ADVANCE
 from boxbox.gui import texts
@@ -622,9 +622,12 @@ class WebWindow(QMainWindow):
         notes_by_lap: dict[int, int] = {}
         for m in session.lap_messages:
             notes_by_lap[m.lap] = notes_by_lap.get(m.lap, 0) + 1
+        best_sectors = [min((s for l in laps if not l.invalid and (s := l.sectors_ms[i]) is not None), default=None) for i in range(3)]
         for l in laps:
             d = (l.lap_time_ms - best_ms) / 1000 if best_ms and l.lap_time_ms else None
-            lap_rows.append({"number": l.number, "time": format_time(l.lap_time_ms), "delta": f"{d:+.3f}" if d is not None else "", "valid": not l.invalid, "notes": notes_by_lap.get(l.number, 0)})
+            lap_rows.append({"number": l.number, "time": format_time(l.lap_time_ms), "delta": f"{d:+.3f}" if d is not None else "", "valid": not l.invalid, "notes": notes_by_lap.get(l.number, 0),
+                             "sectors": [format_sector(sm) for sm in l.sectors_ms], "bestSectors": [sm is not None and sm == best_sectors[i] for i, sm in enumerate(l.sectors_ms)]})
+        ideal = sum(best_sectors) if all(best_sectors) else None  # type: ignore[arg-type]
         corner_rows = []
         if session.coach is not None and session.coach.reference is not None:
             names = {c.number: (c.name or f"Z{c.number}") for c in session.coach.track.corners}
@@ -645,7 +648,7 @@ class WebWindow(QMainWindow):
             "coach": result.coach_started, "best": format_time(best_ms) if best_ms else "", "clean": summary.clean_laps if summary else 0, "delta": delta,
             "cpu": f"{result.cpu_percent:.1f}% jednego rdzenia" if not session.cfg.replay and result.wall_s > 1 else "",
             "good": (result.race.good if result.race else summary.good if summary else ""), "toWork": (result.race.to_work if result.race else summary.to_work if summary else ""),
-            "lapRows": lap_rows, "cornerRows": corner_rows, "report": report,
+            "lapRows": lap_rows, "cornerRows": corner_rows, "report": report, "idealLap": format_time(ideal) if ideal else "",
             "race": ({"lines": result.race.lines, "rating": result.race.safety_rating} if result.race else None),
             "lesson": ({"title": session.lesson.title, "passed": result.lesson_result[0], "best": result.lesson_result[1], "needed": result.lesson_result[2]} if session.lesson and result.lesson_result else None),
         }

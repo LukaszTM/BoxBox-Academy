@@ -78,6 +78,29 @@ def test_recorder_splits_laps_and_flags() -> None:
     assert [lap.number for lap in rec.laps] == [1, 2]
 
 
+def test_recorder_collects_sector_times_and_closes_third_at_finish() -> None:
+    rec = LapRecorder()
+    rec.feed(session_packet())
+    rec.feed(lap_packet(lap_distance=100.0, lap_num=1, lap_invalid=False, sector1_ms=0, sector2_ms=0))  # S1 w toku
+    rec.feed(telemetry_packet())
+    assert rec.current is not None and rec.current.sectors_ms == (None, None, None)
+    rec.feed(lap_packet(lap_distance=2000.0, lap_num=1, lap_invalid=False, sector1_ms=27_500, sector2_ms=0))
+    rec.feed(telemetry_packet())
+    rec.feed(lap_packet(lap_distance=4000.0, lap_num=1, lap_invalid=False, sector1_ms=27_500, sector2_ms=29_000))
+    rec.feed(telemetry_packet())
+    assert rec.current.sectors_ms == (27_500, 29_000, None)
+    rec.feed(lap_packet(lap_distance=5.0, lap_num=2, lap_invalid=False, sector1_ms=0, sector2_ms=0))  # meta: gra zeruje S1 i S2
+    done = rec.feed(telemetry_packet())
+    assert done is not None and done.lap_time_ms == 83_123 and done.sectors_ms == (27_500, 29_000, 26_623)
+    assert rec.current.number == 2 and rec.current.sectors_ms == (None, None, None)
+    # bez kompletu sektorów (np. start z pit lane w S2) okrążenie nie ma sektorów, żeby nie liczyć fałszywego S3
+    rec.feed(lap_packet(lap_distance=4000.0, lap_num=2, lap_invalid=False, sector1_ms=0, sector2_ms=29_000))
+    rec.feed(telemetry_packet())
+    rec.feed(lap_packet(lap_distance=5.0, lap_num=3, lap_invalid=False, sector1_ms=0, sector2_ms=0))
+    done = rec.feed(telemetry_packet())
+    assert done is not None and done.number == 2 and done.sectors_ms == (None, None, None)
+
+
 def test_recorder_ignores_negative_distance_and_duplicate_frames() -> None:
     rec = LapRecorder()
     rec.feed(lap_packet(lap_distance=-20.0, lap_num=1))

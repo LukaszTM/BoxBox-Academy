@@ -1,5 +1,6 @@
 """Okno z interfejsem z makiety (Qt WebEngine, bez ekranu): kreator, sesja z nagrania, ekrany, mostek."""
 import os
+import re
 import time
 from pathlib import Path
 
@@ -146,6 +147,11 @@ def test_window_wizard_session_and_screens(app, tmp_path: Path) -> None:
     prog = w.data.build()["progress"]
     assert prog["consistency"]["laps"] >= 3 and prog["consistency"]["spread"].startswith("±") and prog["clean"]["share"].endswith("%")
     assert prog["thenNow"] is None and "Spójność jazdy" in js(w, app, "document.body.textContent") and "Wtedy vs dziś" in js(w, app, "document.body.textContent")
+    # sektory z nagrania Monzy: w historii, suma najlepszych, wyróżnienie w tabeli podsumowania
+    assert len(prog["history"][0]) == 14 and all(re.match(r"^\d+\.\d{3}$", x) for x in prog["history"][1][3:6]) and prog["idealLap"].startswith("1:2")
+    assert js(w, app, "document.querySelectorAll('.data-table td.best-sector').length") >= 3
+    summ = w.data.build()["summary"]
+    assert summ["idealLap"].startswith("1:2") and any(any(r["bestSectors"]) for r in summ["lapRows"]) and "S1" in js(w, app, "document.querySelector('.data-table thead').textContent")
     # Analiza: dowolne okrążenie sesji jako referencja
     an = w.data.build()["analysis"]
     other = next(c for c in an["comps"] if c["id"].startswith("lap:"))

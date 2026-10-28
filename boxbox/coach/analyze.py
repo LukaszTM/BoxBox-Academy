@@ -29,6 +29,10 @@ def format_time(ms: int | None) -> str:
     return f"{ms // 60000}:{(ms % 60000) / 1000:06.3f}"
 
 
+def format_sector(ms: int | None) -> str:
+    return "-" if ms is None else f"{ms / 1000:.3f}"
+
+
 def _fmt_m(value: float | None) -> str:
     return f"{value:6.0f}" if value is not None else "     -"
 

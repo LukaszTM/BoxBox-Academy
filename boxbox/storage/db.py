@@ -42,6 +42,9 @@ CREATE TABLE IF NOT EXISTS laps (
     traction_control INTEGER,
     abs_on INTEGER,
     created_at TEXT NOT NULL,
+    sector1_ms INTEGER,
+    sector2_ms INTEGER,
+    sector3_ms INTEGER,
     UNIQUE (session_id, number)
 );
 CREATE TABLE IF NOT EXISTS corner_metrics (
@@ -101,6 +104,13 @@ class StoredLap:
     gearbox: int | None
     traction_control: int | None
     abs_on: bool | None
+    sector1_ms: int | None = None
+    sector2_ms: int | None = None
+    sector3_ms: int | None = None
+
+    @property
+    def sectors_ms(self) -> tuple[int | None, int | None, int | None]:
+        return (self.sector1_ms, self.sector2_ms, self.sector3_ms)
 
 
 @dataclass(frozen=True)
@@ -166,6 +176,10 @@ class Database:
             cols = {row["name"] for row in self.conn.execute(f"PRAGMA table_info({table})")}
             if "game" not in cols:
                 self.conn.execute(f"ALTER TABLE {table} ADD COLUMN game TEXT NOT NULL DEFAULT 'f1_25'")
+        laps_cols = {row["name"] for row in self.conn.execute("PRAGMA table_info(laps)")}
+        for column in ("sector1_ms", "sector2_ms", "sector3_ms"):  # sektory dodane po pierwszych bazach
+            if column not in laps_cols:
+                self.conn.execute(f"ALTER TABLE laps ADD COLUMN {column} INTEGER")
         self.conn.commit()
 
     def close(self) -> None:
@@ -214,11 +228,13 @@ class Database:
             self.conn.execute("DELETE FROM laps WHERE id = ?", (old["id"],))
         cur = self.conn.execute(
             "INSERT INTO laps (session_id, track_id, number, lap_time_ms, valid, complete, pitted,"
-            " gearbox, traction_control, abs_on, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " gearbox, traction_control, abs_on, created_at, sector1_ms, sector2_ms, sector3_ms)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 session_id, track_id, lap.number, lap.lap_time_ms, int(not lap.invalid),
                 int(lap.is_complete(track_length_m)), int(lap.pitted),
                 gearbox, traction_control, None if abs_on is None else int(abs_on), _now(),
+                lap.sector1_ms, lap.sector2_ms, lap.sector3_ms,
             ),
         )
         lap_id = int(cur.lastrowid)  # type: ignore[arg-type]
@@ -247,6 +263,7 @@ class Database:
             lap_time_ms=row["lap_time_ms"], valid=bool(row["valid"]), complete=bool(row["complete"]),
             pitted=bool(row["pitted"]), gearbox=row["gearbox"], traction_control=row["traction_control"],
             abs_on=None if row["abs_on"] is None else bool(row["abs_on"]),
+            sector1_ms=row["sector1_ms"], sector2_ms=row["sector2_ms"], sector3_ms=row["sector3_ms"],
         )
 
     def laps_for_track(self, track_id: int) -> list[StoredLap]:
@@ -330,6 +347,14 @@ class Database:
         )
         self.conn.commit()
 
+    def best_sectors(self, track_id: int) -> tuple[int | None, int | None, int | None]:
+        """Najlepszy czas każdego sektora z ważnych okrążeń toru; suma = teoretyczne najlepsze okrążenie."""
+        row = self.conn.execute(
+            "SELECT MIN(sector1_ms) AS s1, MIN(sector2_ms) AS s2, MIN(sector3_ms) AS s3 FROM laps"
+            " WHERE track_id = ? AND valid = 1 AND complete = 1 AND pitted = 0 AND sector3_ms IS NOT NULL", (track_id,),
+        ).fetchone()
+        return (row["s1"], row["s2"], row["s3"])
+
     def best_time_per_step(self, track_id: int) -> dict[int, int]:
         """Najlepszy ważny czas dla każdego kroku asyst (wg TC/ABS zapisanych przy okrążeniu)."""
         from boxbox.coach.progress import step_for
@@ -372,7 +397,7 @@ class Database:
         """Przejazdy toru od najnowszych: do tabeli w oknie."""
         rows = self.conn.execute(
             "SELECT l.id, l.number, l.lap_time_ms, l.valid, l.pitted, l.traction_control, l.abs_on, l.gearbox,"
-            " l.created_at, s.source FROM laps l JOIN sessions s ON s.id = l.session_id"
+            " l.created_at, l.sector1_ms, l.sector2_ms, l.sector3_ms, s.source FROM laps l JOIN sessions s ON s.id = l.session_id"
             " WHERE l.track_id = ? AND l.complete = 1 ORDER BY l.id DESC LIMIT ?",
             (track_id, limit),
         ).fetchall()

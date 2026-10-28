@@ -44,6 +44,21 @@ class Lap:
             self.ers_assist = ers_assist
 
     track_length_m: float | None = None  # z pakietu Session, gdy znana
+    sector1_ms: int | None = None  # z Lap Data w trakcie okrążenia (gra zeruje na mecie)
+    sector2_ms: int | None = None
+    sector3_ms: int | None = None  # czas okrążenia minus S1 i S2, liczony po mecie
+
+    @property
+    def sectors_ms(self) -> tuple[int | None, int | None, int | None]:
+        return (self.sector1_ms, self.sector2_ms, self.sector3_ms)
+
+    def close_sectors(self) -> None:
+        """Po mecie: S3 z czasu okrążenia; bez kompletu S1 i S2 sektory zostają puste."""
+        if self.lap_time_ms and self.sector1_ms and self.sector2_ms:
+            s3 = self.lap_time_ms - self.sector1_ms - self.sector2_ms
+            self.sector3_ms = s3 if s3 > 0 else None
+        if self.sector3_ms is None:
+            self.sector1_ms = self.sector2_ms = None
 
     def is_complete_hint(self) -> bool:
         """Pełność wg długości toru zapisanej w okrążeniu; bez niej zakładamy, że pełne."""
@@ -87,6 +102,7 @@ class LapRecorder:
         if self.current is None or lap.current_lap_num != self.current.number:
             if self.current is not None and self.current.samples:
                 self.current.lap_time_ms = lap.last_lap_time_ms or None
+                self.current.close_sectors()
                 self.laps.append(self.current)
                 finished = self.current
             # okrążenie bez próbek (np. numer z poprzedniej sesji jeszcze w garażu) jest pomijane
@@ -96,6 +112,10 @@ class LapRecorder:
             )
         if lap.current_lap_invalid:
             self.current.invalid = True
+        if lap.sector1_time_ms:
+            self.current.sector1_ms = lap.sector1_time_ms
+        if lap.sector2_time_ms:
+            self.current.sector2_ms = lap.sector2_time_ms
         if lap.pit_status != 0:
             self.current.pitted = True
             return finished

@@ -58,11 +58,11 @@ def telemetry_packet(
 
 def _lap_car(
     lap_distance: float, lap_num: int, pit_status: int, lap_invalid: bool, current_lap_time_ms: int,
-    last_lap_time_ms: int = 83_123,
+    last_lap_time_ms: int = 83_123, sector1_ms: int = 1_234, sector2_ms: int = 80_000,
 ) -> bytes:
     return struct.pack(
         "<IIHBHBHBHBfffBBBBBBBBBBBBBBBHHBfB",
-        last_lap_time_ms, current_lap_time_ms, 1_234, 0, 20_000, 1, 300, 0, 1_500, 0,
+        last_lap_time_ms, current_lap_time_ms, sector1_ms % 60_000, sector1_ms // 60_000, sector2_ms % 60_000, sector2_ms // 60_000, 300, 0, 1_500, 0,
         lap_distance, 9999.0, 0.0,
         5, lap_num, pit_status, 1, 2, int(lap_invalid), 0, 0, 0, 0, 0, 7, 4, 2, 0,
         0, 0, 0, 312.5, 2,
@@ -72,10 +72,10 @@ def _lap_car(
 def lap_packet(
     fmt: int = 2025, lap_distance: float = 1234.5, lap_num: int = 3, pit_status: int = 0,
     lap_invalid: bool = True, current_lap_time_ms: int = 45_678,
-    rival: tuple[float, int, int] | None = None,
+    rival: tuple[float, int, int] | None = None, sector1_ms: int = 1_234, sector2_ms: int = 80_000,
 ) -> bytes:
     """rival = (dystans, czas okrążenia ms, czas ostatniego okrążenia ms) ducha pod indeksem RIVAL."""
-    player = _lap_car(lap_distance, lap_num, pit_status, lap_invalid, current_lap_time_ms)
+    player = _lap_car(lap_distance, lap_num, pit_status, lap_invalid, current_lap_time_ms, sector1_ms=sector1_ms, sector2_ms=sector2_ms)
     others = {RIVAL: _lap_car(rival[0], 2, 0, False, rival[1], rival[2])} if rival else None
     tail = struct.pack("<BB", 255, RIVAL if rival else 255)
     return _cars_packet(PacketId.LAP_DATA, fmt, ld.CAR_SIZE, player, tail, others)

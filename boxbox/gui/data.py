@@ -5,7 +5,7 @@ import json
 from datetime import date, datetime
 from pathlib import Path
 
-from boxbox.coach.analyze import format_time
+from boxbox.coach.analyze import format_sector, format_time
 from boxbox.coach.badges import badges, collect, goal_text
 from boxbox.coach.consistency import LapRecord, clean_share, consistency, format_share, then_vs_now
 from boxbox.coach.corners import analyze_lap
@@ -253,7 +253,7 @@ class DataBuilder:
         active = self._active_track(overview)
         if active is None:
             return {"tracks": [], "active": "", "step": 1, "stepName": STEPS[1], "streak": 0, "needed": CLEAN_LAPS_TO_ADVANCE, "nextStep": STEPS[2], "nextText": "", "bestPerStep": {}, "trend": [], "trendDelta": None, "mastered": [], "todo": [], "badges": [], "history": [],
-                    "consistency": None, "clean": None, "thenNow": None}
+                    "consistency": None, "clean": None, "thenNow": None, "idealLap": "", "bestSectors": ["-", "-", "-"]}
         p = per_track[active]
         rows = db.lap_table(active, limit=200)
         valid_times = [r["lap_time_ms"] for r in reversed(rows) if r["valid"] and r["lap_time_ms"]][-20:]
@@ -277,12 +277,16 @@ class DataBuilder:
             msgs = [(c, rule) for c, rule, w in db.lap_messages(r["id"]) if w >= 0.3]
             delta = (r["lap_time_ms"] - best_all) / 1000 if best_all and r["lap_time_ms"] else None
             history.append([r["created_at"][5:10].replace("-", "."), f"{r['number']:02d}", format_time(r["lap_time_ms"]),
+                            format_sector(r["sector1_ms"]), format_sector(r["sector2_ms"]), format_sector(r["sector3_ms"]),
                             ("" if delta is None else f"{delta:+.2f}".replace(".", ",")), "Tak" if r["valid"] else "Nie",
                             tc.get(r["traction_control"], "-"), "Tak" if r["abs_on"] else "Nie", gb.get(r["gearbox"], "-"), str(len(msgs)),
                             "; ".join(f"{names.get(c, f'Z{c}')}: {rule_pl(rule)}" for c, rule in msgs),  # tooltip w tabeli
                             bool(r["valid"] and r["lap_time_ms"] and r["lap_time_ms"] == best_all)])
         nxt = STEPS.get(p["step"] + 1)
+        best_sectors = db.best_sectors(active)
+        ideal = sum(best_sectors) if all(best_sectors) else None  # type: ignore[arg-type]
         return {
+            "idealLap": format_time(ideal) if ideal else "", "bestSectors": [format_sector(sm) for sm in best_sectors],
             "tracks": [_track_name(t["track_id"]) for t in overview["tracks"]], "active": _track_name(active),
             "step": p["step"], "stepName": STEPS[p["step"]], "streak": p["streak"], "needed": CLEAN_LAPS_TO_ADVANCE,
             "nextStep": nxt or "", "nextText": f"Brakuje {CLEAN_LAPS_TO_ADVANCE - p['streak']} czystych okrążeń." if nxt else "",

@@ -169,7 +169,7 @@ początkującego krok po kroku (asysty, start, opony, bateria), a postęp jest w
 
 - [ ] Wykresy okrążenia względem dystansu: prędkość, gaz, hamulec, bieg, kierownica, ERS, DRS; nałożenie na okrążenie referencyjne (własne najlepsze, duch Time Trial, AI) i delta czasu w każdym punkcie toru. (28.10: DRS i bateria ERS zapisywane z okrążeniem w bazie (`lap_channels`), w Analizie wykres DRS z liczbą włączonych stref i wykres baterii 0–4 MJ z referencją)
 - [ ] Mapa toru z realnego kształtu (recorder) z punktami hamowania, apeksami, strefami DRS i miejscem każdej uwagi trenera; mapa także na nakładce. (28.10: strefy DRS z okrążenia na mapie Analizy: zielone włączone, bursztynowe pominięte)
-- [ ] Tabela przejazdów dla każdego toru: sesje, okrążenia, czasy, sektory, asysty, ważność, uwagi trenera; filtry i sortowanie; porównanie dwóch okrążeń obok siebie.
+- [ ] Tabela przejazdów dla każdego toru: sesje, okrążenia, czasy, sektory, asysty, ważność, uwagi trenera; filtry i sortowanie; porównanie dwóch okrążeń obok siebie. (28.10: sektory S1–S3 z Lap Data zapisywane z okrążeniem (S3 = czas minus S1 i S2), kolumny w Historii przejazdów i w tabeli Podsumowania z wyróżnieniem najlepszego sektora, „z najlepszych sektorów” jako teoretyczne najlepsze okrążenie; porównanie dwóch okrążeń: Analiza z dowolną referencją z sesji)
 - [ ] Eksport: telemetria okrążenia do CSV, raport sesji do PDF z wykresami, mapą i uwagami trenera (jeden przycisk). (silnik: `coach/delta.py` delta do referencji i CSV; przyciski po makiecie)
 - [ ] Kryterium: po sesji gracz widzi, gdzie traci czas i dlaczego, bez słuchania komunikatów.
 

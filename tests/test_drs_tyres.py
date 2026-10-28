@@ -88,3 +88,33 @@ def test_tyre_advice_rules_and_window() -> None:
     uneven = analyze_tyres(_tyres((95, 95, 95, 95), (30.0, 20.0, 20.0, 20.0), (31.0, 21.0, 21.0, 21.0)))
     assert advise_tyres(uneven).kind == "wear_uneven" and forecast_laps(uneven) == 39
     assert forecast_laps(TyreLapReport((90.0,) * 4, (90.0,) * 4, None, None, 2)) is None
+
+
+def test_drs_and_ers_channels_round_trip_database_and_map(tmp_path, monza: RecordedSession) -> None:
+    """Kanały DRS i ERS okrążenia trafiają do bazy i wracają bez zmian; strefy DRS lądują na mapie Analizy."""
+    from boxbox.coach.corners import analyze_lap
+    from boxbox.gui.data import map_for
+    from boxbox.storage.db import Database
+
+    lap = monza.lap(3)
+    db = Database(tmp_path / "k.sqlite")
+    sid = db.save_session(monza.recorder.state.session, "test")
+    lap_id = db.save_lap(sid, lap, analyze_lap(lap, monza.track), monza.track.length_m, track_id=11)
+    drs, ers = db.drs_samples(lap_id), db.ers_samples(lap_id)
+    assert len(drs) == len(lap.drs) and len(ers) == len(lap.ers)
+    assert drs[500].active == lap.drs[500].active and abs(drs[500].distance_m - lap.drs[500].distance_m) < 0.01
+    assert abs(ers[700].store_j - lap.ers[700].store_j) < 1.0 and ers[700].deploy_mode == lap.ers[700].deploy_mode
+    assert db.drs_samples(lap_id + 99) == () and db.ers_samples(lap_id + 99) == ()
+    report = analyze_drs(list(drs))
+    assert report is not None and len(report.zones) == 2
+    zones = [(z.allowed_m, z.end_m, z.activated_m is not None) for z in report.zones]
+    assert map_for(11, shape_dir=tmp_path, fit_dir=tmp_path, drs_zones=zones)["drsZones"] == []  # sam obrys atlasu: bez dystansów
+    import math
+    from boxbox.tracks.shape import build_shape, save_shape, shape_path
+    length = monza.track.length_m  # kształt „z recordera”: okrąg o długości toru, dystanse są wtedy umieszczone
+    circle = [(length * i / 400, 1000 * math.cos(2 * math.pi * i / 400), 1000 * math.sin(2 * math.pi * i / 400)) for i in range(400)]
+    save_shape(build_shape(circle, 11, "Monza", length), shape_path(11, tmp_path))
+    m = map_for(11, shape_dir=tmp_path, fit_dir=tmp_path, drs_zones=zones)
+    assert m is not None and len(m["drsZones"]) == 2 and all(z["used"] and len(z["points"]) >= 2 for z in m["drsZones"])
+    assert all(0 <= x <= 500 and 0 <= y <= 270 for z in m["drsZones"] for x, y in z["points"])
+    db.close()

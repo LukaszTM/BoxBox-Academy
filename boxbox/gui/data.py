@@ -1,5 +1,6 @@
 """Dane dla interfejsu (index.html + app.js): jeden słownik `D`, który okno rysuje. Zero HTML tutaj."""
 import base64
+from collections.abc import Sequence
 import json
 from datetime import date, datetime
 from pathlib import Path
@@ -9,6 +10,8 @@ from boxbox.coach.badges import badges, collect, goal_text
 from boxbox.coach.consistency import LapRecord, clean_share, consistency, format_share, then_vs_now
 from boxbox.coach.corners import analyze_lap
 from boxbox.coach.delta import delta_trace
+from boxbox.coach.drs import analyze_drs
+from boxbox.coach.ers import ERS_MAX_J
 from boxbox.coach.glossary import GLOSSARY
 from boxbox.coach.laps import Lap, Sample
 from boxbox.coach.lessons import LESSONS
@@ -52,7 +55,7 @@ def _norm(values: list[float], lo: float | None = None, hi: float | None = None)
     return [round((v - lo) / span, 4) for v in values]
 
 
-def _resample(samples: tuple[Sample, ...] | list[Sample], attr: str, n: int = 120) -> list[float]:
+def _resample(samples: Sequence[object], attr: str, n: int = 120) -> list[float]:  # próbki z polem distance_m
     pts = [s for s in samples if s.distance_m >= 0]
     if len(pts) < 2:
         return []
@@ -107,8 +110,10 @@ def _shape_for(track_id: int, shape_dirs: list[Path], fit_dir: Path) -> tuple[Tr
 
 
 def map_for(track_id: int, shape_dir: Path = SHAPE_DIR, active: str = "", fit_dir: Path = FIT_DIR,
-            brakes: list[float] | None = None, ref_brakes: list[float] | None = None) -> dict | None:
-    """Mapa do SVG 500x270: obrys, zakręty, meta i (opcjonalnie) punkty hamowania gracza i referencji (dystanse w m)."""
+            brakes: list[float] | None = None, ref_brakes: list[float] | None = None,
+            drs_zones: list[tuple[float, float, bool]] | None = None) -> dict | None:
+    """Mapa do SVG 500x270: obrys, zakręty, meta i (opcjonalnie) punkty hamowania gracza i referencji (dystanse w m)
+    oraz strefy DRS z okrążenia (od lampki do zamknięcia skrzydła; True = włączone)."""
     dirs = [shape_dir] + ([SHAPE_DIR] if shape_dir != SHAPE_DIR else [])
     shape, source = _shape_for(track_id, dirs, fit_dir)
     if shape is None or not shape.points:
@@ -128,11 +133,18 @@ def map_for(track_id: int, shape_dir: Path = SHAPE_DIR, active: str = "", fit_di
     def marks(ds: list[float] | None) -> list[list[float]]:
         return [pt(*shape.position_at(d)) for d in (ds or [])] if placed else []
 
+    def zone(start: float, end: float) -> list[list[float]]:
+        if end < start:  # strefa przez linię mety
+            end += shape.length_m
+        n = max(2, int((end - start) / max(shape.step_m, 1.0)) + 1)
+        return [pt(*shape.position_at(start + (end - start) * i / (n - 1))) for i in range(n)]
+
     return {
         "points": [pt(p.x, p.z) for p in shape.points[::step]],
         "corners": [{"name": c.name, "x": pt(c.x, c.z)[0], "y": pt(c.x, c.z)[1]} for c in shape.corners] if placed else [],
         "start": pt(shape.points[0].x, shape.points[0].z) if placed else None,
         "brakes": marks(brakes), "refBrakes": marks(ref_brakes),
+        "drsZones": [{"points": zone(a, b), "used": used} for a, b, used in (drs_zones or [])] if placed else [],
         "source": source,
     }
 
@@ -293,6 +305,7 @@ class DataBuilder:
         sessions = db.session_list()
         empty = {"sessions": [], "laps": [], "comps": [], "session": None, "lap": None, "comp": "best", "compLabel": "", "track": "", "lengthText": "",
                  "speed": {"own": [], "ref": []}, "pedal": {"own": [], "ref": []}, "gear": {"own": [], "ref": []}, "steer": {"own": [], "ref": []},
+                 "drs": {"own": [], "zones": 0, "used": 0}, "ers": {"own": [], "ref": []},
                  "delta": {"own": [], "values": [], "end": ""}, "axis": [], "map": None, "notes": []}
         if not sessions:
             return empty
@@ -332,6 +345,10 @@ class DataBuilder:
         delta_values = [round(deltas[int(i * (len(deltas) - 1) / 119)], 3) for i in range(120)] if len(deltas) > 1 else []
         gear_own, gear_ref = _resample(own, "gear"), _resample(ref, "gear")
         steer_own, steer_ref = _resample(own, "steer"), _resample(ref, "steer")
+        drs_own, ers_own = db.drs_samples(lap.id), db.ers_samples(lap.id)
+        ers_ref = db.ers_samples(ref_lap.id) if ref_lap else ()
+        drs_report = analyze_drs(list(drs_own))
+        drs_zones = [(z.allowed_m, z.end_m, z.activated_m is not None) for z in drs_report.zones] if drs_report else []
         length = max((s.distance_m for s in own), default=0.0)
         try:
             track = load_track_by_id(session["track_id"]) if session["track_id"] is not None else None
@@ -357,10 +374,12 @@ class DataBuilder:
             "pedal": {"own": _norm(thr_own, 0, 1), "ref": _norm(thr_ref, 0, 1) if thr_ref else [], "brake": _norm(brk_own, 0, 1)},
             "gear": {"own": _norm(gear_own, 0, 8), "ref": _norm(gear_ref, 0, 8) if gear_ref else []},
             "steer": {"own": _norm(steer_own, -1, 1), "ref": _norm(steer_ref, -1, 1) if steer_ref else []},
+            "drs": {"own": _norm(_resample(drs_own, "active"), 0, 1), "zones": len(drs_zones), "used": sum(1 for z in drs_zones if z[2])},
+            "ers": {"own": _norm(_resample(ers_own, "store_j"), 0, ERS_MAX_J), "ref": _norm(_resample(ers_ref, "store_j"), 0, ERS_MAX_J) if ers_ref else []},
             "delta": {"own": _norm(deltas) if deltas else [], "values": delta_values,
                       "end": (f"{deltas[-1]:+.2f} s".replace(".", ",").replace("+", "+").replace("-", "−") if deltas else "")},
             "axis": [f"{int(length * k / 4):,} m".replace(",", " ") for k in range(5)],
-            "map": map_for(session["track_id"], self.shape_dir, fit_dir=self.fit_dir, brakes=brakes, ref_brakes=ref_brakes) if session["track_id"] is not None else None,
+            "map": map_for(session["track_id"], self.shape_dir, fit_dir=self.fit_dir, brakes=brakes, ref_brakes=ref_brakes, drs_zones=drs_zones) if session["track_id"] is not None else None,
             "notes": notes,
         }
 

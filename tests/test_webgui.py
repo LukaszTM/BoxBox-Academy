@@ -153,6 +153,12 @@ def test_window_wizard_session_and_screens(app, tmp_path: Path) -> None:
     an2 = w.data.build()["analysis"]
     assert an2["comp"] == other["id"] and an2["compLabel"].startswith("okrążenie ") and an2["speed"]["ref"]
     w.data.analysis_sel["comp"] = "best"
+    # kanały DRS i ERS z bazy: wykresy i strefy DRS na mapie
+    assert len(an["drs"]["own"]) == 120 and an["drs"]["zones"] == 2 and an["drs"]["used"] == 2 and len(an["ers"]["own"]) == 120
+    assert len(an["map"]["drsZones"]) == 2
+    js(w, app, "window.boxbox.navigate('analysis'); 1")
+    pump(app, 0.4)
+    assert js(w, app, "document.querySelectorAll('.track-drs.used').length") == 2 and "BATERIA ERS" in js(w, app, "document.body.textContent")
     js(w, app, "window.boxbox.ui.tutorial=true; window.boxbox.ui.tutorialStep=0; window.boxbox.navigate('start'); 1")
     pump(app, 0.3)
     assert "SAMOUCZEK" in js(w, app, "document.querySelector('.tutorial').textContent")

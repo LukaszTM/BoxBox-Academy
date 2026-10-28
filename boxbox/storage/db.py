@@ -6,10 +6,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from boxbox.coach.corners import CornerMetrics, LapAnalysis
+from boxbox.coach.ers_sample import ErsSample
+from boxbox.coach.lap_samples import DrsSample
 from boxbox.coach.laps import Lap, Sample
 from boxbox.telemetry.session import SessionPacket
 
 _SAMPLE = struct.Struct("<fIHffbf")  # dystans, czas, prędkość, gaz, hamulec, bieg, kierownica
+_DRS = struct.Struct("<fI??")  # dystans, czas, lampka, skrzydło
+_ERS = struct.Struct("<ffffB")  # dystans, bateria, deploy, odzysk, tryb
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS sessions (
@@ -59,6 +63,12 @@ CREATE TABLE IF NOT EXISTS corner_metrics (
 CREATE TABLE IF NOT EXISTS lap_samples (
     lap_id INTEGER PRIMARY KEY REFERENCES laps(id) ON DELETE CASCADE,
     data BLOB NOT NULL
+);
+CREATE TABLE IF NOT EXISTS lap_channels (
+    lap_id INTEGER NOT NULL REFERENCES laps(id) ON DELETE CASCADE,
+    kind TEXT NOT NULL,  -- drs | ers
+    data BLOB NOT NULL,
+    PRIMARY KEY (lap_id, kind)
 );
 CREATE TABLE IF NOT EXISTS lap_messages (
     lap_id INTEGER NOT NULL REFERENCES laps(id) ON DELETE CASCADE,
@@ -112,6 +122,22 @@ def pack_samples(samples: list[Sample]) -> bytes:
 
 def unpack_samples(data: bytes) -> tuple[Sample, ...]:
     return tuple(Sample(*_SAMPLE.unpack_from(data, i)) for i in range(0, len(data), _SAMPLE.size))
+
+
+def pack_drs(samples: list[DrsSample]) -> bytes:
+    return b"".join(_DRS.pack(s.distance_m, s.lap_time_ms, s.allowed, s.active) for s in samples)
+
+
+def unpack_drs(data: bytes) -> tuple[DrsSample, ...]:
+    return tuple(DrsSample(*_DRS.unpack_from(data, i)) for i in range(0, len(data), _DRS.size))
+
+
+def pack_ers(samples: list[ErsSample]) -> bytes:
+    return b"".join(_ERS.pack(s.distance_m, s.store_j, s.deployed_j, s.harvested_j, s.deploy_mode) for s in samples)
+
+
+def unpack_ers(data: bytes) -> tuple[ErsSample, ...]:
+    return tuple(ErsSample(*_ERS.unpack_from(data, i)) for i in range(0, len(data), _ERS.size))
 
 
 def _now() -> str:
@@ -208,6 +234,9 @@ class Database:
             ],
         )
         self.conn.execute("INSERT INTO lap_samples VALUES (?, ?)", (lap_id, pack_samples(lap.samples)))
+        for kind, data in (("drs", pack_drs(lap.drs)), ("ers", pack_ers(lap.ers))):  # kanały do wykresów w Analizie
+            if data:
+                self.conn.execute("INSERT INTO lap_channels VALUES (?, ?, ?)", (lap_id, kind, data))
         self.conn.commit()
         return lap_id
 
@@ -259,6 +288,14 @@ class Database:
     def samples(self, lap_id: int) -> tuple[Sample, ...]:
         row = self.conn.execute("SELECT data FROM lap_samples WHERE lap_id = ?", (lap_id,)).fetchone()
         return unpack_samples(row["data"]) if row else ()
+
+    def drs_samples(self, lap_id: int) -> tuple[DrsSample, ...]:
+        row = self.conn.execute("SELECT data FROM lap_channels WHERE lap_id = ? AND kind = 'drs'", (lap_id,)).fetchone()
+        return unpack_drs(row["data"]) if row else ()
+
+    def ers_samples(self, lap_id: int) -> tuple[ErsSample, ...]:
+        row = self.conn.execute("SELECT data FROM lap_channels WHERE lap_id = ? AND kind = 'ers'", (lap_id,)).fetchone()
+        return unpack_ers(row["data"]) if row else ()
 
     def save_messages(self, lap_id: int, messages: list) -> None:
         self.conn.execute("DELETE FROM lap_messages WHERE lap_id = ?", (lap_id,))

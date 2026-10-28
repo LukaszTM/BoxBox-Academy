@@ -57,6 +57,7 @@ TRACK_NAMES: dict[int, str] = {  # załącznik "Track IDs" w docs/Data_Output_fr
     14: "Abu Zabi", 15: "Austin", 16: "Interlagos", 17: "Spielberg", 19: "Meksyk", 20: "Baku",
     26: "Zandvoort", 27: "Imola", 29: "Dżudda", 30: "Miami", 31: "Las Vegas", 32: "Losail",
     39: "Silverstone (odwrotny)", 40: "Spielberg (odwrotny)", 41: "Zandvoort (odwrotny)",
+    42: "Madryt",  # 2026 Season Pack (Madring)
 }
 
 SESSION_TYPE_NAMES: dict[int, str] = {

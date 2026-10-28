@@ -236,6 +236,12 @@ ważnych okrążeniach (opanowane) i zakręty do pracy z nazwami reguł.
 ERS: deploy liczony per strefa z próbek baterii; ponad 25% deployu w strefach hamowania → „za dużo
 baterii w zakrętach”; bateria na mecie powyżej 90% → „bateria prawie pełna”. Przy włączonej asyście ERS rady nie ma.
 
+Plan baterii (`coach/ers_plan.py`): proste między zakrętami z czasem przejazdu z okrążenia referencyjnego,
+uszeregowane od najdłuższej; deploy dostają te, które mieszczą się w budżecie ok. 33 s pełnej mocy (4 MJ przy
+120 kW). Na żywo 250 m przed najdłuższą prostą przy baterii poniżej 15 %: „bateria prawie pusta, a zaraz
+najdłuższa prosta”; po okrążeniu, gdy mniej niż 70 % deployu poszło na zaplanowane proste: „bateria idzie
+w złych miejscach”. Plan odnawia się z każdą nową referencją; `describe(plan)` daje zdanie do okna.
+
 ## 10. Głos
 
 Katalog 710 fraz (`assets\voice\phrases.csv`, generowany z kodu): klipy zakrętów `corner_t1`…

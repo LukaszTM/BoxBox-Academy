@@ -90,6 +90,8 @@ MISC_TEXTS: dict[str, str] = {
     "ers_wasted": "Za dużo baterii idzie w zakrętach. Używaj jej na prostych, zaraz po wyjściu.",
     "ers_unused": "Bateria na mecie prawie pełna. Masz zapas na wyjściach z wolnych zakrętów.",
     "ers_last_lap": "Ostatnie okrążenie. Wciśnij całą baterię, co zostało.",
+    "ers_empty_straight": "Bateria prawie pusta, a zaraz najdłuższa prosta. Oszczędzaj ją w zakrętach, wydawaj na prostych.",
+    "ers_off_plan": "Bateria idzie w złych miejscach. Wydawaj ją na najdłuższych prostych, zaraz po wyjściu z zakrętu.",
     "drs_missed": "Nie włączyłeś DRS na prostej. Szukaj zielonej lampki zaraz po wyjściu z zakrętu.",
     "drs_late": "DRS włączony za późno. Naciskaj od razu, gdy zaświeci się zielona lampka.",
     "tyres_rear_hot": "Tył grzeje się bardziej niż przód. Łagodniej z gazem na wyjściach, opony podziękują.",

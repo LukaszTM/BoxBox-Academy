@@ -10,6 +10,9 @@ from dataclasses import dataclass, field
 from boxbox.coach.corners import LapAnalysis, analyze_corner, analyze_lap
 from boxbox.coach.drs import advise_drs, analyze_drs
 from boxbox.coach.ers import advise_ers, analyze_ers
+from boxbox.coach.ers_plan import ErsPlan, empty_before_straight
+from boxbox.coach.ers_plan import plan as make_ers_plan
+from boxbox.coach.ers_plan import review as review_plan
 from boxbox.coach.tyres import advise_tyres, analyze_tyres
 from boxbox.coach.glossary import explain
 from boxbox.coach.guide_live import KINDS, CornerGuide, kinds_for_rules
@@ -39,6 +42,8 @@ class LiveCoach:
     available: Callable[[str], bool] | None = None  # czy klip o id jest w bibliotece (wybór v2/v1)
     progress: TrackProgress | None = None  # ścieżka zdejmowania asyst (z bazy); None = bez śledzenia
     ers_advice: bool = True
+    ers_plan: ErsPlan | None = None  # plan baterii z okrążenia referencyjnego (proste do deployu)
+    ers_warned: set[int] = field(default_factory=set)  # okrążenia, na których padło „bateria pusta przed prostą”
     drs_advice: bool = True  # po okrążeniu: pominięta strefa DRS albo spóźnione włączenie
     tyre_advice: bool = True  # po okrążeniu: tył/przód grzeje się bardziej, szybkie albo nierówne zużycie (raz na sesję)
     tyre_said: set[str] = field(default_factory=set)
@@ -94,6 +99,13 @@ class LiveCoach:
             self.guide.set_reference(self.reference)
             for cue in self.guide.update(recorder.current):
                 self.speak(list(cue.ids), cue.text)
+        cur = recorder.current
+        if self.ers_advice and self.ers_plan is not None and cur is not None and cur.ers and cur.ers_assist is False and not cur.pitted \
+                and cur.number not in self.ers_warned:
+            s = cur.ers[-1]
+            if empty_before_straight(self.ers_plan, s.distance_m, s.store_j, self.track.length_m) is not None:
+                self.ers_warned.add(cur.number)
+                self.speak(["misc_ers_empty_straight"], MISC_TEXTS["ers_empty_straight"])
         return out
 
     def _on_progress(self, lap: Lap) -> list[Message]:
@@ -133,6 +145,7 @@ class LiveCoach:
             if usable:
                 self.reference = analysis
                 self.best_time_ms = lap.lap_time_ms
+                self.ers_plan = make_ers_plan(self.track, lap)
                 self._say_misc("no_reference")
             return []
         if lap.invalid:
@@ -169,6 +182,12 @@ class LiveCoach:
             if advice.kind in ("wasted_in_corners", "unused_battery"):
                 key = "ers_wasted" if advice.kind == "wasted_in_corners" else "ers_unused"
                 self.speak([f"misc_{key}"], MISC_TEXTS[key])
+            elif self.ers_plan is not None:
+                rev = review_plan(self.ers_plan, lap.ers, self.track.length_m)
+                if rev is not None and not rev.ok and rev.deployed_j > 200_000:
+                    self.speak(["misc_ers_off_plan"], MISC_TEXTS["ers_off_plan"])
+        if usable and self.reference is analysis and lap.samples:
+            self.ers_plan = make_ers_plan(self.track, lap)  # nowa referencja = nowy plan baterii
         if self.drs_advice and lap.drs and not lap.invalid:
             drs = advise_drs(analyze_drs(lap.drs), lap.drs_assist)
             if drs.clip is not None:

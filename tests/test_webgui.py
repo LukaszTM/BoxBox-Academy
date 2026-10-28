@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QApplication  # noqa: E402
 
 from boxbox.gui.data import DataBuilder, map_for  # noqa: E402
 from boxbox.gui.settings import Settings  # noqa: E402
-from boxbox.gui.webapp import WebWindow  # noqa: E402
+from boxbox.gui.webapp import WebWindow, zoom_for_width  # noqa: E402
 from boxbox.session import SessionConfig  # noqa: E402
 
 MONZA = Path("recordings/monza-trening_2026-10-26_153411.bin.xz")
@@ -88,6 +88,7 @@ def test_window_wizard_session_and_screens(app, tmp_path: Path) -> None:
         pump(app, 0.2)
     assert w.report_path is not None and w.report_path.exists() and w.report_path.stat().st_size > 10_000 and w.report_path.name.startswith("raport-monza-")
     assert w.report_path.read_bytes()[:5] == b"%PDF-"
+    pump(app, 1.0)  # komunikat „Zapisano raport” dociera do strony chwilę po zapisie
     assert any(r["key"] == "first_clean" and r["got"] for r in w.data.build()["progress"]["badges"])  # odznaki z silnika
     for view, title in (("analysis", "Analiza"), ("progress", "Postęp"), ("skills", "Umiejętności"), ("lessons", "Lekcje"), ("driver", "Karta kierowcy"), ("settings", "Ustawienia"), ("help", "Pomoc")):
         js(w, app, f"window.boxbox.navigate('{view}'); 1")
@@ -117,6 +118,13 @@ def test_window_wizard_session_and_screens(app, tmp_path: Path) -> None:
     js(w, app, "window.boxbox.navigate('driver'); 1")
     pump(app, 0.4)
     assert js(w, app, "!!document.querySelector('.license-radar-link svg')")
+    # tło z głębią (siatka, poświaty, obrys toru z sesji) i skalowanie okna przy maksymalizacji na 2560 px
+    assert js(w, app, "document.querySelectorAll('.bg-3d .bg-glow').length") == 3 and js(w, app, "(document.querySelector('.bg-track .road').getAttribute('d')||'').length") > 200
+    assert js(w, app, "!!document.querySelector('.bg-track .start')")  # start/meta z kształtu Monzy
+    assert w.view.zoomFactor() == 1.0
+    w.resize(2560, 1400)
+    pump(app, 0.3)
+    assert abs(w.view.zoomFactor() - 1.45) < 0.01 and zoom_for_width(1920) == 1.097 and zoom_for_width(1200) == 1.0
     js(w, app, "window.boxbox.navigate('analysis'); 1")
     pump(app, 0.5)
     assert js(w, app, "document.querySelectorAll('.chart-line').length") >= 4  # prędkość, pedały, bieg, kierownica
@@ -130,7 +138,7 @@ def test_window_wizard_session_and_screens(app, tmp_path: Path) -> None:
     assert js(w, app, "document.querySelector('.notice.error .notice-content').textContent") == "Port zajęty"
     js(w, app, "document.querySelector('[data-action=notice-close]').click(); 1")
     pump(app, 0.3)
-    assert js(w, app, "!document.querySelector('.notice')")
+    assert js(w, app, "(document.querySelector('.notice')||{textContent:''}).textContent") == ""
     js(w, app, "window.boxbox.navigate('progress'); document.querySelector('[data-sort=\"2\"]').click(); 1")
     pump(app, 0.4)
     assert js(w, app, "document.querySelectorAll('.data-table tbody tr').length") >= 5 and js(w, app, "!!document.querySelector('tr.best-lap')")

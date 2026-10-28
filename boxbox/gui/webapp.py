@@ -213,6 +213,15 @@ class Bridge(QObject):
         self.w.push_all()
 
 
+DESIGN_WIDTH = 1750  # szerokość okna, przy której makieta ma naturalną skalę
+MAX_ZOOM = 1.45
+
+
+def zoom_for_width(width: int) -> float:
+    """Powiększenie strony dla szerokości okna: 1,0 do 1750 px, liniowo do 1,45 przy 2540 px i więcej."""
+    return round(max(1.0, min(MAX_ZOOM, width / DESIGN_WIDTH)), 3)
+
+
 class WebWindow(QMainWindow):
     def __init__(self, data_dir: Path = Path("data"), shape_dir: Path | None = None) -> None:
         super().__init__()
@@ -810,6 +819,11 @@ class WebWindow(QMainWindow):
         dialog = QPrintDialog(printer, self)
         if dialog.exec():
             self.view.page().print(printer, lambda ok: self.bridge.notice.emit("success" if ok else "error", "Wydruk wysłany" if ok else "Drukowanie nie powiodło się"))
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        """Układ z makiety jest na ok. 1600 px szerokości: na większym oknie (np. 2560 px) interfejs rośnie, zamiast zostawiać pustkę."""
+        super().resizeEvent(event)
+        self.view.setZoomFactor(zoom_for_width(self.width()))
 
     def closeEvent(self, event) -> None:  # noqa: N802
         if self.session is not None:

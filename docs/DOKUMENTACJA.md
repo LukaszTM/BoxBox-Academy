@@ -138,7 +138,8 @@ sprawdzania, czy zakręty z pliku toru leżą tam, gdzie w grze.
 
 `LapRecorder` zbiera próbki (dystans, prędkość, gaz, hamulec, bieg, czas) i zamyka okrążenie przy
 zmianie numeru. Okrążenie ma czas, flagi ważne/pit/pełne, asysty wybrane głosowaniem z próbek
-(gra potrafi zmieniać je w trakcie) i próbki ERS.
+(gra potrafi zmieniać je w trakcie), próbki ERS, DRS i opon oraz czasy sektorów: S1 i S2 z Lap Data
+w trakcie okrążenia, S3 = czas okrążenia minus S1 i S2 po mecie (bez kompletu sektory zostają puste).
 
 Dla każdego zakrętu liczone są: v_min i jej miejsce (środek plateau), bieg w apeksie, prędkość
 wejścia i wyjścia, czas przejazdu strefy, punkt hamowania, koniec hamowania, czas puszczania
@@ -233,6 +234,17 @@ kroku i zapis w tabeli `progress`. Zmiana asyst zmienia krok i zeruje serię. Ek
 tor, krok, seria, osiągnięte kroki, najlepszy czas na każdym kroku, zakręty bez uwag w ostatnich 3
 ważnych okrążeniach (opanowane) i zakręty do pracy z nazwami reguł.
 
+Zakładka Postęp w oknie dokłada: sumę najlepszych sektorów (teoretyczne najlepsze okrążenie), spójność
+jazdy (`coach/consistency.py`: odchylenie czasów z ostatnich 10 ważnych okrążeń; względem średniego czasu
+do 0,5 % „bardzo równo”, 1 % „równo”, 2 % „zmiennie”, wyżej „nierówno”, każda ocena z jedną radą), odsetek
+czystych okrążeń toru oraz „Wtedy vs dziś”: sesje sprzed co najmniej 4 tygodni kontra ostatni tydzień
+(bez tak starych danych: pierwszy dzień jazdy kontra ostatni), w tabeli okrążenia, najlepszy i średni czas,
+odsetek czystych, pod nią zdanie podsumowania. Historia przejazdów ma kolumny S1–S3 z najlepszym sektorem
+wyróżnionym. Zakładka Analiza: referencją może być najlepsze okrążenie toru, poprzednie albo dowolne
+z sesji; poza prędkością, pedałami, biegiem i kierownicą wykres DRS (z liczbą włączonych stref) i baterii
+ERS 0–4 MJ, a na mapie toru strefy DRS z okrążenia (zielone włączone, bursztynowe pominięte). Eksport CSV
+okrążenia dokłada kolumny `drs` (0/1) i `bateria_mj`, gdy okrążenie ma te kanały.
+
 ERS: deploy liczony per strefa z próbek baterii; ponad 25% deployu w strefach hamowania → „za dużo
 baterii w zakrętach”; bateria na mecie powyżej 90% → „bateria prawie pełna”. Przy włączonej asyście ERS rady nie ma.
 
@@ -263,8 +275,9 @@ składa klipy z 120 ms przerwy, kolejka 3 komunikatów, głośność z `--volume
 ## 11. Baza danych
 
 SQLite `data\boxbox.sqlite`: `sessions` (uid gry jako tekst, źródło, tor, format), `laps` (numer, czas,
-ważne, pełne, pit, skrzynia, TC, ABS), `corner_metrics` (wszystkie metryki z p. 6), `lap_samples`
-(próbki w blobie), `lap_messages` (zakręt, reguła, waga), `progress` (krok, seria, osiągnięte).
+ważne, pełne, pit, skrzynia, TC, ABS, sektory S1–S3), `corner_metrics` (wszystkie metryki z p. 6), `lap_samples`
+(próbki w blobie), `lap_channels` (próbki DRS i ERS okrążenia w blobach, do wykresów i CSV),
+`lap_messages` (zakręt, reguła, waga), `progress` (krok, seria, osiągnięte).
 Migracje dodają brakujące kolumny przy starcie. Obok bazy dziennik `boxbox.log`: start, cwd, wersja
 Pythona, start trenera i tor, każdy komunikat z czasem, każde okrążenie, błędy wątków, obciążenie.
 

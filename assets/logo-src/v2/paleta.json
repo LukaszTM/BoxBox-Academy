@@ -1,0 +1,34 @@
+{
+  "nazwa": "BoxBox Academy — logo v2",
+  "kolory": {
+    "Signal Red": "#E8232A",
+    "Telemetry Cyan": "#19E6E6",
+    "Carbon": "#0B0C0E",
+    "Graphite": "#15171B",
+    "Ash": "#9BA3AD"
+  },
+  "warianty": [
+    "pionowe",
+    "poziome",
+    "znak"
+  ],
+  "rozmiary_png": [
+    256,
+    512,
+    1024,
+    2048
+  ],
+  "ico": [
+    16,
+    24,
+    32,
+    48,
+    64,
+    128,
+    256
+  ],
+  "fonty_tylko_uzyte_do_zamiany_na_krzywe": {
+    "BOXBOX": "Roboto Condensed Bold Italic",
+    "ACADEMY": "Inter SemiBold"
+  }
+}

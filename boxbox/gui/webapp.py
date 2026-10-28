@@ -15,7 +15,7 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QTimer, QUrl, Signal, Slot
+from PySide6.QtCore import QEvent, QObject, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QIcon
 from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtWebEngineWidgets import QWebEngineView
@@ -43,6 +43,33 @@ log = logging.getLogger("boxbox.gui")
 WEB_DIR = Path(__file__).resolve().parent / "web"
 ROOT = Path(__file__).resolve().parent.parent.parent
 IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
+
+
+def photo_folders() -> list[Path]:
+    """Obrazy, Pulpit i Pobrane użytkownika, także gdy Windows przeniósł je do OneDrive (znane foldery z rejestru)."""
+    home = Path.home()
+    folders: list[Path] = []
+    if sys.platform.startswith("win"):
+        try:
+            import winreg
+
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders") as key:
+                for name in ("My Pictures", "Desktop", "{374DE290-123F-4565-9164-39C4925E467B}"):  # ostatni = Pobrane
+                    try:
+                        value, _ = winreg.QueryValueEx(key, name)
+                        folders.append(Path(os.path.expandvars(value)))
+                    except OSError:
+                        pass
+        except (ImportError, OSError):
+            pass
+    for base in (home, home / "OneDrive"):
+        for name in ("Pictures", "Obrazy", "Desktop", "Pulpit", "Downloads", "Pobrane"):
+            folders.append(base / name)
+    out: list[Path] = []
+    for f in folders:
+        if f not in out:
+            out.append(f)
+    return out
 
 
 class Bridge(QObject):
@@ -120,15 +147,23 @@ class Bridge(QObject):
 
     @Slot()
     def listPhotos(self) -> None:
-        found = []
-        for folder in (Path.home() / "Pictures", Path.home() / "Obrazy", Path.home() / "Desktop", Path.home() / "Pulpit"):
-            if folder.is_dir():
-                for p in sorted(folder.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True):
-                    if p.suffix.lower() in IMAGE_SUFFIXES and p.stat().st_size < 12_000_000:
-                        found.append(p)
-                    if len(found) >= 40:
-                        break
-        out = [{"path": str(p), "name": p.name, "thumb": QUrl.fromLocalFile(str(p)).toString()} for p in found[:40]]
+        found: list[Path] = []
+        seen: set[Path] = set()
+        for folder in photo_folders():
+            if not folder.is_dir():
+                continue
+            try:
+                entries = sorted(folder.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True)
+            except OSError:
+                continue
+            for p in entries:
+                if p.suffix.lower() in IMAGE_SUFFIXES and p.is_file() and p.stat().st_size < 12_000_000 and p.resolve() not in seen:
+                    seen.add(p.resolve())
+                    found.append(p)
+                if len(found) >= 60:
+                    break
+        out = [{"path": str(p), "name": p.name, "thumb": QUrl.fromLocalFile(str(p)).toString()} for p in found[:60]]
+        log.info("zdjęcia: %d plików w %s", len(out), ", ".join(str(f) for f in photo_folders() if f.is_dir()))
         self.photos.emit(json.dumps(out, ensure_ascii=False))
 
     @Slot(str)
@@ -204,10 +239,33 @@ class WebWindow(QMainWindow):
         self.channel.registerObject("bridge", self.bridge)
         self.view.page().setWebChannel(self.channel)
         self.view.load(QUrl.fromLocalFile(str(WEB_DIR / "index.html")))
+        self.view.setAcceptDrops(True)
+        self.view.installEventFilter(self)
+        QTimer.singleShot(1500, self._watch_drops)
         self.start_probe()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.tick)
         self.timer.start(200)
+
+    def _watch_drops(self) -> None:
+        proxy = self.view.focusProxy()  # właściwy widget renderujący powstaje po załadowaniu strony
+        if proxy is not None:
+            proxy.installEventFilter(self)
+
+    def eventFilter(self, obj, event) -> bool:  # noqa: N802
+        et = event.type()
+        if et in (QEvent.Type.DragEnter, QEvent.Type.DragMove) and event.mimeData().hasUrls():
+            event.acceptProposedAction()
+            return True
+        if et == QEvent.Type.Drop and event.mimeData().hasUrls():
+            for url in event.mimeData().urls():
+                if url.isLocalFile() and Path(url.toLocalFile()).suffix.lower() in IMAGE_SUFFIXES:
+                    self.set_photo(url.toLocalFile())
+                    event.acceptProposedAction()
+                    return True
+            self.bridge.notice.emit("error", "To nie jest obraz (png, jpg, webp).")
+            return True
+        return super().eventFilter(obj, event)
 
     # --- ustawienia i dane ---
     def save_settings(self) -> None:
@@ -278,8 +336,10 @@ class WebWindow(QMainWindow):
     def tick(self) -> None:
         if self.session is None:
             r = self.probe_result()
-            self.data.status = {"connected": r.connected, "busy": r.busy, "track": r.track, "fmt": r.fmt, "rate": int(r.rate), "port": self.settings.port}
-            self.push_live()
+            status = {"connected": r.connected, "busy": r.busy, "track": r.track, "fmt": r.fmt, "rate": int(r.rate), "port": self.settings.port}
+            if status != self.data.status:  # bez zmiany nic nie wysyłamy: interfejs nie przerysowuje się w kółko
+                self.data.status = status
+                self.push_live()
             if r.connected and self.settings.auto_start and self.settings.wizard_done:
                 self.start_session_cfg(self._config({}), auto=True)
             return

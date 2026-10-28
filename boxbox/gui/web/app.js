@@ -163,16 +163,25 @@ function overlayUI(){const L=D.live; const msgs=L.messages.slice(-3).reverse();
 
 function renderView(){switch(ui.view){case 'start':return D.live?live():ready();case 'analysis':return analysis();case 'progress':return progressScreen();case 'lessons':return lessons();case 'driver':return driver();case 'settings':return settings();case 'wizard':return wizard();case 'summary':return summary();case 'help':return help();case 'hud':return hudView();default:return ready()}}
 const app=document.getElementById('app');
-function render(){ if(!D) return; const active=document.activeElement; const keep=active&&active.id&&['session-name','driver-nick','bug-desc','lesson-corner','port'].includes(active.id)?{id:active.id,pos:active.selectionStart}:null;
-  const hudFrame=ui.view==='hud'?document.getElementById('hud-frame'):null; if(hudFrame){ // edytor HUD zostaje na miejscu (przeniesienie iframe = przeładowanie); odświeżamy tylko pasek boczny, nagłówek i komunikat
-    const html=document.createElement('div'); html.innerHTML=shell();
-    for(const sel of ['.side','.header']){const cur=app.querySelector(sel), fresh=html.querySelector(sel); if(cur&&fresh) cur.replaceWith(fresh)}
-    const oldNotice=app.querySelector('.notice'), newNotice=html.querySelector('.notice'); if(oldNotice) oldNotice.remove(); if(newNotice) app.querySelector('.header').after(newNotice);
-    const oldTut=app.querySelector('.tutorial'), newTut=html.querySelector('.tutorial'); if(oldTut) oldTut.remove(); if(newTut) app.querySelector('.app-layout').append(newTut);
-    const oldPick=app.querySelector('.hud-v2-page .photo-grid'), newPick=html.querySelector('.hud-v2-page .photo-grid'); if(oldPick) oldPick.remove(); if(newPick) app.querySelector('.hud-v2-page .panel').append(newPick);
-    const oldTools=app.querySelector('.hud-v2-page .toolbar-group'), newTools=html.querySelector('.hud-v2-page .toolbar-group'); if(oldTools&&newTools) oldTools.replaceWith(newTools); }
-  else app.innerHTML=shell();
+const KEEP_IDS=['session-name','driver-nick','bug-desc','lesson-corner','port'];
+let lastHtml='';
+function render(){ if(!D) return;
+  const active=document.activeElement; const keep=active&&active.id&&KEEP_IDS.includes(active.id)?{id:active.id,pos:active.selectionStart}:null;
+  const typed={}; for(const id of KEEP_IDS){const el=document.getElementById(id); if(el&&el.value!==el.defaultValue) typed[id]=el.value}  // to, co użytkownik wpisał, przeżywa przerysowanie
+  const html=shell();
+  const hudFrame=ui.view==='hud'?document.getElementById('hud-frame'):null;
+  if(hudFrame){ // edytor HUD zostaje na miejscu (przeniesienie iframe = przeładowanie); odświeżamy tylko pasek boczny, nagłówek i komunikat
+    const box=document.createElement('div'); box.innerHTML=html;
+    for(const sel of ['.side','.header']){const cur=app.querySelector(sel), fresh=box.querySelector(sel); if(cur&&fresh&&cur.outerHTML!==fresh.outerHTML) cur.replaceWith(fresh)}
+    const oldNotice=app.querySelector('.notice'), newNotice=box.querySelector('.notice'); if((oldNotice&&oldNotice.outerHTML)!==(newNotice&&newNotice.outerHTML)){ if(oldNotice) oldNotice.remove(); if(newNotice) app.querySelector('.header').after(newNotice) }
+    const oldTut=app.querySelector('.tutorial'), newTut=box.querySelector('.tutorial'); if((oldTut&&oldTut.outerHTML)!==(newTut&&newTut.outerHTML)){ if(oldTut) oldTut.remove(); if(newTut) app.querySelector('.app-layout').append(newTut) }
+    const oldPick=app.querySelector('.hud-v2-page .photo-grid'), newPick=box.querySelector('.hud-v2-page .photo-grid'); if((oldPick&&oldPick.outerHTML)!==(newPick&&newPick.outerHTML)){ if(oldPick) oldPick.remove(); if(newPick) app.querySelector('.hud-v2-page .panel').append(newPick) }
+    const oldTools=app.querySelector('.hud-v2-page .toolbar-group'), newTools=box.querySelector('.hud-v2-page .toolbar-group'); if(oldTools&&newTools&&oldTools.outerHTML!==newTools.outerHTML) oldTools.replaceWith(newTools);
+    lastHtml=''; }
+  else { if(html===lastHtml) return; // nic się nie zmieniło: nie ruszamy DOM (pola tekstowe, hover, kliknięcia)
+    lastHtml=html; app.innerHTML=html; }
   document.title=`BoxBox Academy | ${H[ui.view]?.[0]||'Start'}`;
+  for(const id in typed){const el=document.getElementById(id); if(el) el.value=typed[id]}
   if(keep){const el=document.getElementById(keep.id); if(el){el.focus(); try{el.setSelectionRange(keep.pos,keep.pos)}catch(e){}}} }
 function navigate(next){ui.view=next;ui.overlayVisible=false;ui.photoPicker=false;ui.hudPhotoPicker=false;render();window.scrollTo({top:0,behavior:'instant'});}
 const call=(name,...args)=>{ if(bridge&&bridge[name]) return bridge[name](...args); };
@@ -222,7 +231,7 @@ function exportLicense(){const d=D.driver;let c=document.createElement('canvas')
 app.addEventListener('click',e=>{const n=e.target.closest('[data-nav]');if(n){navigate(n.dataset.nav);return}const a=e.target.closest('[data-action]');if(a){action(a.dataset.action);return}const t=e.target.closest('[data-toggle]');if(t){const x=t.dataset.toggle; if(['record','overlay','quiet'].includes(x)){ui[x]=!ui[x]} else {D.settings[x]=!D.settings[x]; call('setSetting', JSON.stringify({[x]:D.settings[x]}))} render();return}const md=e.target.closest('[data-mode]');if(md){ui.mode=md.dataset.mode;render();return}const cor=e.target.closest('[data-corner]');if(cor){ui.corner=cor.dataset.corner;render();return}const tr=e.target.closest('[data-track]');if(tr){call('selectTrack',tr.dataset.track);return}const st=e.target.closest('[data-settings]');if(st){ui.settingsTab=st.dataset.settings;render();return}const help=e.target.closest('[data-help]');if(help){ui.helpTab=help.dataset.help;render();return}const les=e.target.closest('[data-lesson]');if(les){ui.lesson=les.dataset.lesson;render();return}const sort=e.target.closest('[data-sort]');if(sort){const idx=Number(sort.dataset.sort);ui.sortDir=ui.sortBy===idx?-ui.sortDir:1;ui.sortBy=idx;render();return}const hp=e.target.closest('[data-hud-photo]');if(hp){ui.hudBackground=hp.dataset.hudPhoto;ui.hudPhotoPicker=false;render();hudInit();return}const ph=e.target.closest('[data-photo]');if(ph){call('setPhoto',ph.dataset.photo);ui.photoPicker=false;return}});
 app.addEventListener('change',e=>{const id=e.target.id; if(id==='session-name'){ui.sessionName=e.target.value} if(id==='an-session'){call('selectAnalysis',JSON.stringify({session:e.target.value}))} if(id==='an-lap'){call('selectAnalysis',JSON.stringify({lap:e.target.value}))} if(id==='an-comp'){call('selectAnalysis',JSON.stringify({comp:e.target.value}))} if(id==='volume'){call('setSetting',JSON.stringify({volume:parseInt(e.target.value)}))} if(id==='scale'){call('setSetting',JSON.stringify({scale:parseInt(e.target.value)}))} if(id==='opacity'){call('setSetting',JSON.stringify({opacity:parseInt(e.target.value)}))} if(id==='port'){call('setSetting',JSON.stringify({port:parseInt(e.target.value)||20777}))} if(id==='lesson-corner'){ui.lessonCorner=e.target.value}});
 app.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('.license[data-nav]')){e.preventDefault();navigate('driver')}if((e.key==='Enter'||e.key===' ')&&e.target.closest('[data-corner]')){e.preventDefault();ui.corner=e.target.closest('[data-corner]').dataset.corner;render()}});
-document.addEventListener('dragover',e=>e.preventDefault()); document.addEventListener('drop',e=>{e.preventDefault(); const f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(f&&f.path) call('setPhoto', f.path);});
+document.addEventListener('dragover',e=>e.preventDefault()); document.addEventListener('drop',e=>e.preventDefault()); // upuszczony plik obsługuje okno Qt (ścieżka pliku nie jest dostępna w przeglądarce)
 
 // --- połączenie z Pythonem ---
 function applyData(json, partial){ const d=typeof json==='string'?JSON.parse(json):json; if(partial&&D){ Object.assign(D,d) } else { D=d } ; if(D && d.view){ ui.view=d.view } render(); }

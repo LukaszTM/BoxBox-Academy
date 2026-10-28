@@ -93,6 +93,19 @@ MISC_TEXTS: dict[str, str] = {
 }
 
 
+# Prowadzenie w zakręcie (boxbox/coach/guide_live.py): krótkie komendy przed punktem z okrążenia referencyjnego.
+# "intro" idzie po klipie zakrętu: "Zakręt czwarty. Prowadzę." Reszta to pojedyncze słowa, bo liczy się czas.
+GUIDE_TEXTS: dict[str, str] = {
+    "intro": "Prowadzę.",
+    "lift": "Puść gaz.",
+    "brake_hard": "Hamuj mocno.",
+    "brake_medium": "Hamuj do połowy.",
+    "brake_light": "Hamuj lekko.",
+    "half": "Pół gazu.",
+    "full": "Pełny gaz.",
+}
+
+
 def corner_key(name: str) -> str:
     """'T9-T10' -> 't9_10', 'T4' -> 't4'; nazwy spoza wzorca T<n> dostają klucz 'zone'."""
     nums = re.findall(r"\d+", name)
@@ -187,6 +200,8 @@ def catalog(corner_names: Sequence[str] = ()) -> dict[str, str]:
         out[f"gear_{g}"] = gear_text(g)
     for key, text in MISC_TEXTS.items():
         out[f"misc_{key}"] = text
+    for key, text in GUIDE_TEXTS.items():
+        out[f"guide_{key}"] = text
     out.update(engineer_catalog())  # inżynier (etap 6): generujemy razem, w jednym miesiącu planu
     from boxbox.coach.glossary import EXPLAIN  # tryb "wytłumacz mi": dłuższe wersje uwag (etap 8)
 

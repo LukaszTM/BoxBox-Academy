@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from boxbox.coach.corners import LapAnalysis, analyze_corner, analyze_lap
 from boxbox.coach.ers import advise_ers, analyze_ers
 from boxbox.coach.glossary import explain
+from boxbox.coach.guide_live import KINDS, CornerGuide, kinds_for_rules
 from boxbox.coach.lessons import Lesson, filter_messages
 from boxbox.coach.progress import TrackProgress
 from boxbox.coach.laps import Lap, LapRecorder
@@ -40,6 +41,14 @@ class LiveCoach:
     lesson_corner: int | None = None
     explain_mode: bool = False  # "wytłumacz mi": przy pierwszej uwadze danego typu dłuższe wyjaśnienie
     explained: set[str] = field(default_factory=set)
+    guidance: bool = True  # prowadzenie w nieopanowanych zakrętach (komendy przed punktem z referencji)
+    guided_corners: set[int] = field(default_factory=set)  # zakręty do prowadzenia na start (np. z poprzednich sesji)
+    guide: CornerGuide = field(init=False)
+
+    def __post_init__(self) -> None:
+        kinds = kinds_for_rules(self.lesson.rules) if self.lesson is not None else frozenset(KINDS)
+        self.guide = CornerGuide(self.track, self.reference, kinds=kinds)
+        self.guide.set_guided(sorted(self.guided_corners) if self.lesson_corner is None else [self.lesson_corner])
 
     def _say_misc(self, key: str) -> None:
         self.speak([f"misc_{key}"], MISC_TEXTS[key])
@@ -76,6 +85,10 @@ class LiveCoach:
             out += self._on_lap_finished(finished)
         if self.corner_messages and self.reference is not None and recorder.current is not None:
             out += self._on_progress(recorder.current)
+        if self.guidance and self.reference is not None and recorder.current is not None:
+            self.guide.set_reference(self.reference)
+            for cue in self.guide.update(recorder.current):
+                self.speak(list(cue.ids), cue.text)
         return out
 
     def _on_progress(self, lap: Lap) -> list[Message]:
@@ -139,6 +152,9 @@ class LiveCoach:
             self.best_time_ms = lap.lap_time_ms
             self.reference = analysis
             self._say_misc("lap_best")
+        # prowadzenie na następnym okrążeniu: zakręty z uwag tego okrążenia (lekcja z zakrętem: tylko on)
+        if self.lesson_corner is None:
+            self.guide.set_guided([m.corner for m in pick_top(spoken)])
         if self.progress is not None:
             clip, text = self.progress.record(lap, messages)
             if clip is not None and text is not None:

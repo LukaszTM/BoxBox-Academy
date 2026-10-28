@@ -56,6 +56,7 @@ Linia poleceń (`py -3 -m boxbox.app ...`):
 | `--record <nazwa>` | nagrywanie sesji na żywo do `recordings\` |
 | `--voice <folder>`, `--no-voice`, `--volume` | klipy głosu, wyłączenie dźwięku, wzmocnienie |
 | `--corner-messages on/off` | krótki komunikat tuż po zakręcie |
+| `--guidance on/off` | prowadzenie w nieopanowanych zakrętach: puść gaz, hamuj (jak mocno), pół gazu, pełny gaz |
 | `--overlay`, `--scale`, `--alpha` | nakładka trenera, skala napisów, krycie |
 | `--progress` | ekran postępu i wyjście |
 
@@ -99,12 +100,21 @@ Motion, Car Setup, Final Classification, Lobby, Motion Ex, Lap Positions (zbędn
 
 Plik toru `boxbox\tracks\data\<track_id>.json`: lista zakrętów z numerem, nazwą jak w grze (`T1`,
 `T4-T5`, `T8-T10`), metrami wejścia (początek hamowania), apeksu (minimum prędkości) i wyjścia
-(powrót do pełnego gazu). Są: Bahrajn (3), Monza (11), Suzuka (13). Nowy tor robi się jednym
+(powrót do pełnego gazu). W pakiecie są: Bahrajn (3), Monza (11), Suzuka (13). Nowy tor robi się jednym
 poleceniem z nagrania (`python -m boxbox.tracks.detect <nagranie> --car pb`), które szuka minimów
 prędkości potwierdzonych hamowaniem, łączy zakręty bez pełnego gazu między nimi i przycina nachodzące strefy.
 
+**Tor bez pliku (pozostałe tory F1 25 i 2026 Season Pack):** sesja działa od razu. Trener czeka na
+pierwsze pełne okrążenie, wyznacza z niego zakręty tym samym algorytmem (`boxbox/tracks/auto.py`),
+nazywa je T1..Tn według kolejności stref hamowania (szykana to jedna strefa, więc numeracja może różnić
+się od gry), zapisuje `data\tracks\<id>.json` i startuje; to okrążenie zostaje referencją. W kolejnych
+sesjach plik jest wczytywany od razu; można w nim poprawić nazwy i granice. Plik wbudowany
+w `boxbox\tracks\data\` ma zawsze pierwszeństwo (`find_track_path`). Gdy z trzech pełnych okrążeń
+nie da się wyznaczyć zakrętów (mniej niż 3 strefy hamowania), trener wyłącza się z komunikatem.
+
 Przewodnik `guide\<id>.json` to lżejsza lista „nazwa + apeks + notatka” dla nakładki; po pierwszym
-pełnym okrążeniu nakładka kalibruje go do stref hamowania gracza.
+pełnym okrążeniu nakładka kalibruje go do stref hamowania gracza. Tor bez przewodnika dostaje go
+z pliku toru (`guide_from_track`), więc nakładka HUD pokazuje zbliżający się zakręt na każdym torze.
 
 ### Realny kształt toru (recorder)
 
@@ -158,6 +168,20 @@ uwagami, „czyste okrążenie, pierwsze z trzech”, „okrążenie nieważne�
 czystych z rzędu komunikat o kolejnym kroku asyst, rada ERS gdy asysta ERS wyłączona, „koniec
 sesji”. Tekst w konsoli i na nakładce jest budowany z tych samych fraz co mowa, więc zawsze się zgadzają.
 
+### Prowadzenie w zakręcie (`coach/guide_live.py`)
+
+W zakrętach, które gracz ma nieopanowane, trener nie czeka z uwagą na wyjście, tylko prowadzi przed
+punktem: „Zakręt czwarty. Prowadzę.” ok. 220 m przed pierwszą komendą, potem „Puść gaz.”, „Hamuj
+mocno / do połowy / lekko.” (według maksymalnego hamulca referencji: od 80 %, od 45 %, poniżej),
+„Pół gazu.” w apeksie (gdy referencja daje pełny gaz dopiero 40 m dalej) i „Pełny gaz.”. Punkty
+pochodzą z okrążenia referencyjnego (`CornerMetrics`: `lift_m`, `brake_point_m`, `max_brake`,
+`apex_m`, `full_throttle_m`); komenda pada o 1 s jazdy wcześniej (prędkość × 1 s, min. 15 m),
+żeby wybrzmiała dokładnie w punkcie, i przerywa to, co właśnie leci (pilna). Zakręty do prowadzenia
+(najwyżej 3): te z uwagami z podsumowania ostatniego okrążenia, a na starcie sesji te z uwagami
+z poprzednich sesji w bazie; zakręt bez uwagi wypada z listy sam. Lekcja z jednym zakrętem
+prowadzi tylko ten zakręt. Wyłączenie: `--guidance off`. Klipy `guide_*` w katalogu fraz
+(do dogrania tym samym skryptem co reszta; bez klipu komenda jest tylko w tekście na nakładce).
+
 ## 8a. Lekcje, tryb „wytłumacz mi”, podsumowanie sesji
 
 `coach/lessons.py`: pięć lekcji (trzy darmowe: hamowanie w jednym zakręcie, gaz na wyjściu, czyste
@@ -197,11 +221,13 @@ baterii w zakrętach”; bateria na mecie powyżej 90% → „bateria prawie pe�
 
 ## 10. Głos
 
-Katalog 694 fraz (`assets\voice\phrases.csv`, generowany z kodu): klipy zakrętów `corner_t1`…
+Katalog 710 fraz (`assets\voice\phrases.csv`, generowany z kodu): klipy zakrętów `corner_t1`…
 i kombinacje z plików torów, reguły w dwóch częściach (`rule_<r>_a/_b`), liczby metrów `num_10…300`,
 biegi, komunikaty ogólne `misc_*`, pełne zdania `v2_<reguła>_<zakręt>[_metry]` z poprawną
 odmianą („w zakręcie czwartym”, „przed zakrętami od ósmego do dziesiątego”), inżynier `eng_*`
-(opony, pit, flagi, odstępy, uszkodzenia, pogoda, liczby okrążeń, sekundy, pozycje).
+(opony, pit, flagi, odstępy, uszkodzenia, pogoda, liczby okrążeń, sekundy, pozycje), komendy
+prowadzenia w zakręcie `guide_*` (7 krótkich: „Prowadzę.”, „Puść gaz.”, „Hamuj mocno.”, „Hamuj do
+połowy.”, „Hamuj lekko.”, „Pół gazu.”, „Pełny gaz.”).
 
 Generowanie raz, offline: ElevenLabs, głos „Piotr”, model multilingual v2, stability 0,36,
 similarity 0,68, PCM 22 050 Hz mono. Klucz API tylko w zmiennej środowiskowej, nigdy w plikach.

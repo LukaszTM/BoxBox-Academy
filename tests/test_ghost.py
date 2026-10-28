@@ -27,7 +27,7 @@ def test_parse_participants(fmt: int) -> None:
 
 def ghost_recording(path: Path, laps: int = 2, wait_samples: int = 30) -> None:
     """Duch jedzie syntetyczny profil ze śmieciową prędkością w polu; po okrążeniu czeka na linii."""
-    with RecordingWriter(path) as w:
+    with RecordingWriter(path, anonymize=False) as w:  # test nazwy ducha; zwykłe nagrania zamieniają ją na GRACZ-NN
         w.write(0.0, session_packet())
         w.write(0.0, participants_packet())
         t = 0.0

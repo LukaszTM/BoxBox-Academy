@@ -104,6 +104,13 @@ misc_step_done,Jedziesz bez asyst i masz trzy czyste okrążenia. Od teraz pracu
 misc_ers_wasted,"Za dużo baterii idzie w zakrętach. Używaj jej na prostych, zaraz po wyjściu."
 misc_ers_unused,Bateria na mecie prawie pełna. Masz zapas na wyjściach z wolnych zakrętów.
 misc_ers_last_lap,"Ostatnie okrążenie. Wciśnij całą baterię, co zostało."
+guide_intro,Prowadzę.
+guide_lift,Puść gaz.
+guide_brake_hard,Hamuj mocno.
+guide_brake_medium,Hamuj do połowy.
+guide_brake_light,Hamuj lekko.
+guide_half,Pół gazu.
+guide_full,Pełny gaz.
 eng_hello,"Inżynier na radiu. Pełny wyścig, spokojnie, trzymaj swoje tempo."
 eng_formation_lap,"Okrążenie formacyjne. Grzej opony i hamulce, trzymaj pozycję."
 eng_lights_out,"Start. Czysto przez pierwszy zakręt, pozycje odrobisz później."

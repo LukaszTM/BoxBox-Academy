@@ -49,6 +49,19 @@ def test_recording_writer_anonymizes_by_default(tmp_path: Path) -> None:
     assert parse_participants(b).cars[0].name == "MojNick"
 
 
+def test_scrub_drops_truncated_last_record_and_reader_skips_empty(tmp_path: Path) -> None:
+    """Przerwane nagranie kończy się urwanym rekordem: anonimizacja go pomija, a czytnik pomija pusty rekord ze starszych plików."""
+    from tools.anonimizuj_nagrania import scrub_bytes
+
+    pkt = _participants_packet(2025, [("Ktoś", False)])
+    raw = MAGIC + _RECORD_HEADER.pack(0.0, len(pkt)) + pkt + _RECORD_HEADER.pack(1.0, len(pkt)) + pkt[:10]
+    out, changed = scrub_bytes(raw)
+    assert changed == 1 and out.count(_RECORD_HEADER.pack(0.0, len(pkt))) == 1 and len(out) == len(MAGIC) + _RECORD_HEADER.size + len(pkt)
+    legacy = tmp_path / "stare.bin"
+    legacy.write_bytes(MAGIC + _RECORD_HEADER.pack(0.0, len(pkt)) + pkt + _RECORD_HEADER.pack(1.0, 0))
+    assert [len(p.data) for p in read_recording(legacy)] == [len(pkt)]
+
+
 def test_repo_recordings_carry_no_player_names() -> None:
     """Każde nagranie w recordings/ ma tylko GRACZ-NN albo nazwiska AI; nowe nagrania przechodzą przez tools/anonimizuj_nagrania.py."""
     for path in sorted(Path("recordings").glob("*.bin.xz")):

@@ -13,7 +13,7 @@ from boxbox.coach.rules import evaluate_lap, pick_top
 from boxbox.coach.laps import Lap, LapRecorder
 from boxbox.telemetry.replay import replay
 from boxbox.storage.db import Database
-from boxbox.tracks.model import load_track, track_path
+from boxbox.tracks.model import find_track_path, load_track
 from boxbox.ui.console import TC_NAMES
 
 
@@ -85,7 +85,7 @@ def report_laps(
     Bez pliku toru zwraca jedną linię z powodem; aplikacja ma wtedy działać dalej.
     """
     session = recorder.state.session
-    path = track_file or (track_path(session.track_id) if session else None)
+    path = track_file or (find_track_path(session.track_id) if session else None)
     if path is None:
         return "Brak pakietu Session - nie wiadomo, który to tor."
     try:

@@ -57,6 +57,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--corner-messages", choices=["on", "off"], default="on", help="krótki komunikat tuż po zakręcie"
     )
+    parser.add_argument(
+        "--guidance", choices=["on", "off"], default="on",
+        help="prowadzenie w nieopanowanych zakrętach: puść gaz, hamuj (jak mocno), pół gazu, pełny gaz",
+    )
     parser.add_argument("--overlay", action="store_true", help="okno nakładki na grę (zakręt, słowa mechanika)")
     parser.add_argument("--lesson", help="lekcja: trener mówi tylko o jej regułach (np. braking_one_corner)")
     parser.add_argument("--lesson-corner", type=int, help="numer zakrętu do lekcji „jeden zakręt”")
@@ -100,7 +104,7 @@ def config_from_args(args: argparse.Namespace) -> SessionConfig:
     return SessionConfig(
         mode=args.mode, replay=args.replay, speed=args.speed, port=args.port, duration=args.duration,
         track=args.track, db=args.db, record=args.record, voice=args.voice, no_voice=args.no_voice,
-        volume=args.volume, corner_messages=args.corner_messages == "on",
+        volume=args.volume, corner_messages=args.corner_messages == "on", corner_guidance=args.guidance == "on",
         lesson=args.lesson, lesson_corner=args.lesson_corner, explain_mode=args.explain,
     )
 

@@ -24,6 +24,8 @@ def scrub_bytes(raw: bytes) -> tuple[bytes, int]:
         pos += _RECORD_HEADER.size
         data = raw[pos:pos + n]
         pos += n
+        if len(data) < n:
+            break  # urwany ostatni rekord (przerwane nagrywanie): pomijamy, jak czytnik
         if len(data) > 6 and data[6] == PacketId.PARTICIPANTS:
             new = anonymize_participants(data)
             changed += new != data

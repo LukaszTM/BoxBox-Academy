@@ -13,7 +13,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
-from boxbox.coach.laps import LapRecorder
+from boxbox.coach.guide_live import is_urgent_cue
+from boxbox.coach.laps import Lap, LapRecorder
 from boxbox.coach.lessons import Lesson
 from boxbox.coach.lessons import evaluate as evaluate_lesson
 from boxbox.coach.lessons import lesson as lesson_by_id
@@ -31,7 +32,8 @@ from boxbox.telemetry.state import TelemetryState
 from boxbox.telemetry.udp import DEFAULT_PORT, listen
 from boxbox.tracks.atlas import ShapeSampler, fit_path, load_atlas
 from boxbox.tracks.atlas import fit as fit_atlas
-from boxbox.tracks.model import load_track, track_path
+from boxbox.tracks.auto import save_auto_track, track_from_lap
+from boxbox.tracks.model import USER_TRACK_DIR, Track, find_track_path, load_track, track_path, user_track_path
 from boxbox.tracks.shape import build_shape, save_shape, shape_path
 from boxbox.ui.overlay_model import SharedCoachState
 from boxbox.voice.player import ClipLibrary, VoicePlayer
@@ -91,11 +93,13 @@ class SessionConfig:
     no_voice: bool = False
     volume: float = 1.0
     corner_messages: bool = True
+    corner_guidance: bool = True  # prowadzenie w nieopanowanych zakrętach: puść gaz, hamuj, pół gazu, pełny gaz
     lesson: str | None = None  # id lekcji (boxbox/coach/lessons.py); trener mówi tylko o jej regułach
     lesson_corner: int | None = None
     explain_mode: bool = False  # dłuższe wyjaśnienie przy pierwszej uwadze danego typu
     shape_dir: Path | None = None  # dokąd zapisać realny kształt toru z pełnego okrążenia (None = nie zapisuj)
     fit_dir: Path | None = None  # dokąd zapisać dopasowanie atlasu, gdy okrążenie niepełne (None = nie zapisuj)
+    auto_track_dir: Path | None = USER_TRACK_DIR  # tor bez pliku: zakręty z 1. pełnego okrążenia lądują tu (None = tylko w pamięci)
 
 
 @dataclass
@@ -135,6 +139,9 @@ class CoachSession:
         self.player: VoicePlayer | None = None
         self.coach: LiveCoach | None = None
         self.coach_failed = False
+        self.track_source = ""  # "pakiet" | "automatyczny" (plik z data/tracks) | "sesja" (wyznaczony teraz) | "własny" (--track)
+        self.track_pending = False  # brak pliku toru: czekamy na pierwsze pełne okrążenie
+        self._auto_track_tries = 0
         self.engineer: Engineer | None = Engineer() if cfg.mode == "race" else None
         self.writer: RecordingWriter | None = None
         self.recording: Path | None = None
@@ -168,31 +175,84 @@ class CoachSession:
         if self.on_message is not None:
             self.on_message(ids, text)
         if self.player is not None:
-            self.player.say(ids, text)
+            # wskazówka w zakręcie ("Hamuj mocno.") musi wybrzmieć w porę: przerywa to, co właśnie leci
+            self.player.say(ids, text, urgent=is_urgent_cue(ids))
 
-    def ensure_coach(self) -> None:
-        """Trener startuje, gdy znamy tor (pakiet Session): plik toru + referencja z bazy."""
+    def note(self, text: str) -> None:
+        """Informacja bez głosu: konsola przez on_note, okno i nakładka przez listę komunikatów sesji."""
+        self.on_note(text)
+        self.shared.messages.append(text)
+        self.messages.append((time.monotonic() - self._t0, text))
+
+    def _track_file(self) -> Path:
+        cfg, st = self.cfg, self.state.session
+        assert st is not None
+        return cfg.track or find_track_path(st.track_id, user_dir=cfg.auto_track_dir or USER_TRACK_DIR)
+
+    def _auto_track(self, finished: Lap | None) -> Track | None:
+        """Tor bez pliku: zakręty z pierwszego pełnego okrążenia (jak boxbox.tracks.detect), zapis do data/tracks."""
+        st = self.state.session
+        assert st is not None
+        if finished is None:
+            return None
+        track = track_from_lap(finished, st.track_id, st.track_name, float(st.track_length_m),
+                               source=f"sesja {datetime.now():%Y-%m-%d}, okrążenie {finished.number}")
+        if track is None:
+            if finished.is_complete(float(st.track_length_m)) and not finished.pitted:
+                self._auto_track_tries += 1
+                if self._auto_track_tries >= 3:
+                    self.coach_failed = True
+                    self.shared.error = f"nie udało się wyznaczyć zakrętów toru {st.track_name}: trener wyłączony"
+                    self.note(f"Nie udało się wyznaczyć zakrętów toru {st.track_name} z {self._auto_track_tries} okrążeń: trener na żywo wyłączony.")
+                    log.error("tor %s: brak zakrętów po %d pełnych okrążeniach", st.track_id, self._auto_track_tries)
+            return None
+        path = self.cfg.track or (user_track_path(st.track_id, user_dir=self.cfg.auto_track_dir) if self.cfg.auto_track_dir else None)
+        where = ""
+        if path is not None:
+            try:
+                save_auto_track(track, path)
+                where = f", plik {path}"
+            except OSError as exc:  # brak zapisu nie blokuje trenera w tej sesji
+                log.error("zapis pliku toru %s: %s", path, exc)
+        self.track_source = "sesja"
+        self.track_pending = False
+        self.note(f"Zakręty toru {st.track_name} wyznaczone z okrążenia {finished.number}: {len(track.corners)} stref hamowania{where}. Trener aktywny.")
+        log.info("tor %s: %d zakrętów wyznaczonych z okrążenia %d%s", st.track_id, len(track.corners), finished.number, where)
+        return track
+
+    def ensure_coach(self, finished: Lap | None = None) -> None:
+        """Trener startuje, gdy znamy tor (pakiet Session): plik toru + referencja z bazy.
+
+        Bez pliku toru czeka na pierwsze pełne okrążenie i wyznacza zakręty z niego (`finished`).
+        """
         if self.coach is not None or self.coach_failed or self.state.session is None:
             return
         cfg = self.cfg
-        path = cfg.track or track_path(self.state.session.track_id)
+        path = self._track_file()
         try:
             track = load_track(path)
+            self.track_source = "własny" if cfg.track else ("pakiet" if path == track_path(self.state.session.track_id) else "automatyczny")
         except FileNotFoundError:
-            self.coach_failed = True
-            self.on_note(f"Brak pliku toru {path}: trener na żywo wyłączony (tabela po sesji nadal będzie).")
-            log.error("brak pliku toru %s (tor %s)", path, self.state.session.track_id)
-            self.shared.error = f"brak pliku toru dla {self.state.session.track_name}: trener wyłączony"
-            return
+            if not self.track_pending:
+                self.track_pending = True
+                self.note(f"Brak pliku toru {path}: zakręty wyznaczę po pierwszym pełnym okrążeniu, wtedy startuje trener.")
+                log.warning("brak pliku toru %s (tor %s): czekam na pełne okrążenie", path, self.state.session.track_id)
+            track = self._auto_track(finished)
+            if track is None:
+                return
         reference = best_time = progress = None
+        guided: set[int] = set()
         if cfg.db is not None:
             db = Database(cfg.db)
             ref = db.reference(track.track_id)
             progress = db.load_progress(track.track_id)
+            issues = db.recent_corner_issues(track.track_id)
             db.close()
             if ref is not None:
                 reference, best_time = ref.analysis, ref.lap.lap_time_ms
                 self.reference_before, self.best_before_ms = ref.corners, ref.lap.lap_time_ms
+            # zakręty z uwagami w ostatnich okrążeniach poprzednich sesji dostają prowadzenie od razu
+            guided = set(sorted(issues, key=lambda c: -len(issues[c]))[:3])
         if progress is not None:
             self.shared.progress_line = progress_line(progress.step, progress.streak)
         log.info("trener: tor %s (%s), referencja %s, krok %s", track.name, path,
@@ -202,6 +262,7 @@ class CoachSession:
             said_hello=self.player is not None,  # powitanie poszło już na starcie
             available=(lambda i: i in self.player.library) if self.player is not None else None,
             progress=progress, lesson=self.lesson, lesson_corner=cfg.lesson_corner, explain_mode=cfg.explain_mode,
+            guidance=cfg.corner_guidance, guided_corners=guided,
         )
 
     # --- przetwarzanie --------------------------------------------------
@@ -220,7 +281,7 @@ class CoachSession:
                 for radio in self.engineer.update(self.state, time.monotonic() - self._t0):
                     self.speak(list(radio.ids), radio.text)
             if self.cfg.mode == "coach":
-                self.ensure_coach()
+                self.ensure_coach(finished)
                 if self.coach is not None:
                     said = self.coach.update(self.recorder, finished)
                     if finished is not None:

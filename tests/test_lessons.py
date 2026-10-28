@@ -65,7 +65,9 @@ def test_session_with_lesson_and_explain_on_recording(tmp_path) -> None:
     s.loop()
     result = s.finish()
     assert result.lesson_result is not None and result.lesson_result[2] == 3
-    corner_texts = [t for t in said if "Zakręt" in t or "Zakręty" in t]
+    corner_texts = [t for t in said if ("Zakręt" in t or "Zakręty" in t) and not t.endswith("Prowadzę.")]  # bez wstępu prowadzenia
+    # prowadzenie w lekcji gazu: tylko komendy o gazie, bez hamowania
+    assert any(t in ("Pół gazu.", "Pełny gaz.") for t in said) and not any(t.startswith("Hamuj") or t == "Puść gaz." for t in said)
     assert corner_texts and all(("gaz" in t.lower() or "przyczepno" in t.lower()) for t in corner_texts), corner_texts  # lekcja gazu: bez uwag o hamowaniu
     explained = [t for t in said if "Każdy metr bez gazu" in t or "a bez kontroli trakcji auto może się obrócić" in t]
     assert len(explained) >= 1  # wyjaśnienie przy pierwszej uwadze danego typu

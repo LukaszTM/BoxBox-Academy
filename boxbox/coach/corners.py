@@ -22,6 +22,7 @@ class CornerMetrics:
     brake_end_m: float | None = None  # koniec tej fazy hamowania (hamulec poniżej progu)
     brake_release_s: float | None = None  # czas od 50% hamulca do puszczenia; krótki = puszczony naraz
     max_brake: float = 0.0  # najmocniejsze wciśnięcie w fazie hamowania (0-1)
+    lift_m: float | None = None  # gdzie przed zakrętem zszedł z pełnego gazu (początek ciągłej fazy bez pełnego gazu), None = nie było
 
 
 @dataclass(frozen=True)
@@ -86,13 +87,21 @@ def analyze_corner(lap: Lap, corner: Corner, track: Track, lookback_m: float = 1
     full_throttle = next(
         (s.distance_m for rel, s in window[apex_idx:] if s.throttle >= FULL_THROTTLE), None
     )
+    # Puszczenie gazu: początek ciągłej fazy bez pełnego gazu, która kończy się w punkcie hamowania (albo apeksie).
+    lift: float | None = None
+    k = i if brake_point is not None else apex_idx
+    if k > 0 and window[k][1].throttle < FULL_THROTTLE:
+        while k > 0 and window[k - 1][1].throttle < FULL_THROTTLE:
+            k -= 1
+        if k > 0:  # k == 0: faza sięga poza okno, nie wiemy gdzie zaczęła
+            lift = window[k][1].distance_m
     entry, exit_ = _nearest(inside, 0.0), _nearest(inside, corner_len)
     return CornerMetrics(
         corner=corner.number, min_speed_kmh=apex.speed_kmh, apex_m=apex.distance_m, gear_at_apex=apex.gear,
         entry_speed_kmh=entry.speed_kmh, exit_speed_kmh=exit_.speed_kmh,
         time_ms=max(0, exit_.lap_time_ms - entry.lap_time_ms),
         brake_point_m=brake_point, full_throttle_m=full_throttle,
-        brake_end_m=brake_end, brake_release_s=release_s, max_brake=max_brake,
+        brake_end_m=brake_end, brake_release_s=release_s, max_brake=max_brake, lift_m=lift,
     )
 
 

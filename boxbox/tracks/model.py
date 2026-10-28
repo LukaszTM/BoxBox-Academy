@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 DATA_DIR = Path(__file__).parent / "data"
+USER_TRACK_DIR = Path("data") / "tracks"  # pliki torów wyznaczone automatycznie w sesji (poza pakietem programu)
 
 
 @dataclass(frozen=True)
@@ -127,5 +128,24 @@ def track_path(track_id: int, game_id: str = "f1_25") -> Path:
     return DATA_DIR / game_id / f"{track_id}.json"
 
 
-def load_track_by_id(track_id: int) -> Track:
-    return load_track(track_path(track_id))
+def user_track_path(track_id: int, game_id: str = "f1_25", user_dir: Path = USER_TRACK_DIR) -> Path:
+    """Plik toru wyznaczony automatycznie (po pierwszym pełnym okrążeniu sesji), w folderze danych gracza."""
+    if game_id == "f1_25":
+        return user_dir / f"{track_id}.json"
+    return user_dir / game_id / f"{track_id}.json"
+
+
+def find_track_path(track_id: int, game_id: str = "f1_25", user_dir: Path = USER_TRACK_DIR) -> Path:
+    """Plik toru do wczytania: wbudowany (ręcznie poprawione nazwy) przed automatycznym z data/tracks.
+
+    Gdy nie ma żadnego, zwraca ścieżkę wbudowaną (do komunikatu o braku pliku).
+    """
+    bundled = track_path(track_id, game_id)
+    if bundled.exists():
+        return bundled
+    user = user_track_path(track_id, game_id, user_dir)
+    return user if user.exists() else bundled
+
+
+def load_track_by_id(track_id: int, user_dir: Path = USER_TRACK_DIR) -> Track:
+    return load_track(find_track_path(track_id, user_dir=user_dir))

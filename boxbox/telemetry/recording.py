@@ -82,4 +82,6 @@ def read_recording(path: Path) -> Iterator[RecordedPacket]:
             data = f.read(length)
             if len(data) < length:
                 return
+            if not data:
+                continue  # pusty rekord (ślad po urwanym nagraniu w starszych plikach), nie pakiet
             yield RecordedPacket(timestamp, data)

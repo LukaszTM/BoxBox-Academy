@@ -23,7 +23,8 @@ def test_roundtrip(tmp_path: Path) -> None:
         w.write(0.5, b"")
         w.write(1.25, b"\x00" * 1400)
     packets = list(read_recording(path))
-    assert [(p.timestamp, len(p.data)) for p in packets] == [(0.0, 3), (0.5, 0), (1.25, 1400)]
+    # pusty rekord nie jest pakietem (ślad po urwanym nagraniu): czytnik go pomija
+    assert [(p.timestamp, len(p.data)) for p in packets] == [(0.0, 3), (1.25, 1400)]
 
 
 def test_truncated_last_record_is_ignored(tmp_path: Path) -> None:

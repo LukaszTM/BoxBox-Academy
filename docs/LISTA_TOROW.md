@@ -5,6 +5,11 @@ Długości orientacyjne (km); program bierze dokładną długość z pakietu Ses
 Kolumna „Stan w programie”: plik toru = zakręty do trenera (`boxbox/tracks/data/<id>.json`),
 kształt = obrys z recordera do mapy (`boxbox/tracks/shape/<id>.json`).
 
+Tor ze stanem „brak” też działa: trener wyznacza zakręty z pierwszego pełnego okrążenia sesji
+i zapisuje `data/tracks/<id>.json` (numeracja T1..Tn według stref hamowania), a mapa i minimapa
+biorą obrys z atlasu dopasowanego do jazdy. Plik w pakiecie jest potrzebny tylko po to, żeby
+zakręty miały nazwy jak w grze (T4–T5 zamiast T3) i ręcznie sprawdzone granice.
+
 ## Tory kalendarza (potrzebne do bety)
 
 | ID | Tor | Kraj | Długość | F1 25 (sezon 2025) | Sezon 2026 | Stan w programie |
@@ -48,7 +53,7 @@ Razem: 25 torów kalendarza (24 w F1 25, 24 w sezonie 2026; Imola tylko 2025, Ma
 ## Co jest potrzebne dla każdego toru
 
 1. **Nagranie recorderem** (`recorder.bat`): co najmniej 2 pełne okrążenia z pakietem Motion. Daje kształt toru do mapy i surowe dane.
-2. **Plik toru** z zakrętami: z nagrania poleceniem `python -m boxbox.tracks.detect <nagranie> --car pb`, potem nazwy zakrętów jak w grze (T1, T4–T5…). Trzy tory są gotowe: Bahrajn, Monza, Suzuka.
+2. **Plik toru** z zakrętami: z nagrania poleceniem `python -m boxbox.tracks.detect <nagranie> --car pb` albo automatycznie z pierwszej sesji na torze (`data/tracks/<id>.json`), potem nazwy zakrętów jak w grze (T1, T4–T5…) i przeniesienie do pakietu. Trzy tory są gotowe: Bahrajn, Monza, Suzuka.
 3. **Przewodnik** (`guide/<id>.json`): apeksy z notatkami do nakładki; powstaje z pliku toru.
 4. **Zdjęcie/mapa toru** jako wzorzec numeracji zakrętów i do sprawdzenia obrysu.
 

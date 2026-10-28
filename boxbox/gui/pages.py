@@ -22,7 +22,7 @@ from boxbox.gui.widgets import Banner, StatCard, label, panel
 from boxbox.session import CoachSession, SessionConfig
 from boxbox.storage.db import Database
 from boxbox.tracks.model import load_track_by_id
-from boxbox.ui.overlay_model import GUIDE_DIR, build_coach_view, load_guide_for
+from boxbox.ui.overlay_model import GUIDE_DIR, build_coach_view, guide_from_track, load_guide_for
 from boxbox.voice.player import ClipLibrary, VoicePlayer
 
 
@@ -170,6 +170,8 @@ class HomePage(QWidget):
             if state.session is not None and state.session.track_id != self.guide_track_id:
                 self.guide_track_id = state.session.track_id
                 self.guide = load_guide_for(state.session.track_id, GUIDE_DIR)
+            if self.guide is None and self.session.coach is not None:
+                self.guide = guide_from_track(self.session.coach.track)  # tor bez przewodnika: zakręty z pliku toru
             view = build_coach_view(state, self.guide, sh.messages, sh.packets, sh.progress_line, sh.recording_name, sh.focus_line)
             error = sh.error
             new_messages = self.session.messages[self._shown_messages:]

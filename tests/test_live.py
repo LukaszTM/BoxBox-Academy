@@ -51,7 +51,7 @@ def test_live_corner_and_lap_messages_with_reference(monza: RecordedSession) -> 
     entries = catalog(track_corner_names())
     assert all(i in entries for s in spoken for i in s[2])
     # krótki komunikat po zakręcie (bez wskazówki "_b") najwyżej raz na zakręt na okrążenie
-    keys = [(s[0], s[2][0]) for s in spoken if s[2][0].startswith("corner_") and not any(i.endswith("_b") for i in s[2])]
+    keys = [(s[0], s[2][0]) for s in spoken if s[2][0].startswith("corner_") and not any(i.endswith("_b") or i.startswith("guide_") for i in s[2])]
     assert keys and len(keys) == len(set(keys))
 
 
@@ -70,7 +70,7 @@ def test_live_corner_messages_can_be_disabled(monza: RecordedSession) -> None:
     ref = analyze_lap(monza.lap(6), monza.track)
     spoken, _ = run_live(monza.track, ref, corner_messages=False)
     # bez krótkich komunikatów po zakręcie (klip zakrętu na początku, bez wskazówki "_b")
-    assert not any(s[2][0].startswith("corner_") and not any(i.endswith("_b") for i in s[2]) for s in spoken)
+    assert not any(s[2][0].startswith("corner_") and not any(i.endswith("_b") or i.startswith("guide_") for i in s[2]) for s in spoken)
     assert any(s[2] == ["misc_lap_summary"] for s in spoken)
 
 

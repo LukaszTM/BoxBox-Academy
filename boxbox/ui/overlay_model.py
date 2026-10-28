@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from boxbox.telemetry.state import TelemetryState
-from boxbox.tracks.model import Corner
+from boxbox.tracks.model import Corner, Track
 
 GUIDE_DIR = Path(__file__).parent.parent / "tracks" / "guide"
 APEX_HOLD_M = 40.0  # tak długo po apeksie pokazujemy jeszcze ten sam zakręt
@@ -118,6 +118,12 @@ def load_guide(path: Path) -> TrackGuide:
 def load_guide_for(track_id: int, guide_dir: Path = GUIDE_DIR) -> TrackGuide | None:
     path = guide_dir / f"{track_id}.json"
     return load_guide(path) if path.exists() else None
+
+
+def guide_from_track(track: Track) -> TrackGuide:
+    """Przewodnik z pliku toru, gdy tor nie ma ręcznego guide/<id>.json (np. plik wyznaczony automatycznie)."""
+    corners = tuple(GuideCorner(c.name or f"T{c.number}", c.apex_m) for c in track.corners)
+    return TrackGuide(track.track_id, track.name, track.length_m, "z pliku toru", corners)
 
 
 def load_plan(path: Path) -> SessionPlan:

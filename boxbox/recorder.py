@@ -26,7 +26,7 @@ from boxbox.telemetry.recording import SKIPPED_FOR_SHAPE, RecordingWriter, is_ne
 from boxbox.telemetry.replay import replay
 from boxbox.telemetry.udp import DEFAULT_PORT, listen
 from boxbox.tools.pack import LIMIT_MB, split
-from boxbox.tracks.model import load_track, track_path
+from boxbox.tracks.model import find_track_path, load_track, track_path
 from boxbox.tracks.shape import SHAPE_DIR, TrackShape, build_shape, save_shape, shape_path, to_svg
 from boxbox.ui.overlay_model import GUIDE_DIR
 
@@ -122,7 +122,7 @@ def make_shape(collector: ShapeCollector) -> TrackShape | None:
         return None
     track = None
     try:
-        track = load_track(track_path(st.session.track_id))
+        track = load_track(find_track_path(st.session.track_id))
     except FileNotFoundError:
         pass
     shape = build_shape(best[1], st.session.track_id, st.session.track_name, length, track)
@@ -154,7 +154,7 @@ def build_report(
         except OSError:
             pass
     if track_id is not None:
-        for p, arc in ((track_path(track_id), f"tracks/data/{track_id}.json"), (guide_dir / f"{track_id}.json", f"tracks/guide/{track_id}.json")):
+        for p, arc in ((find_track_path(track_id), f"tracks/data/{track_id}.json"), (guide_dir / f"{track_id}.json", f"tracks/guide/{track_id}.json")):
             if p.exists():
                 files.append((p, arc))
     for name in ("boxbox.sqlite", "boxbox.log"):

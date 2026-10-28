@@ -176,7 +176,7 @@ początkującego krok po kroku (asysty, start, opony, bateria), a postęp jest w
 **Etap 8 – Trener 2.0: optymalne punkty i wyjaśnianie (3–4 sesje)**
 
 - [ ] Optymalny punkt hamowania w każdym zakręcie: z najlepszych własnych okrążeń, ducha i AI; na mapie i nakładce znacznik. (zrobione: cel „hamuj X m wcześniej/później” jako połowa różnicy, 5–20 m, w linii „popraw” na nakładce i w oknie)
-- [ ] Optymalne dodanie gazu i trail-braking: punkt pełnego gazu, krzywa puszczania hamulca, bieg w apeksie; porównanie z referencją jako cel na zakręt.
+- [ ] Optymalne dodanie gazu i trail-braking: punkt pełnego gazu, krzywa puszczania hamulca, bieg w apeksie; porównanie z referencją jako cel na zakręt. (zrobione 28.10: prowadzenie w nieopanowanych zakrętach na żywo, `coach/guide_live.py`: „Prowadzę.”, „Puść gaz.”, „Hamuj mocno/do połowy/lekko.”, „Pół gazu.”, „Pełny gaz.” przed punktami z referencji, najwyżej 3 zakręty z uwagami z ostatniego okrążenia; klipy `guide_*` do dogrania; do sprawdzenia na żywo, czy wyprzedzenie 1 s pasuje)
 - [ ] DRS: wykrywanie stref z pakietu Session, czas reakcji na włączenie, uwaga „DRS włączony o 0,4 s za późno”, ćwiczenie na prostych.
 - [ ] Bateria: plan deployu na okrążenie (gdzie zyskuje najwięcej), tryb przeglądu/hotlap, ostrzeżenie o pustej baterii przed prostą, ocena po okrążeniu z liczbą.
 - [x] Tryb „wytłumacz mi”: przy pierwszym wystąpieniu każdej uwagi trener mówi dłuższą wersję; później krótko. Słownik pojęć w oknie. (silnik: `coach/glossary.py`, `--explain`, klipy `explain_*` do dogrania; okno: po makiecie)
@@ -203,7 +203,7 @@ początkującego krok po kroku (asysty, start, opony, bateria), a postęp jest w
 - [ ] Test na 3–5 początkujących z formularzem z `docs/PLAN_TESTOW.md`; lista błędów i poprawki.
 - [x] Zgłaszanie błędów: `python -m boxbox.tools.bugreport "co się stało"` pakuje dziennik, bazę, ustawienia i ostatnie nagranie do ZIP (przycisk w oknie po makiecie).
 - [ ] Sprawdzenie aktualizacji z GitHub Releases, podpis `.exe` albo instrukcja dla antywirusa.
-- [ ] Oba formaty telemetrii (2025 i 2026) przetestowane na żywo na 3 torach; pozostałe tory: pliki torów z recordera i automatycznego wykrywania zakrętów.
+- [ ] Oba formaty telemetrii (2025 i 2026) przetestowane na żywo na 3 torach; pozostałe tory: pliki torów z recordera i automatycznego wykrywania zakrętów. (zrobione 28.10: tor bez pliku dostaje zakręty z pierwszego pełnego okrążenia sesji, `tracks/auto.py`, zapis `data/tracks/<id>.json`, trener startuje od tego okrążenia, nakładka HUD ma zakręty z pliku toru; do sprawdzenia na żywo na torze spoza pakietu)
 - [ ] Kryterium: beta na GitHub Releases, instalacja i pierwsza sesja u obcej osoby bez pomocy.
 
 **Po becie** (nie w zakresie bety): ranking i konta w chmurze (nick + ID z karty kierowcy), lektor w samouczku, swobodna rozmowa z mechanikiem (model językowy), wersja mobilna jako podgląd, więcej gier.

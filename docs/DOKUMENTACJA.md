@@ -173,8 +173,8 @@ sesji”. Tekst w konsoli i na nakładce jest budowany z tych samych fraz co mow
 ### Prowadzenie w zakręcie (`coach/guide_live.py`)
 
 W zakrętach, które gracz ma nieopanowane, trener nie czeka z uwagą na wyjście, tylko prowadzi przed
-punktem: „Zakręt czwarty. Prowadzę.” ok. 220 m przed pierwszą komendą, potem „Puść gaz.”, „Hamuj
-mocno / do połowy / lekko.” (według maksymalnego hamulca referencji: od 80 %, od 45 %, poniżej),
+punktem: „Zakręt czwarty. Prowadzę.” ok. 220 m przed pierwszą komendą, potem „Puść gaz.”, „Mocny
+hamulec / Pół hamulca / Lekki hamulec.” (według maksymalnego hamulca referencji: od 80 %, od 45 %, poniżej),
 „Pół gazu.” w apeksie (gdy referencja daje pełny gaz dopiero 40 m dalej) i „Pełny gaz.”. Punkty
 pochodzą z okrążenia referencyjnego (`CornerMetrics`: `lift_m`, `brake_point_m`, `max_brake`,
 `apex_m`, `full_throttle_m`); komenda pada o 1 s jazdy wcześniej (prędkość × 1 s, min. 15 m),
@@ -238,8 +238,8 @@ i kombinacje z plików torów, reguły w dwóch częściach (`rule_<r>_a/_b`), l
 biegi, komunikaty ogólne `misc_*`, pełne zdania `v2_<reguła>_<zakręt>[_metry]` z poprawną
 odmianą („w zakręcie czwartym”, „przed zakrętami od ósmego do dziesiątego”), inżynier `eng_*`
 (opony, pit, flagi, odstępy, uszkodzenia, pogoda, liczby okrążeń, sekundy, pozycje), komendy
-prowadzenia w zakręcie `guide_*` (7 krótkich: „Prowadzę.”, „Puść gaz.”, „Hamuj mocno.”, „Hamuj do
-połowy.”, „Hamuj lekko.”, „Pół gazu.”, „Pełny gaz.”).
+prowadzenia w zakręcie `guide_*` (7 krótkich: „Prowadzę.”, „Puść gaz.”, „Mocny hamulec.”, „Pół
+hamulca.”, „Lekki hamulec.”, „Pół gazu.”, „Pełny gaz.”), DRS i opony `misc_drs_*`, `misc_tyres_*`.
 
 Generowanie raz, offline: ElevenLabs, głos „Piotr”, model multilingual v2, stability 0,36,
 similarity 0,68, PCM 22 050 Hz mono. Klucz API tylko w zmiennej środowiskowej, nigdy w plikach.

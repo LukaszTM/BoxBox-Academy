@@ -20,7 +20,7 @@ def test_corner_cues_order_strength_and_intro() -> None:
     assert [c.kind for c in cues] == ["intro", "lift", "brake", "half", "full"]
     assert [c.at_m for c in cues] == [800.0 - INTRO_M, 800.0, 880.0, 1000.0, 1090.0]
     assert cues[0].ids == ("corner_t4", "guide_intro") and cues[0].text == "Zakręt czwarty. Prowadzę."
-    assert cues[2].ids == ("guide_brake_hard",) and cues[2].text == "Hamuj mocno."
+    assert cues[2].ids == ("guide_brake_hard",) and cues[2].text == "Mocny hamulec."
     assert cues[3].text == "Pół gazu." and cues[4].text == "Pełny gaz."
     # gaz puszczony tuż przed hamowaniem: samo hamowanie; pełny gaz zaraz za apeksem: bez "pół gazu"
     cues = corner_cues(corner, _metrics(4, brake=880.0, lift=870.0, apex=1000.0, full=1000.0 + HALF_MIN_GAP_M - 1, max_brake=0.5), 5000.0)

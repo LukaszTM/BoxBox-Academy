@@ -105,9 +105,9 @@ MISC_TEXTS: dict[str, str] = {
 GUIDE_TEXTS: dict[str, str] = {
     "intro": "Prowadzę.",
     "lift": "Puść gaz.",
-    "brake_hard": "Hamuj mocno.",
-    "brake_medium": "Hamuj do połowy.",
-    "brake_light": "Hamuj lekko.",
+    "brake_hard": "Mocny hamulec.",  # bez „hamuj”: głos czyta „-uj” jako „-uć”
+    "brake_medium": "Pół hamulca.",
+    "brake_light": "Lekki hamulec.",
     "half": "Pół gazu.",
     "full": "Pełny gaz.",
 }

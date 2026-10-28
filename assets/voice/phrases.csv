@@ -113,9 +113,9 @@ misc_tyres_wear_fast,Opony zużywają się szybko. Mniej ślizgania: płynniej g
 misc_tyres_wear_uneven,"Jedno koło zużyte dużo bardziej niż reszta. Zobacz w analizie, w których zakrętach ślizgasz."
 guide_intro,Prowadzę.
 guide_lift,Puść gaz.
-guide_brake_hard,Hamuj mocno.
-guide_brake_medium,Hamuj do połowy.
-guide_brake_light,Hamuj lekko.
+guide_brake_hard,Mocny hamulec.
+guide_brake_medium,Pół hamulca.
+guide_brake_light,Lekki hamulec.
 guide_half,Pół gazu.
 guide_full,Pełny gaz.
 eng_hello,"Inżynier na radiu. Pełny wyścig, spokojnie, trzymaj swoje tempo."

@@ -175,3 +175,28 @@ def test_tyre_temperatures_and_race_summary() -> None:
     assert s.safety_rating == 80 and "Kontakty: 1" in s.lines[-2] and s.to_work.startswith("1 kontakt")
     s2 = summarize_race(st, None, 0, 0, 0, 1)
     assert s2.safety_rating == 100 and s2.good.startswith("Wyścig bez kontaktu")
+
+
+def test_collision_log_with_context_and_rule_in_summary() -> None:
+    from boxbox.engineer.summary import summarize_race
+    from tests.builders import RIVAL, participants_packet
+
+    eng, st = Engineer(), TelemetryState()
+    feed(eng, st, [race_session(), participants_packet(names={PLAYER: "Gracz", RIVAL: "NORRIS"}), lap_packet_race(3, 5), status_race()], 0.0)
+    # kontakt w hamowaniu (hamulec 0,25 z buildera), z autem RIVAL
+    assert "collision" in feed(eng, st, [telemetry_packet(), event_packet("COLL", bytes([PLAYER, RIVAL]))], 1.0)  # plus okno temperatur opon
+    assert len(eng.collision_log) == 1
+    note = eng.collision_log[0]
+    assert note.lap == 3 and note.other == "NORRIS" and note.context == "braking" and note.severity is None
+    # drugi kontakt (po odstępie): pełny gaz, prosto -> prosta; inne auto bez nazwy w pakiecie
+    assert feed(eng, st, [telemetry_packet(throttle=1.0, brake=0.0, steer=0.0), event_packet("COLL", bytes([9, PLAYER]))], 12.0) == ["collision"]
+    assert eng.collision_log[1].context == "straight" and eng.collision_log[1].other == ""
+    # kontakt innych aut nie trafia do dziennika
+    assert feed(eng, st, [event_packet("COLL", bytes([7, 9]))], 25.0) == [] and len(eng.collision_log) == 2
+    s = summarize_race(st, None, 2, 0, 0, 0, eng.collision_log)
+    lines = [l for l in s.lines if l.startswith("Kontakt ")]
+    assert lines[0].startswith("Kontakt 1: okrążenie 3,") and "z NORRIS" in lines[0] and "w strefie hamowania" in lines[0]
+    assert lines[1].startswith("Kontakt 2: okrążenie 3,") and " z " not in lines[1] and "na prostej" in lines[1]
+    # 2026: ciężkość kontaktu w zdaniu
+    note26 = note.__class__(4, 1200.0, "", "cornering", 2)
+    assert note26.line(3) == "Kontakt 3: okrążenie 4, 1200 m, ciężki; w zakręcie: gdy auto jest przy twoim boku na wejściu, zostaw szerokość auta aż do wyjścia."

@@ -36,11 +36,11 @@ def _cars_packet(
     return header_bytes(packet_id, fmt) + b"".join(cars) + tail
 
 
-def _telemetry_car(fmt: int, speed: int, throttle: float, brake: float, gear: int) -> bytes:
+def _telemetry_car(fmt: int, speed: int, throttle: float, brake: float, gear: int, steer: float = -0.5) -> bytes:
     engine_temp = "H" if fmt == 2025 else "B"
     return struct.pack(
         "<HfffBbHBBH4H4B4B" + engine_temp + "4f4B",
-        speed, throttle, -0.5, brake, 10, gear, 11500, 1, 80, 0x7FFF,
+        speed, throttle, steer, brake, 10, gear, 11500, 1, 80, 0x7FFF,
         400, 410, 420, 430, 90, 91, 92, 93, 100, 101, 102, 103, 105,
         23.5, 23.6, 22.0, 22.1, 0, 0, 1, 1,
     )
@@ -48,10 +48,10 @@ def _telemetry_car(fmt: int, speed: int, throttle: float, brake: float, gear: in
 
 def telemetry_packet(
     fmt: int = 2025, speed: int = 287, throttle: float = 0.75, brake: float = 0.25, gear: int = 6,
-    rival: tuple[int, float, float, int] | None = None,
+    rival: tuple[int, float, float, int] | None = None, steer: float = -0.5,
 ) -> bytes:
     """rival = (prędkość, gaz, hamulec, bieg) dla auta RIVAL."""
-    player = _telemetry_car(fmt, speed, throttle, brake, gear)
+    player = _telemetry_car(fmt, speed, throttle, brake, gear, steer)
     others = {RIVAL: _telemetry_car(fmt, *rival)} if rival else None
     return _cars_packet(PacketId.CAR_TELEMETRY, fmt, len(player), player, struct.pack("<BBb", 0, 255, 7), others)
 

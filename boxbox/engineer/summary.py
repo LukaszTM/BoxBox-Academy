@@ -1,7 +1,12 @@
 """Podsumowanie wyścigu po sesji (tekst): pozycje, start, kontakty, kary, pit-stopy, opony."""
+from collections.abc import Sequence
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from boxbox.engineer.start import StartReport
+
+if TYPE_CHECKING:
+    from boxbox.engineer.rules import CollisionNote
 from boxbox.telemetry.state import TelemetryState
 
 
@@ -13,7 +18,10 @@ class RaceSummary:
     to_work: str = ""
 
 
-def summarize_race(state: TelemetryState, start: StartReport | None, collisions: int, penalties: int, warnings: int, pit_stops: int) -> RaceSummary:
+def summarize_race(
+    state: TelemetryState, start: StartReport | None, collisions: int, penalties: int, warnings: int, pit_stops: int,
+    log: Sequence["CollisionNote"] = (),
+) -> RaceSummary:
     s = RaceSummary()
     lap = state.lap.player if state.lap is not None else None
     if lap is not None and lap.grid_position and lap.car_position:
@@ -22,6 +30,8 @@ def summarize_race(state: TelemetryState, start: StartReport | None, collisions:
     if start is not None:
         s.lines.append(start.text)
     s.lines.append(f"Kontakty: {collisions}, kary: {penalties}, ostrzeżenia: {warnings}, pit-stopy: {pit_stops}")
+    for i, note in enumerate(log, start=1):  # każdy kontakt z miejscem i zasadą (etap 9: tłumaczone po sytuacji, nie w jej trakcie)
+        s.lines.append(note.line(i))
     s.safety_rating = max(0, 100 - 20 * collisions - 15 * penalties - 5 * warnings)
     s.lines.append(f"Czystość jazdy: {s.safety_rating}/100")
     if collisions == 0 and penalties == 0:

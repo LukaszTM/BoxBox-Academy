@@ -30,6 +30,33 @@ TYRE_WINDOW_LOW_C, TYRE_WINDOW_HIGH_C = 85, 110
 FUEL_SPARE_LAPS = 2.0
 
 
+COLLISION_RULES: dict[str, str] = {  # zasada tłumaczona po sytuacji (raport po wyścigu), według tego, co robił gracz w chwili kontaktu
+    "braking": "w strefie hamowania: kto jest obok, ma prawo do miejsca; hamuj po swojej stronie toru i nie skręcaj w auto obok",
+    "straight": "na prostej: broń się jedną zmianą toru i nie zjeżdżaj na auto, które już jest obok",
+    "cornering": "w zakręcie: gdy auto jest przy twoim boku na wejściu, zostaw szerokość auta aż do wyjścia",
+}
+SEVERITY_NAMES = {0: "lekki", 1: "średni", 2: "ciężki"}
+
+
+@dataclass(frozen=True)
+class CollisionNote:
+    """Jeden kontakt gracza: gdzie, z kim, co robił (do raportu po wyścigu, bez nowych klipów)."""
+    lap: int
+    distance_m: float
+    other: str  # nazwa drugiego auta (puste, gdy nieznana)
+    context: str  # braking | straight | cornering
+    severity: int | None = None  # tylko 2026
+
+    @property
+    def rule(self) -> str:
+        return COLLISION_RULES.get(self.context, COLLISION_RULES["cornering"])
+
+    def line(self, number: int) -> str:
+        sev = f", {SEVERITY_NAMES[self.severity]}" if self.severity in SEVERITY_NAMES else ""
+        who = f" z {self.other}" if self.other else ""
+        return f"Kontakt {number}: okrążenie {self.lap}, {self.distance_m:.0f} m{who}{sev}; {self.rule}."
+
+
 @dataclass(frozen=True)
 class RadioMessage:
     key: str  # klucz w ENGINEER_TEXTS (bez prefiksu eng_)
@@ -92,6 +119,7 @@ class Engineer:
         self.start = StartAnalyzer()
         self.start_report: StartReport | None = None
         self.collisions = 0
+        self.collision_log: list[CollisionNote] = []
         self.penalties = 0
         self.prev_pits = 0
 
@@ -104,6 +132,22 @@ class Engineer:
     def reset_tyre_flags(self) -> None:
         for k in ("tyres_front_wear", "tyres_rear_wear", "tyres_critical"):
             self.said_once.discard(k)
+
+    @staticmethod
+    def _collision_note(state: TelemetryState, coll: Collision, player_idx: int) -> CollisionNote:
+        other_idx = coll.vehicle2_index if coll.vehicle1_index == player_idx else coll.vehicle1_index
+        other = ""
+        if state.participants is not None and 0 <= other_idx < len(state.participants.cars):
+            other = state.participants.cars[other_idx].name
+        lap = state.lap.player if state.lap is not None else None
+        car = state.telemetry.player if state.telemetry is not None else None
+        if car is not None and car.brake >= 0.1:
+            context = "braking"
+        elif car is not None and car.throttle >= 0.9 and abs(car.steer) < 0.1:
+            context = "straight"
+        else:
+            context = "cornering"
+        return CollisionNote(lap.current_lap_num if lap is not None else 0, max(0.0, lap.lap_distance) if lap is not None else 0.0, other, context, coll.severity)
 
     def update(self, state: TelemetryState, now: float) -> list[RadioMessage]:
         out: list[RadioMessage] = []
@@ -147,6 +191,7 @@ class Engineer:
                 if player_idx in (ev.details.vehicle1_index, ev.details.vehicle2_index) and self.cd.ready("collision", now, 10):
                     self.cd.mark("collision", now)
                     self.collisions += 1
+                    self.collision_log.append(self._collision_note(state, ev.details, player_idx))
                     out.append(_msg("collision"))
             elif code == "PENA" and isinstance(ev.details, Penalty) and player_idx is not None and ev.details.vehicle_index == player_idx:
                 if ev.details.time_s > 0 and self.cd.ready("penalty_time", now, 15):

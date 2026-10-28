@@ -57,6 +57,7 @@ Linia poleceń (`py -3 -m boxbox.app ...`):
 | `--voice <folder>`, `--no-voice`, `--volume` | klipy głosu, wyłączenie dźwięku, wzmocnienie |
 | `--corner-messages on/off` | krótki komunikat tuż po zakręcie |
 | `--guidance on/off` | prowadzenie w nieopanowanych zakrętach: puść gaz, hamuj (jak mocno), pół gazu, pełny gaz |
+| `--skills` | profil umiejętności 0–100 na każdym torze (hamowanie, praca hamulcem, gaz, powtarzalność, tempo, samodzielność) i wyjdź; wzory: `coach/skills.py`, wytyczne zakładki: `docs/ANALIZA_UMIEJETNOSCI.md` |
 | `--overlay`, `--scale`, `--alpha` | nakładka trenera, skala napisów, krycie |
 | `--progress` | ekran postępu i wyjście |
 

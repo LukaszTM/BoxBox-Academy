@@ -194,6 +194,7 @@ początkującego krok po kroku (asysty, start, opony, bateria), a postęp jest w
 **Etap 10 – Postęp i motywacja (2 sesje)**
 
 - [ ] Panel postępu na każdy tor: krok asyst, seria, trend czasów (wykres), zakręty opanowane, spójność (rozrzut czasów), odsetek czystych okrążeń.
+- [ ] Analiza umiejętności 0–100 (jak „skill analysis” w narzędziach konkurencji, decyzja 28.10): sześć wymiarów (hamowanie, praca hamulcem, gaz na wyjściu, powtarzalność, tempo, samodzielność) z ostatnich 10 okrążeń, każdy z trendem i jednym zdaniem „co podnosi wynik”; poniżej 5 okrążeń „za mało danych”; profil per tor i łączny; wykres radarowy w karcie kierowcy i na stronie postępu. (silnik: `coach/skills.py`, `--skills`, testy na Monzie; wytyczne do zakładki: `docs/ANALIZA_UMIEJETNOSCI.md`; okno po makiecie)
 - [ ] Odznaki i cele dnia: pierwsze czyste okrążenie, pierwsze okrążenie bez TC, 10 sesji, tor opanowany; seria dni z treningiem.
 - [ ] Historia: każda sesja z podsumowaniem i raportem PDF do pobrania; porównanie „ty miesiąc temu vs dziś”.
 - [ ] Kryterium: po każdej sesji gracz widzi co najmniej jedną rzecz, która się poprawiła.

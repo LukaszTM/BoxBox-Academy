@@ -51,6 +51,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--record", help="na żywo: zapisz też nagranie sesji pod tą nazwą do recordings/")
     parser.add_argument("--progress", action="store_true", help="pokaż postęp (kroki asyst, zakręty opanowane) i wyjdź")
+    parser.add_argument("--skills", action="store_true", help="pokaż profil umiejętności 0–100 na każdym torze i wyjdź")
     parser.add_argument("--voice", type=Path, default=DEFAULT_VOICE, help="folder z klipami WAV mechanika")
     parser.add_argument("--no-voice", action="store_true", help="bez dźwięku (komunikaty tylko w konsoli)")
     parser.add_argument("--volume", type=float, default=1.0, help="głośność mechanika, np. 1.5 (ponad 1 = wzmocnienie)")
@@ -152,6 +153,10 @@ def run(args: argparse.Namespace) -> tuple[TelemetryState, LapRecorder]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.skills:
+        from boxbox.coach.skills import main as skills_main
+
+        return skills_main(["--db", str(args.db)])
     if args.progress:
         from boxbox.coach.analyze import render_progress
 

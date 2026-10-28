@@ -3,6 +3,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 
 from boxbox.coach.ers_sample import ErsSample
+from boxbox.coach.lap_samples import TYRE_SAMPLE_M, DrsSample, TyreSample
 from boxbox.telemetry.header import PacketId
 from boxbox.telemetry.state import TelemetryState
 
@@ -30,7 +31,10 @@ class Lap:
     traction_control: int | None = None  # 0 wył., 1 średnia, 2 pełna
     abs_on: bool | None = None
     ers_assist: bool | None = None
+    drs_assist: bool | None = None  # z pakietu Session (asysta DRS = gra włącza sama)
     ers: list["ErsSample"] = field(default_factory=list, repr=False, compare=False)  # próbki baterii (z Car Status)
+    drs: list["DrsSample"] = field(default_factory=list, repr=False, compare=False)  # DRS dozwolony / włączony (Car Status + Car Telemetry)
+    tyres: list["TyreSample"] = field(default_factory=list, repr=False, compare=False)  # temperatury i zużycie opon co TYRE_SAMPLE_M
     _assist_votes: Counter[tuple[int | None, int | None, bool | None]] = field(default_factory=Counter, repr=False, compare=False)
 
     def vote_assists(self, gearbox: int | None, traction_control: int | None, abs_on: bool | None, ers_assist: bool | None = None) -> None:
@@ -107,6 +111,16 @@ class LapRecorder:
             self.current.ers.append(ErsSample(
                 lap.lap_distance, status.ers_store_energy_j, status.ers_deployed_this_lap_j,
                 status.ers_harvested_this_lap_mguk_j + status.ers_harvested_this_lap_mguh_j, status.ers_deploy_mode,
+            ))
+            self.current.drs.append(DrsSample(lap.lap_distance, lap.current_lap_time_ms, status.drs_allowed, car.drs))
+        if self.state.session is not None:
+            self.current.drs_assist = self.state.session.assists.drs
+        tyres = self.current.tyres
+        if not tyres or lap.lap_distance - tyres[-1].distance_m >= TYRE_SAMPLE_M:
+            damage = self.state.damage.player if self.state.damage else None
+            tyres.append(TyreSample(
+                lap.lap_distance, tuple(car.tyres_surface_temperature), tuple(car.tyres_inner_temperature),
+                tuple(damage.tyres_wear_percent) if damage else None,
             ))
         self.current.samples.append(Sample(
             distance_m=lap.lap_distance, lap_time_ms=lap.current_lap_time_ms, speed_kmh=car.speed_kmh,

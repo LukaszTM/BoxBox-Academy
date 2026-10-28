@@ -57,7 +57,8 @@ Linia poleceń (`py -3 -m boxbox.app ...`):
 | `--voice <folder>`, `--no-voice`, `--volume` | klipy głosu, wyłączenie dźwięku, wzmocnienie |
 | `--corner-messages on/off` | krótki komunikat tuż po zakręcie |
 | `--guidance on/off` | prowadzenie w nieopanowanych zakrętach: puść gaz, hamuj (jak mocno), pół gazu, pełny gaz |
-| `--skills` | profil umiejętności 0–100 na każdym torze (hamowanie, praca hamulcem, gaz, powtarzalność, tempo, samodzielność) i wyjdź; wzory: `coach/skills.py`, wytyczne zakładki: `docs/ANALIZA_UMIEJETNOSCI.md` |
+| `--skills` | profil umiejętności 0–100 na każdym torze (hamowanie, praca hamulcem, gaz, powtarzalność, tempo, samodzielność) i wyjdź; wzory: `coach/skills.py`, wytyczne zakładki: `docs/ANALIZA_UMIEJETNOSCI.md`; w oknie zakładka Umiejętności |
+| `--badges` | odznaki (12, z celem i postępem) i trzy cele dnia z bazy; `coach/badges.py` |
 | `--overlay`, `--scale`, `--alpha` | nakładka trenera, skala napisów, krycie |
 | `--progress` | ekran postępu i wyjście |
 
@@ -182,6 +183,16 @@ pochodzą z okrążenia referencyjnego (`CornerMetrics`: `lift_m`, `brake_point_
 z poprzednich sesji w bazie; zakręt bez uwagi wypada z listy sam. Lekcja z jednym zakrętem
 prowadzi tylko ten zakręt. Wyłączenie: `--guidance off`. Klipy `guide_*` w katalogu fraz
 (do dogrania tym samym skryptem co reszta; bez klipu komenda jest tylko w tekście na nakładce).
+
+### DRS i opony po okrążeniu
+
+`coach/drs.py`: strefy DRS z telemetrii (lampka `drsAllowed` z Car Status, skrzydło z Car Telemetry), czas reakcji
+i metry straty w każdej strefie, strefa pominięta. Po ważnym okrążeniu jedna rada: „nie włączyłeś DRS na prostej”
+albo „DRS włączony za późno” (reakcja ponad 0,5 s; zwykła z nagrań to 20–40 ms). Z asystą DRS gra włącza sama,
+więc trener milczy. `coach/tyres.py`: próbki opon co 25 m, raport na okrążenie (średnie temperatury powierzchni
+i wnętrza kół, zużycie na okrążenie, prognoza okrążeń do 70 % zużycia) i rada raz na sesję: tył albo przód grzeje
+się bardziej (różnica 12 °C), jedna strona dużo cieplejsza (15 °C), zużycie powyżej 4 % na okrążenie, jedno koło
+zużyte o 8 % bardziej. Progi względne, bo okno temperatur zależy od mieszanki; do sprawdzenia na żywo.
 
 ## 8a. Lekcje, tryb „wytłumacz mi”, podsumowanie sesji
 

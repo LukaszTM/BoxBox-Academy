@@ -73,9 +73,11 @@ class Skill:
     trend: int | None  # punkty względem poprzedniego okna; None = brak poprzedniego okna
     hint: str  # co podnosi wynik, jedno zdanie
     laps: int  # ile okrążeń weszło do wyniku
+    corner: int | None = None  # zakręt, którego dotyczy zdanie (do przejścia w Analizę)
 
     def to_dict(self) -> dict[str, Any]:
-        return {"key": self.key, "name": self.name, "basis": self.basis, "score": self.score, "trend": self.trend, "hint": self.hint, "laps": self.laps}
+        return {"key": self.key, "name": self.name, "basis": self.basis, "score": self.score, "trend": self.trend, "hint": self.hint,
+                "laps": self.laps, "corner": self.corner}
 
 
 @dataclass(frozen=True)
@@ -117,7 +119,7 @@ def _round_m(value: float) -> int:
 
 # --- wymiary -----------------------------------------------------------------
 
-def _braking(laps: Sequence[LapRecord], ref: dict[int, CornerMetrics], names: dict[int, str] | None) -> tuple[float | None, str]:
+def _braking(laps: Sequence[LapRecord], ref: dict[int, CornerMetrics], names: dict[int, str] | None) -> tuple[float | None, str, int | None]:
     per_corner: dict[int, list[float]] = {}
     scores: list[float] = []
     for lap in laps:
@@ -133,17 +135,18 @@ def _braking(laps: Sequence[LapRecord], ref: dict[int, CornerMetrics], names: di
             per_corner.setdefault(m.corner, []).append(delta)
             scores.append(_linear(abs(delta), 0.0, BRAKE_ZERO_M))
     if not scores:
-        return None, ""
+        return None, "", None
     worst = max(per_corner.items(), key=lambda kv: abs(statistics.fmean(kv[1])), default=None)
-    hint = ""
+    hint, corner = "", None
     if worst is not None:
         mean = statistics.fmean(worst[1])
         if abs(mean) >= 10:
             hint = f"hamuj ok. {_round_m(abs(mean))} m {'wcześniej' if mean > 0 else 'później'} w {_label(worst[0], names)}"
-    return statistics.fmean(scores), hint
+            corner = worst[0]
+    return statistics.fmean(scores), hint, corner
 
 
-def _brake_control(laps: Sequence[LapRecord], ref: dict[int, CornerMetrics], names: dict[int, str] | None) -> tuple[float | None, str]:
+def _brake_control(laps: Sequence[LapRecord], ref: dict[int, CornerMetrics], names: dict[int, str] | None) -> tuple[float | None, str, int | None]:
     scores: list[float] = []
     release_issues: dict[int, int] = {}
     strength_issues: dict[int, list[float]] = {}
@@ -162,8 +165,8 @@ def _brake_control(laps: Sequence[LapRecord], ref: dict[int, CornerMetrics], nam
             else:
                 scores.append(strength)
     if not scores:
-        return None, ""
-    hint = ""
+        return None, "", None
+    hint, corner = "", None
     if release_issues:
         corner = max(release_issues, key=release_issues.get)  # type: ignore[arg-type]
         hint = f"zwalniaj hamulec stopniowo aż do apeksu w {_label(corner, names)}"
@@ -172,10 +175,11 @@ def _brake_control(laps: Sequence[LapRecord], ref: dict[int, CornerMetrics], nam
         if worst is not None and abs(statistics.fmean(worst[1])) >= 0.2:
             mean = statistics.fmean(worst[1])
             hint = f"{'hamuj mocniej' if mean < 0 else 'nie dociskaj hamulca tak mocno'} w {_label(worst[0], names)}"
-    return statistics.fmean(scores), hint
+            corner = worst[0]
+    return statistics.fmean(scores), hint, corner
 
 
-def _throttle(laps: Sequence[LapRecord], ref: dict[int, CornerMetrics], names: dict[int, str] | None) -> tuple[float | None, str]:
+def _throttle(laps: Sequence[LapRecord], ref: dict[int, CornerMetrics], names: dict[int, str] | None) -> tuple[float | None, str, int | None]:
     per_corner: dict[int, list[float]] = {}
     grip: dict[int, int] = {}
     scores: list[float] = []
@@ -197,8 +201,8 @@ def _throttle(laps: Sequence[LapRecord], ref: dict[int, CornerMetrics], names: d
             per_corner.setdefault(m.corner, []).append(delta)
             scores.append(_linear(abs(delta), 0.0, THROTTLE_ZERO_M))
     if not scores:
-        return None, ""
-    hint = ""
+        return None, "", None
+    hint, corner = "", None
     if grip:
         corner = max(grip, key=grip.get)  # type: ignore[arg-type]
         hint = f"łagodniej z gazem na wyjściu z {_label(corner, names)}, tam tracisz przyczepność"
@@ -208,13 +212,14 @@ def _throttle(laps: Sequence[LapRecord], ref: dict[int, CornerMetrics], names: d
             mean = statistics.fmean(worst[1])
             hint = (f"pełny gaz ok. {_round_m(abs(mean))} m wcześniej na wyjściu z {_label(worst[0], names)}" if mean > 0
                     else f"z pełnym gazem na wyjściu z {_label(worst[0], names)} poczekaj ok. {_round_m(abs(mean))} m dłużej")
-    return statistics.fmean(scores), hint
+            corner = worst[0]
+    return statistics.fmean(scores), hint, corner
 
 
-def _consistency(laps: Sequence[LapRecord], names: dict[int, str] | None) -> tuple[float | None, str]:
+def _consistency(laps: Sequence[LapRecord], names: dict[int, str] | None) -> tuple[float | None, str, int | None]:
     times = [lap.lap_time_ms for lap in laps if lap.usable]
     if len(times) < 2:
-        return None, ""
+        return None, "", None
     best = min(times)  # type: ignore[type-var]
     spread = (statistics.fmean(times) - best) / best  # type: ignore[operator]
     spread_score = _linear(spread, SPREAD_FULL, SPREAD_ZERO)
@@ -225,18 +230,19 @@ def _consistency(laps: Sequence[LapRecord], names: dict[int, str] | None) -> tup
         for c, _, w in lap.messages:
             if w >= BIG_ERROR_WEIGHT:
                 big[c] = big.get(c, 0) + 1
+    corner = None
     if big:
         corner = max(big, key=big.get)  # type: ignore[arg-type]
         hint = f"{clean} z {len(laps)} okrążeń czystych; największe błędy w {_label(corner, names)}"
     else:
         hint = f"rozrzut czasów {100 * spread:.1f} %; jedź to samo okrążenie, nie szybsze" if spread > SPREAD_FULL else "równo jak w zegarku; teraz czas na tempo"
-    return (spread_score + clean_score) / 2, hint
+    return (spread_score + clean_score) / 2, hint, corner
 
 
-def _pace(laps: Sequence[LapRecord], reference_ms: int | None, ref: dict[int, CornerMetrics], names: dict[int, str] | None) -> tuple[float | None, str]:
+def _pace(laps: Sequence[LapRecord], reference_ms: int | None, ref: dict[int, CornerMetrics], names: dict[int, str] | None) -> tuple[float | None, str, int | None]:
     times = [lap.lap_time_ms for lap in laps if lap.clean]
     if not times or not reference_ms:
-        return None, ""
+        return None, "", None
     gap = (statistics.fmean(times) - reference_ms) / reference_ms  # type: ignore[operator]
     score = _linear(max(0.0, gap), 0.0, PACE_ZERO)
     # gdzie ucieka najwięcej czasu: zakręt z największą średnią stratą do referencji
@@ -249,24 +255,25 @@ def _pace(laps: Sequence[LapRecord], reference_ms: int | None, ref: dict[int, Co
             if r is not None:
                 loss.setdefault(m.corner, []).append((m.time_ms - r.time_ms) / 1000)
     worst = max(loss.items(), key=lambda kv: statistics.fmean(kv[1]), default=None)
-    hint = ""
+    hint, corner = "", None
     if worst is not None and statistics.fmean(worst[1]) >= 0.1:
         hint = f"najwięcej czasu tracisz w {_label(worst[0], names)}: {statistics.fmean(worst[1]):.1f} s na okrążenie".replace(".", ",")
+        corner = worst[0]
     elif gap > 0:
         hint = f"średnio {100 * gap:.1f} % wolniej niż referencja".replace(".", ",")
-    return score, hint
+    return score, hint, corner
 
 
-def _independence(laps: Sequence[LapRecord], step: int | None, streak: int) -> tuple[float | None, str]:
+def _independence(laps: Sequence[LapRecord], step: int | None, streak: int) -> tuple[float | None, str, int | None]:
     if step is None:
         recent = [step_for(lap.traction_control, lap.abs_on) for lap in laps if lap.usable]
         if not recent:
-            return None, ""
+            return None, "", None
         step = max(set(recent), key=recent.count)
     score = 25.0 * (step - 1) + 25.0 * min(streak, CLEAN_LAPS_TO_ADVANCE) / CLEAN_LAPS_TO_ADVANCE
     nxt = STEPS.get(step + 1)
     hint = f"{CLEAN_LAPS_TO_ADVANCE - min(streak, CLEAN_LAPS_TO_ADVANCE)} czyste okrążenia do kroku: {nxt}" if nxt else "jedziesz bez asyst"
-    return score, hint
+    return score, hint, None
 
 
 # --- profil --------------------------------------------------------------------
@@ -274,7 +281,7 @@ def _independence(laps: Sequence[LapRecord], step: int | None, streak: int) -> t
 def _scores(
     laps: Sequence[LapRecord], ref: dict[int, CornerMetrics], reference_ms: int | None, names: dict[int, str] | None,
     step: int | None, streak: int,
-) -> dict[str, tuple[float | None, str]]:
+) -> dict[str, tuple[float | None, str, int | None]]:
     return {
         "braking": _braking(laps, ref, names),
         "brake_control": _brake_control(laps, ref, names),
@@ -310,14 +317,15 @@ def skill_profile(
     for key, name, basis in DIMENSIONS:
         if external_reference and key in ("braking", "brake_control", "throttle", "pace"):
             basis = basis.replace("twojego najlepszego okrążenia", "ducha z Time Trial").replace("najlepszego okrążenia", "ducha z Time Trial").replace("do referencji", "do ducha z Time Trial")
-        value, hint = now[key]
+        value, hint, corner = now[key]
         if key == "independence":
             score = _clip(value) if value is not None else None
         else:
             score = _clip(value) if (enough and value is not None) else None
-        prev = before.get(key, (None, ""))[0]
+        prev = before.get(key, (None, "", None))[0]
         trend = None if score is None or prev is None else score - _clip(prev)
-        skills.append(Skill(key, name, basis, score, trend, hint if score is not None else "", len(window) if key != "independence" else len(usable)))
+        skills.append(Skill(key, name, basis, score, trend, hint if score is not None else "", len(window) if key != "independence" else len(usable),
+                            corner if score is not None else None))
     note = "" if enough else f"za mało danych: {len(window)} z {MIN_LAPS} ważnych okrążeń"
     return SkillProfile(track_id, track_name, tuple(skills), len(window), note)
 
@@ -335,8 +343,7 @@ def combine(profiles: Sequence[SkillProfile]) -> SkillProfile:
         trends = [(s.trend, w) for s, w in have if s.trend is not None]
         trend = int(round(sum(t * w for t, w in trends) / sum(w for _, w in trends))) if trends else None
         weakest = min(have, key=lambda sw: sw[0].score or 0)[0]
-        hint = weakest.hint
-        skills.append(Skill(key, name, basis, score, trend, hint, sum(w for _, w in have)))
+        skills.append(Skill(key, name, basis, score, trend, weakest.hint, sum(w for _, w in have), weakest.corner))
     return SkillProfile(None, "wszystkie tory", tuple(skills), sum(p.laps_used for p in profiles))
 
 

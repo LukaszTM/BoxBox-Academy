@@ -8,7 +8,9 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from boxbox.coach.corners import LapAnalysis, analyze_corner, analyze_lap
+from boxbox.coach.drs import advise_drs, analyze_drs
 from boxbox.coach.ers import advise_ers, analyze_ers
+from boxbox.coach.tyres import advise_tyres, analyze_tyres
 from boxbox.coach.glossary import explain
 from boxbox.coach.guide_live import KINDS, CornerGuide, kinds_for_rules
 from boxbox.coach.lessons import Lesson, filter_messages
@@ -37,6 +39,9 @@ class LiveCoach:
     available: Callable[[str], bool] | None = None  # czy klip o id jest w bibliotece (wybór v2/v1)
     progress: TrackProgress | None = None  # ścieżka zdejmowania asyst (z bazy); None = bez śledzenia
     ers_advice: bool = True
+    drs_advice: bool = True  # po okrążeniu: pominięta strefa DRS albo spóźnione włączenie
+    tyre_advice: bool = True  # po okrążeniu: tył/przód grzeje się bardziej, szybkie albo nierówne zużycie (raz na sesję)
+    tyre_said: set[str] = field(default_factory=set)
     lesson: Lesson | None = None  # lekcja: trener mówi tylko o jej regułach (i zakręcie)
     lesson_corner: int | None = None
     explain_mode: bool = False  # "wytłumacz mi": przy pierwszej uwadze danego typu dłuższe wyjaśnienie
@@ -164,6 +169,15 @@ class LiveCoach:
             if advice.kind in ("wasted_in_corners", "unused_battery"):
                 key = "ers_wasted" if advice.kind == "wasted_in_corners" else "ers_unused"
                 self.speak([f"misc_{key}"], MISC_TEXTS[key])
+        if self.drs_advice and lap.drs and not lap.invalid:
+            drs = advise_drs(analyze_drs(lap.drs), lap.drs_assist)
+            if drs.clip is not None:
+                self.speak([drs.clip], MISC_TEXTS[f"drs_{drs.kind}"])
+        if self.tyre_advice and lap.tyres and not lap.invalid:
+            tyres = advise_tyres(analyze_tyres(lap.tyres))
+            if tyres.clip is not None and tyres.kind not in self.tyre_said:
+                self.tyre_said.add(tyres.kind)  # każda rada o oponach raz na sesję: to cecha stylu, nie błąd w zakręcie
+                self.speak([tyres.clip], MISC_TEXTS[f"tyres_{tyres.kind}"])
         return out
 
     def finish(self) -> None:

@@ -49,7 +49,7 @@ LESSONS: tuple[Lesson, ...] = (
     Lesson(
         "trail_braking", "Trail-braking",
         "Trzymaj lekki hamulec do apeksu w wolnych zakrętach. Cel: 3 okrążenia bez uwagi o zbyt wczesnym puszczeniu hamulca.",
-        5, ("trail_missing", "brake_release"), True, "no_rule:trail_missing:3", premium=True,
+        5, ("trail_missing", "brake_release"), True, "no_rule:trail_missing:3",  # od makiety v4 lekcja startowa (wejście z karty „Praca hamulcem”)
         explain="Trail-braking to stopniowe zwalnianie hamulca już po skręceniu. Przód auta zostaje dociążony i lepiej "
                 "skręca; auto wchodzi w zakręt zamiast pchać przodem.",
     ),

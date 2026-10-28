@@ -16,7 +16,7 @@ def msg(n: int, corner: int, rule: str, w: float = 0.5, value_m: int | None = No
 
 
 def test_lessons_catalog_and_filter() -> None:
-    assert len(free_lessons()) == 3 and all(not item.premium for item in free_lessons())
+    assert len(free_lessons()) == 4 and all(not item.premium for item in free_lessons())  # 3 startowe + trail-braking (makieta v4)
     item = lesson("braking_one_corner")
     msgs = [msg(1, 1, "brake_late"), msg(1, 2, "brake_late"), msg(1, 1, "throttle_early")]
     assert [m.corner for m in filter_messages(item, msgs, corner=1)] == [1]

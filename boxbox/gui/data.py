@@ -11,6 +11,7 @@ from boxbox.coach.glossary import GLOSSARY
 from boxbox.coach.laps import Lap, Sample
 from boxbox.coach.lessons import LESSONS
 from boxbox.coach.progress import CLEAN_LAPS_TO_ADVANCE, STEPS
+from boxbox.coach.skills import MIN_LAPS, WINDOW, SkillProfile, combine, profile_for_track
 from boxbox.coach.summary import rule_pl
 from boxbox.games import adapter
 from boxbox.gui import texts
@@ -180,6 +181,38 @@ class DataBuilder:
             "photo": _photo_data_url(s.photo), "tracks": tracks,
         }
 
+    def _skills(self, db: Database, overview: dict) -> dict:
+        """Profile umiejętności do zakładki Umiejętności i mini-radaru w karcie kierowcy (silnik: coach/skills.py)."""
+        tracks: list[dict] = []
+        profiles: list[SkillProfile] = []
+        for t in overview["tracks"]:
+            tid = t["track_id"]
+            try:
+                track = load_track_by_id(tid)
+                names: dict[int, str] | None = {c.number: c.name or f"Z{c.number}" for c in track.corners}
+                name = track.name
+            except FileNotFoundError:
+                names, name = None, f"tor {tid}"
+            profile = profile_for_track(db, tid, name, names)
+            profiles.append(profile)
+            best = db.best_lap(tid)
+            ref = ""
+            if best is not None:
+                row = db.conn.execute("SELECT created_at FROM laps WHERE id = ?", (best.id,)).fetchone()
+                when = f" ({row['created_at'][8:10]}.{row['created_at'][5:7]})" if row and row["created_at"] else ""
+                ref = f"twoje najlepsze {format_time(best.lap_time_ms).replace('.', ',')}{when}"
+            tracks.append(self._profile_dict(profile, ref, names))
+        all_dict = self._profile_dict(combine(profiles), "twoje najlepsze okrążenia na poszczególnych torach", None) if profiles else None
+        return {"tracks": tracks, "all": all_dict, "minLaps": MIN_LAPS, "window": WINDOW}
+
+    @staticmethod
+    def _profile_dict(profile: SkillProfile, ref: str, names: dict[int, str] | None) -> dict:
+        d = profile.to_dict()
+        d["ref"] = ref
+        for s in d["skills"]:
+            s["cornerName"] = (names or {}).get(s["corner"], "") if s["corner"] is not None else ""
+        return d
+
     def _active_track(self, overview: dict) -> int | None:
         if self.progress_track is not None:
             return self.progress_track
@@ -348,6 +381,7 @@ class DataBuilder:
             driver = self._driver(db, overview, per_track)
             progress = self._progress(db, overview, per_track)
             analysis = self._analysis(db)
+            skills = self._skills(db, overview)
             active_id = self._active_track(overview)
         finally:
             db.close()
@@ -365,6 +399,7 @@ class DataBuilder:
             "todo": {"step": progress["step"], "stepName": progress["stepName"], "streak": progress["streak"], "needed": progress["needed"],
                      "nextStep": progress["nextStep"] or "praca nad czasem", "track": active_name},
             "live": self.live, "summary": self.summary, "progress": progress, "analysis": analysis, "lessons": self._lessons(active_id),
+            "skills": skills,
             "glossary": [[name, desc] for name, desc in GLOSSARY.values()], "wizard": self.wizard,
             "defaultSessionName": f"{active_name or 'sesja'} {datetime.now():%d.%m}".strip(),
         }

@@ -90,6 +90,13 @@ MISC_TEXTS: dict[str, str] = {
     "ers_wasted": "Za dużo baterii idzie w zakrętach. Używaj jej na prostych, zaraz po wyjściu.",
     "ers_unused": "Bateria na mecie prawie pełna. Masz zapas na wyjściach z wolnych zakrętów.",
     "ers_last_lap": "Ostatnie okrążenie. Wciśnij całą baterię, co zostało.",
+    "drs_missed": "Nie włączyłeś DRS na prostej. Szukaj zielonej lampki zaraz po wyjściu z zakrętu.",
+    "drs_late": "DRS włączony za późno. Naciskaj od razu, gdy zaświeci się zielona lampka.",
+    "tyres_rear_hot": "Tył grzeje się bardziej niż przód. Łagodniej z gazem na wyjściach, opony podziękują.",
+    "tyres_front_hot": "Przód grzeje się bardziej niż tył. Mniej kierownicy w zakręcie i wolniej na wejściu.",
+    "tyres_side_hot": "Jedna strona opon dużo cieplejsza. Na tym torze to normalne, ale nie dociskaj w szybkich zakrętach.",
+    "tyres_wear_fast": "Opony zużywają się szybko. Mniej ślizgania: płynniej gaz i mniej blokowania kół.",
+    "tyres_wear_uneven": "Jedno koło zużyte dużo bardziej niż reszta. Zobacz w analizie, w których zakrętach ślizgasz.",
 }
 
 

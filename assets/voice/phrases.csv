@@ -104,6 +104,13 @@ misc_step_done,Jedziesz bez asyst i masz trzy czyste okrążenia. Od teraz pracu
 misc_ers_wasted,"Za dużo baterii idzie w zakrętach. Używaj jej na prostych, zaraz po wyjściu."
 misc_ers_unused,Bateria na mecie prawie pełna. Masz zapas na wyjściach z wolnych zakrętów.
 misc_ers_last_lap,"Ostatnie okrążenie. Wciśnij całą baterię, co zostało."
+misc_drs_missed,Nie włączyłeś DRS na prostej. Szukaj zielonej lampki zaraz po wyjściu z zakrętu.
+misc_drs_late,"DRS włączony za późno. Naciskaj od razu, gdy zaświeci się zielona lampka."
+misc_tyres_rear_hot,"Tył grzeje się bardziej niż przód. Łagodniej z gazem na wyjściach, opony podziękują."
+misc_tyres_front_hot,Przód grzeje się bardziej niż tył. Mniej kierownicy w zakręcie i wolniej na wejściu.
+misc_tyres_side_hot,"Jedna strona opon dużo cieplejsza. Na tym torze to normalne, ale nie dociskaj w szybkich zakrętach."
+misc_tyres_wear_fast,Opony zużywają się szybko. Mniej ślizgania: płynniej gaz i mniej blokowania kół.
+misc_tyres_wear_uneven,"Jedno koło zużyte dużo bardziej niż reszta. Zobacz w analizie, w których zakrętach ślizgasz."
 guide_intro,Prowadzę.
 guide_lift,Puść gaz.
 guide_brake_hard,Hamuj mocno.

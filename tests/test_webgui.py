@@ -53,6 +53,7 @@ def test_data_builder_empty_db(tmp_path: Path) -> None:
     d = DataBuilder(Settings(nick="X"), tmp_path / "b.sqlite", tmp_path).build()
     assert d["driver"]["nick"] == "X" and d["driver"]["level"] == 1 and d["progress"]["tracks"] == []
     assert d["analysis"]["sessions"] == [] and len(d["lessons"]["cards"]) == 5 and d["glossary"]
+    assert d["skills"] == {"tracks": [], "all": None, "minLaps": 5, "window": 10}  # pusta baza: zakładka pokazuje stan „profil się tworzy”
     assert map_for(11, tmp_path, fit_dir=tmp_path / "fit")["source"] == "outline"  # Monza bez nagrania: sam obrys z atlasu
 
 
@@ -80,10 +81,34 @@ def test_window_wizard_session_and_screens(app, tmp_path: Path) -> None:
     assert w.session is None and w.data.summary is not None and w.data.summary["laps"] >= 5
     assert "Podsumowanie" in js(w, app, "document.title")
     assert w.settings.last_session["track"] == "Monza"
-    for view, title in (("analysis", "Analiza"), ("progress", "Postęp"), ("lessons", "Lekcje"), ("driver", "Karta kierowcy"), ("settings", "Ustawienia"), ("help", "Pomoc")):
+    for view, title in (("analysis", "Analiza"), ("progress", "Postęp"), ("skills", "Umiejętności"), ("lessons", "Lekcje"), ("driver", "Karta kierowcy"), ("settings", "Ustawienia"), ("help", "Pomoc")):
         js(w, app, f"window.boxbox.navigate('{view}'); 1")
         pump(app, 0.4)
         assert js(w, app, "document.title").endswith(title)
+    # makieta v4: Umiejętności z silnika (Monza: 5 ważnych okrążeń = profil), karta -> Analiza z banerem, mini-radar w karcie kierowcy
+    skills = w.data.build()["skills"]
+    assert [t["track"] for t in skills["tracks"]] == ["Monza"] and skills["all"]["lapsUsed"] >= 5
+    assert all(s["score"] is not None for s in skills["tracks"][0]["skills"]) and skills["tracks"][0]["ref"].startswith("twoje najlepsze 1:")
+    js(w, app, "window.boxbox.navigate('skills'); 1")
+    pump(app, 0.5)
+    assert js(w, app, "document.querySelectorAll('.skill-card').length") == 6 and js(w, app, "!!document.querySelector('.skill-radar-current')")
+    assert js(w, app, "document.querySelectorAll('.skill-number').length") == 6 and "—" not in js(w, app, "Array.from(document.querySelectorAll('.skill-number')).map(e=>e.textContent).join()")
+    assert js(w, app, "document.querySelector('.skill-goal-text').textContent").strip() != ""
+    js(w, app, "document.querySelector('[data-skills-track=\"11\"]').click(); 1")
+    pump(app, 0.4)
+    assert "Monza" in js(w, app, "document.querySelector('.skills-meta').textContent")
+    js(w, app, "document.querySelector('.skill-card[data-skill-open=\"braking\"]').click(); 1")
+    pump(app, 0.5)
+    assert js(w, app, "document.title").endswith("Analiza") and "Hamowanie" in js(w, app, "document.querySelector('.skill-analysis-return').textContent")
+    js(w, app, "document.querySelector('[data-action=skills-back]').click(); 1")
+    pump(app, 0.4)
+    assert js(w, app, "document.title").endswith("Umiejętności")
+    js(w, app, "document.querySelector('[data-action=skills-lesson]').click(); 1")
+    pump(app, 0.4)
+    assert js(w, app, "document.title").endswith("Lekcje") and js(w, app, "window.boxbox.ui.lesson") in ("braking_one_corner", "trail_braking", "throttle_exit", "clean_lap")
+    js(w, app, "window.boxbox.navigate('driver'); 1")
+    pump(app, 0.4)
+    assert js(w, app, "!!document.querySelector('.license-radar-link svg')")
     js(w, app, "window.boxbox.navigate('analysis'); 1")
     pump(app, 0.5)
     assert js(w, app, "document.querySelectorAll('.chart-line').length") >= 4  # prędkość, pedały, bieg, kierownica

@@ -177,7 +177,7 @@ początkującego krok po kroku (asysty, start, opony, bateria), a postęp jest w
 
 - [ ] Optymalny punkt hamowania w każdym zakręcie: z najlepszych własnych okrążeń, ducha i AI; na mapie i nakładce znacznik. (zrobione: cel „hamuj X m wcześniej/później” jako połowa różnicy, 5–20 m, w linii „popraw” na nakładce i w oknie)
 - [ ] Optymalne dodanie gazu i trail-braking: punkt pełnego gazu, krzywa puszczania hamulca, bieg w apeksie; porównanie z referencją jako cel na zakręt. (zrobione 28.10: prowadzenie w nieopanowanych zakrętach na żywo, `coach/guide_live.py`: „Prowadzę.”, „Puść gaz.”, „Hamuj mocno/do połowy/lekko.”, „Pół gazu.”, „Pełny gaz.” przed punktami z referencji, najwyżej 3 zakręty z uwagami z ostatniego okrążenia; klipy `guide_*` do dogrania; do sprawdzenia na żywo, czy wyprzedzenie 1 s pasuje)
-- [ ] DRS: wykrywanie stref z pakietu Session, czas reakcji na włączenie, uwaga „DRS włączony o 0,4 s za późno”, ćwiczenie na prostych.
+- [ ] DRS: wykrywanie stref z pakietu Session, czas reakcji na włączenie, uwaga „DRS włączony o 0,4 s za późno”, ćwiczenie na prostych. (zrobione 28.10: strefy z telemetrii (lampka `drsAllowed` i skrzydło), czas reakcji i metry straty na strefę, strefa pominięta; po okrążeniu „DRS włączony za późno” (ponad 0,5 s) albo „nie włączyłeś DRS”; z asystą DRS trener milczy; `coach/drs.py`, testy na Monzie i Bahrajnie. Ćwiczenie na prostych: później)
 - [ ] Bateria: plan deployu na okrążenie (gdzie zyskuje najwięcej), tryb przeglądu/hotlap, ostrzeżenie o pustej baterii przed prostą, ocena po okrążeniu z liczbą.
 - [x] Tryb „wytłumacz mi”: przy pierwszym wystąpieniu każdej uwagi trener mówi dłuższą wersję; później krótko. Słownik pojęć w oknie. (silnik: `coach/glossary.py`, `--explain`, klipy `explain_*` do dogrania; okno: po makiecie)
 - [x] Lekcje: zestaw krótkich ćwiczeń z jednym celem, trener mówi tylko o regułach lekcji, ocena serii po sesji. (silnik: `coach/lessons.py`, `--lesson`; okno i zapis postępu lekcji: po makiecie)
@@ -185,7 +185,7 @@ początkującego krok po kroku (asysty, start, opony, bateria), a postęp jest w
 
 **Etap 9 – Opony, start i walka na torze (3 sesje)**
 
-- [ ] Opony: temperatury i zużycie per okrążenie, okno temperatur, uwagi „przegrzewasz tył na wyjściach”, „ziarnienie”, prognoza żywotności zestawu na dystans wyścigu; lekcja oszczędzania opon.
+- [ ] Opony: temperatury i zużycie per okrążenie, okno temperatur, uwagi „przegrzewasz tył na wyjściach”, „ziarnienie”, prognoza żywotności zestawu na dystans wyścigu; lekcja oszczędzania opon. (zrobione 28.10: próbki opon co 25 m, raport na okrążenie (średnie temperatury powierzchni i wnętrza, zużycie na okrążenie, prognoza okrążeń do 70 %), rada raz na sesję: tył/przód/strona cieplejsza, szybkie albo nierówne zużycie; `coach/tyres.py`; progi względne, do weryfikacji na żywo. Ziarnienie i lekcja: później)
 - [x] Start: czas reakcji od zgaszenia świateł (LGOT), uślizg kół, pozycje po 1. okrążeniu, raport tekstowy po pierwszym okrążeniu (`engineer/start.py`). Lekcja startu: później.
 - [ ] Walka: kolizje z pakietu Event (kto, gdzie, siła), ocena bezpieczeństwa jazdy (safety rating), zasady obrony i ataku tłumaczone przez trenera po sytuacji, nie w jej trakcie.
 - [x] Inżynier na radiu (tryb wyścigowy): opony, okno pit-stopu, flagi, SC/VSC, DRS, odstępy, uszkodzenia, deszcz, paliwo, kary, kolizje, ostatnie okrążenia (`engineer/rules.py`, `--mode race`; klipy `eng_*` gotowe).
@@ -194,8 +194,8 @@ początkującego krok po kroku (asysty, start, opony, bateria), a postęp jest w
 **Etap 10 – Postęp i motywacja (2 sesje)**
 
 - [ ] Panel postępu na każdy tor: krok asyst, seria, trend czasów (wykres), zakręty opanowane, spójność (rozrzut czasów), odsetek czystych okrążeń.
-- [ ] Analiza umiejętności 0–100 (jak „skill analysis” w narzędziach konkurencji, decyzja 28.10): sześć wymiarów (hamowanie, praca hamulcem, gaz na wyjściu, powtarzalność, tempo, samodzielność) z ostatnich 10 okrążeń, każdy z trendem i jednym zdaniem „co podnosi wynik”; poniżej 5 okrążeń „za mało danych”; profil per tor i łączny; wykres radarowy w karcie kierowcy i na stronie postępu. (silnik: `coach/skills.py`, `--skills`, testy na Monzie; wytyczne do zakładki: `docs/ANALIZA_UMIEJETNOSCI.md`; okno po makiecie)
-- [ ] Odznaki i cele dnia: pierwsze czyste okrążenie, pierwsze okrążenie bez TC, 10 sesji, tor opanowany; seria dni z treningiem.
+- [ ] Analiza umiejętności 0–100 (jak „skill analysis” w narzędziach konkurencji, decyzja 28.10): sześć wymiarów (hamowanie, praca hamulcem, gaz na wyjściu, powtarzalność, tempo, samodzielność) z ostatnich 10 okrążeń, każdy z trendem i jednym zdaniem „co podnosi wynik”; poniżej 5 okrążeń „za mało danych”; profil per tor i łączny; wykres radarowy w karcie kierowcy i na stronie postępu. (silnik: `coach/skills.py`, `--skills`, testy na Monzie; wytyczne do zakładki: `docs/ANALIZA_UMIEJETNOSCI.md`; okno wg makiety v4 z 28.10: zakładka Umiejętności z radarem, sześcioma kartami, zadaniem i lekcją, mini-radar w karcie kierowcy, baner w Analizie; lekcja Trail-braking stała się startową)
+- [ ] Odznaki i cele dnia: pierwsze czyste okrążenie, pierwsze okrążenie bez TC, 10 sesji, tor opanowany; seria dni z treningiem. (silnik 28.10: 12 odznak z celem i postępem liczone z bazy bez nowej tabeli, cele dnia = 3 najbliższe, `coach/badges.py`, `--badges`; rząd odznak w oknie po makiecie)
 - [ ] Historia: każda sesja z podsumowaniem i raportem PDF do pobrania; porównanie „ty miesiąc temu vs dziś”.
 - [ ] Kryterium: po każdej sesji gracz widzi co najmniej jedną rzecz, która się poprawiła.
 

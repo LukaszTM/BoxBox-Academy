@@ -178,7 +178,7 @@ Ikona aplikacji: `assets/icon.ico` ze znaku (bolid i fala), bez tekstu.
 - `makieta-start-nowoczesna.png`: docelowy wygląd ekranu Start (szkło, głębia, poświaty), wzorzec dla kodu; `makieta-start.png`: wcześniejsza wersja płaska, nieaktualna.
 - `email.html` i `email.txt`: szablon e-maila (ciemne tło, baner, jeden czerwony przycisk, stopka z oznaczeniem marki i zastrzeżeniem o EA/F1); pola `{{ }}` do podmiany; `przyklad-stempla.png`: jak wygląda ostemplowana grafika.
 - Stemplowanie grafik do publikacji: `python tools/brand_assets.py stempluj plik.png` wkleja logo w prawym dolnym rogu (18% szerokości, 85% krycia). Każdy zrzut, miniatura i film przed publikacją przechodzi przez stempel.
-- Baner `assets/banner.png` (1536 × 1024) do nagłówków kanału i Patreona; logo `assets/logo.png` tylko na ciemnym tle; minimalna szerokość logo 120 px; wokół logo pusta przestrzeń równa wysokości litery „B”.
+- Baner `assets/banner.png` (2048 × 681) do nagłówków kanału i Patreona; logo `assets/logo.png` (wektor z 28.10.2026, źródła w `assets/logo-src/`) tylko na ciemnym tle, na jasnym `logo-czarny.png`; minimalna szerokość logo 120 px; wokół logo pusta przestrzeń równa wysokości litery „B”.
 
 Czego nie robimy: nie obracamy logo, nie zmieniamy jego kolorów, nie kładziemy na jasnym tle, nie piszemy
 „Box Box” ani „BoxBox academy”; zawsze „BoxBox Academy”.

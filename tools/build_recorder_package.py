@@ -29,7 +29,7 @@ DIST = ROOT / "dist"
 PDF_NAME = "BoxBox_Academy_instrukcja_nagran.pdf"
 ZIP_NAME = "boxbox-recorder.zip"
 FONT_DIR = Path("/usr/share/fonts/truetype/dejavu")
-LOGO = ROOT / "assets" / "logo.png"
+LOGO = ROOT / "assets" / "logo-czarny.png"  # PDF-y mają białe tło: wersja czarna znaku
 
 
 def _register_fonts() -> None:

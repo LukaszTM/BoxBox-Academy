@@ -14,7 +14,7 @@ from PySide6.QtWidgets import QApplication  # noqa: E402
 
 from boxbox.gui.data import DataBuilder, map_for  # noqa: E402
 from boxbox.gui.settings import Settings  # noqa: E402
-from boxbox.gui.webapp import WebWindow, zoom_for_width  # noqa: E402
+from boxbox.gui.webapp import WebWindow, zoom_for_width, zoom_for_window  # noqa: E402
 from boxbox.session import SessionConfig  # noqa: E402
 
 MONZA = Path("recordings/monza-trening_2026-10-26_153411.bin.xz")
@@ -53,7 +53,7 @@ def wait_loaded(w: WebWindow, app) -> None:
 def test_data_builder_empty_db(tmp_path: Path) -> None:
     d = DataBuilder(Settings(nick="X"), tmp_path / "b.sqlite", tmp_path).build()
     assert d["driver"]["nick"] == "X" and d["driver"]["level"] == 1 and d["progress"]["tracks"] == []
-    assert d["analysis"]["sessions"] == [] and len(d["lessons"]["cards"]) == 5 and d["glossary"]
+    assert d["analysis"]["sessions"] == [] and len(d["lessons"]["cards"]) == 7 and d["glossary"]
     assert d["skills"] == {"tracks": [], "all": None, "minLaps": 5, "window": 10}  # pusta baza: zakładka pokazuje stan „profil się tworzy”
     assert map_for(11, tmp_path, fit_dir=tmp_path / "fit")["source"] == "outline"  # Monza bez nagrania: sam obrys z atlasu
 
@@ -126,6 +126,9 @@ def test_window_wizard_session_and_screens(app, tmp_path: Path) -> None:
     w.resize(2560, 1400)
     pump(app, 0.3)
     assert abs(w.view.zoomFactor() - 1.45) < 0.01 and zoom_for_width(1920) == 1.097 and zoom_for_width(1200) == 1.0
+    # wysokie okna: powiększenie z wysokości, ale nie poniżej szerokości jednokolumnowego układu
+    assert zoom_for_window(1920, 1080) == 1.097 and zoom_for_window(1920, 1200) == 1.2 and zoom_for_window(1600, 1300) == 1.3
+    assert zoom_for_window(1480, 960) == 1.0 and zoom_for_window(2560, 1440) == 1.45 and zoom_for_window(1200, 1400) == 1.017
     js(w, app, "window.boxbox.navigate('analysis'); 1")
     pump(app, 0.5)
     assert js(w, app, "document.querySelectorAll('.chart-line').length") >= 4  # prędkość, pedały, bieg, kierownica
@@ -176,7 +179,7 @@ def test_window_wizard_session_and_screens(app, tmp_path: Path) -> None:
     assert js(w, app, "!document.querySelector('.tutorial')") and w.settings.tutorial_done, seen
     js(w, app, "window.boxbox.navigate('hud'); 1")
     pump(app, 2.5)
-    assert js(w, app, "document.querySelector('#hud-frame').contentDocument.querySelectorAll('.block').length") == 7
+    assert js(w, app, "document.querySelector('#hud-frame').contentDocument.querySelectorAll('.block').length") == 8  # z modułem DRS · bateria · sektory
     js(w, app, "window.boxbox.bridge.setSetting(JSON.stringify({hud:{positions:{status:[5,55]},visible:{minimap:false},opacity:35,scale:110}})); 1")
     pump(app, 0.4)
     assert w.settings.hud_layout["positions"]["status"] == [5, 55] and w.settings.overlay_opacity == 35 and abs(w.settings.overlay_scale - 1.1) < 1e-9
@@ -232,6 +235,8 @@ def test_hud_overlay_follows_session(app, tmp_path: Path) -> None:
             assert ovjs("document.querySelector('.timing-label').textContent").startswith("OKRĄŻENIE")
             assert "CZYSTYCH" in ovjs("document.querySelector('.timing-foot').textContent")
             assert ovjs("document.querySelector('.radio-line').textContent")  # mechanik mówił
+            assert ovjs("document.getElementById('energy-batt').textContent").endswith("%")  # moduł DRS · bateria · sektory z telemetrii
+            assert ovjs("document.getElementById('energy-drs').textContent") in ("—", "GOTOWY", "OTWARTY")
     assert fit_done and seen_finish
     pump(app, 1.0)
     assert w.session is None and w.overlay is None  # po sesji nakładka znika

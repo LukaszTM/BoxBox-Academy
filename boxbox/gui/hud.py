@@ -33,6 +33,7 @@ class HudFrame:
     lap_end: dict | None = None  # {"lap", "time", "delta", "good", "warn", "out_lap"}
     shape: dict | None = None  # {"points": [[0..1, 0..1], ...]} albo None = ukryj minimapę
     car: tuple[int, int | None] | None = None  # (indeks punktu auta, indeks punktu hamowania przed następnym zakrętem)
+    energy: dict | None = None  # {"drs": off|ready|open, "battery": %, "s1", "s2", "s1Best", "s2Best"}; None = bez zmian
     extra: dict = field(default_factory=dict)
 
 
@@ -116,6 +117,8 @@ class HudWindow(QWebEngineView):
             js.append(f"BoxBoxHUD.setLapEnd({_js(e.get('lap', ''))}, {_js(e.get('time', ''))}, {_js(e.get('delta', ''))}, {_js(e.get('good', ''))}, {_js(e.get('warn', ''))})")
             js.append(f"BoxBoxHUD.lapCompleted({{complete: {_js(bool(e.get('complete', True)))}, outLap: {_js(bool(e.get('out_lap', False)))}}})")
             js.append("BoxBoxHUD.newLap()")
+        if f.energy is not None and (p is None or f.energy != p.energy):
+            js.append(f"BoxBoxHUD.setEnergy({_js(f.energy)})")
         if p is None or f.shape != p.shape:
             js.append(f"BoxBoxHUD.setTrackShape({_js(f.shape)})")
         if f.car is not None and (p is None or f.car != p.car or f.shape != p.shape):
@@ -131,4 +134,5 @@ def demo_frame() -> HudFrame:
         mode="normal", status="● TRENER · PODGLĄD", corner="T8–T10", meters=120, goal="POPRAW · T1–T2 · HAMUJ 20 M WCZEŚNIEJ",
         lap="OKRĄŻENIE 04", delta="−0,41 s", streak_text="2 / 3 CZYSTYCH", streak_pct=67, radio=(257, "T1–T2: hamowanie za późno, o jakieś dwadzieścia metrów."),
         shape={"points": [[0.15, 0.35], [0.57, 0.10], [0.9, 0.45], [0.54, 0.9], [0.13, 0.68]]}, car=(1, 3),
+        energy={"drs": "open", "battery": 64, "s1": "28.038", "s2": "29.312", "s1Best": True, "s2Best": False},
     )

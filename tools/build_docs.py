@@ -19,6 +19,7 @@ DOCS = {
     "LOGO_WYTYCZNE.md": ("BoxBox_Academy_logo_wytyczne.pdf", "BoxBox Academy – logo: wytyczne do przeróbki"),
     "ANALIZA_UMIEJETNOSCI.md": ("BoxBox_Academy_analiza_umiejetnosci.pdf", "BoxBox Academy – zakładka Analiza umiejętności: wytyczne"),
     "CO_NAGRAC.md": ("BoxBox_Academy_co_nagrac.pdf", "BoxBox Academy – co nagrać (partia 2)"),
+    "ANTYWIRUS.md": ("BoxBox_Academy_antywirus.pdf", "BoxBox Academy – gdy Windows blokuje program"),
 }
 
 

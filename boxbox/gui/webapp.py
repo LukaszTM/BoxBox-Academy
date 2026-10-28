@@ -22,6 +22,7 @@ from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QApplication, QMainWindow
 
 from boxbox.coach.analyze import format_sector, format_time, report_laps
+from boxbox.coach.ers import ERS_MAX_J
 from boxbox.coach.delta import lap_csv
 from boxbox.coach.progress import CLEAN_LAPS_TO_ADVANCE
 from boxbox.gui import texts
@@ -214,12 +215,21 @@ class Bridge(QObject):
 
 
 DESIGN_WIDTH = 1750  # szerokość okna, przy której makieta ma naturalną skalę
+DESIGN_HEIGHT = 1000  # wysokość, przy której Start i widok na żywo wypełniają okno bez pustego dołu
+MIN_CSS_WIDTH = 1180  # poniżej tej szerokości (w pikselach strony) układ przechodzi na jedną kolumnę
 MAX_ZOOM = 1.45
 
 
 def zoom_for_width(width: int) -> float:
     """Powiększenie strony dla szerokości okna: 1,0 do 1750 px, liniowo do 1,45 przy 2540 px i więcej."""
     return round(max(1.0, min(MAX_ZOOM, width / DESIGN_WIDTH)), 3)
+
+
+def zoom_for_window(width: int, height: int) -> float:
+    """Powiększenie z szerokości albo wysokości (większe z dwóch), żeby wysokie ekrany nie miały pustego dołu;
+    ograniczone tak, by strona nie zeszła poniżej szerokości jednokolumnowego układu."""
+    zoom = max(zoom_for_width(width), height / DESIGN_HEIGHT)
+    return round(max(1.0, min(MAX_ZOOM, zoom, width / MIN_CSS_WIDTH)), 3)
 
 
 class WebWindow(QMainWindow):
@@ -580,6 +590,20 @@ class WebWindow(QMainWindow):
                            "good": good, "warn": warn, "complete": not done.invalid, "out_lap": done.pitted}
             elif session.recorder.laps and session.recorder.laps[-1].pitted:
                 lap_end = {"lap": f"OKRĄŻENIE {session.recorder.laps[-1].number:02d}", "time": "", "delta": "", "good": "", "warn": "", "complete": False, "out_lap": True}
+        energy = None
+        status_pkt = state.status.player if state.status is not None else None
+        car_pkt = state.telemetry.player if state.telemetry is not None else None
+        if status_pkt is not None or car_pkt is not None:
+            drs = "open" if car_pkt is not None and car_pkt.drs else "ready" if status_pkt is not None and status_pkt.drs_allowed else "off"
+            battery = round(100 * status_pkt.ers_store_energy_j / ERS_MAX_J) if status_pkt is not None else None
+            current = session.recorder.current
+            s1 = current.sector1_ms if current is not None else None
+            s2 = current.sector2_ms if current is not None else None
+            done_valid = [l for l in session.recorder.laps if not l.invalid and l.sector3_ms]
+            best1 = min((l.sector1_ms for l in done_valid if l.sector1_ms), default=None)
+            best2 = min((l.sector2_ms for l in done_valid if l.sector2_ms), default=None)
+            energy = {"drs": drs, "battery": battery, "s1": format_sector(s1) if s1 else "", "s2": format_sector(s2) if s2 else "",
+                      "s1Best": bool(s1 and best1 and s1 <= best1), "s2Best": bool(s2 and best2 and s2 <= best2)}
         shape = car = None
         if state.session is not None:
             hs = self._hud_shape_for(state.session.track_id)
@@ -598,7 +622,7 @@ class WebWindow(QMainWindow):
             lap=f"OKRĄŻENIE {lap.current_lap_num:02d}" + (" · PIT" if lap.pit_status else ""), delta=last_delta,
             streak_text=f"{streak} / {CLEAN_LAPS_TO_ADVANCE} CZYSTYCH" if progress is not None else "",
             streak_pct=100 * streak / CLEAN_LAPS_TO_ADVANCE, radio=(new[-1] if new else None), lap_end=lap_end, shape=shape, car=car,
-            extra={"goalMeters": goal_meters},
+            energy=energy, extra={"goalMeters": goal_meters},
         )
 
     def finish_session(self) -> None:
@@ -827,7 +851,7 @@ class WebWindow(QMainWindow):
     def resizeEvent(self, event) -> None:  # noqa: N802
         """Układ z makiety jest na ok. 1600 px szerokości: na większym oknie (np. 2560 px) interfejs rośnie, zamiast zostawiać pustkę."""
         super().resizeEvent(event)
-        self.view.setZoomFactor(zoom_for_width(self.width()))
+        self.view.setZoomFactor(zoom_for_window(self.width(), self.height()))
 
     def closeEvent(self, event) -> None:  # noqa: N802
         if self.session is not None:

@@ -382,7 +382,7 @@ class CoachSession:
                 log.info("podsumowanie: dobrze: %s | do pracy: %s", summary.good, summary.to_work)
         lesson_result = None
         if self.lesson is not None and self.coach is not None:
-            lesson_result = evaluate_lesson(self.lesson, self.recorder.laps, self.messages_by_lap, self.cfg.lesson_corner)
+            lesson_result = evaluate_lesson(self.lesson, self.recorder.laps, self.messages_by_lap, self.cfg.lesson_corner, self.coach.track)
             log.info("lekcja %s: %s, seria %d/%d", self.lesson.id, "zaliczona" if lesson_result[0] else "nie", lesson_result[1], lesson_result[2])
         race = None
         if self.engineer is not None and self.state.lap is not None:

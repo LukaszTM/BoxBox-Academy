@@ -202,9 +202,12 @@ zużyte o 8 % bardziej. Progi względne, bo okno temperatur zależy od mieszanki
 
 ## 8a. Lekcje, tryb „wytłumacz mi”, podsumowanie sesji
 
-`coach/lessons.py`: pięć lekcji (trzy darmowe: hamowanie w jednym zakręcie, gaz na wyjściu, czyste
-okrążenie; dwie premium: trail-braking, bateria na prostych), każda z regułami, o których trener mówi,
-i warunkiem zaliczenia (seria okrążeń bez danej uwagi). `--lesson <id> [--lesson-corner N]` w konsoli;
+`coach/lessons.py`: siedem lekcji (cztery darmowe: hamowanie w jednym zakręcie, gaz na wyjściu, czyste
+okrążenie, trail-braking; trzy premium: bateria na prostych, DRS w każdej strefie, opony w oknie), każda
+z regułami, o których trener mówi, i warunkiem zaliczenia: seria okrążeń bez danej uwagi albo, w lekcjach
+DRS/baterii/opon, seria okrążeń spełniających cel liczony z danych okrążenia (DRS w każdej strefie
+do 0,5 s po lampce i bez asysty DRS; mniej niż 25 % deployu w zakrętach i poniżej 90 % baterii na mecie
+bez asysty ERS; brak rady o oponach po okrążeniu). `--lesson <id> [--lesson-corner N]` w konsoli;
 po sesji wynik „zaliczona / najlepsza seria n/3”. `coach/glossary.py`: słownik pojęć i dłuższe wersje
 uwag; `--explain` dokłada wyjaśnienie przy pierwszej uwadze danego typu (klipy `explain_*` w katalogu
 fraz). `coach/summary.py`: po sesji jedno zdanie „Dobrze” (nowe najlepsze, hamowanie później niż

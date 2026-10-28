@@ -33,7 +33,8 @@ from boxbox.tracks.atlas import (
 from boxbox.tracks.model import load_track_by_id
 from boxbox.tracks.shape import SHAPE_DIR, TrackShape, load_shape, shape_path
 
-ICONS = {"braking_one_corner": "target", "throttle_exit": "bolt", "clean_lap": "flag", "trail_braking": "layers", "ers_straights": "spark"}
+ICONS = {"braking_one_corner": "target", "throttle_exit": "bolt", "clean_lap": "flag", "trail_braking": "layers", "ers_straights": "spark",
+         "drs_zones": "bolt", "tyres_window": "shield"}
 BUILD = "1101"
 
 

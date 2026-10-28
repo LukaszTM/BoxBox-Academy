@@ -38,6 +38,58 @@ def test_lesson_evaluation_streaks() -> None:
     assert evaluate(clean, [lap(1), lap(2, invalid=True), lap(3)], {}) == (False, 1, 3)
 
 
+def test_data_goal_lessons_drs_ers_tyres() -> None:
+    from boxbox.coach.ers_sample import ErsSample
+    from boxbox.coach.lap_samples import DrsSample, TyreSample
+    from tests.synthetic import track
+
+    def drs_lap(n: int, reaction_ms: int | None, assist: bool = False) -> Lap:
+        l = lap(n)
+        l.drs_assist = assist
+        for d in range(0, 5000, 10):  # strefa 2000–2600 m: lampka od 2000, skrzydło po `reaction_ms`
+            t = d * 18  # ~90 s na 5000 m
+            in_zone = 2000 <= d < 2600
+            on = reaction_ms is not None and in_zone and t >= 2000 * 18 + reaction_ms
+            l.drs.append(DrsSample(float(d), t, in_zone and not on, on))
+        return l
+
+    drs = lesson("drs_zones")
+    laps = [drs_lap(1, 30), drs_lap(2, 900), drs_lap(3, 20), drs_lap(4, 40), drs_lap(5, 25)]
+    assert evaluate(drs, laps, {}) == (True, 3, 3)  # okrążenie 2 spóźnione (0,9 s), potem trzy dobre
+    assert evaluate(drs, [drs_lap(1, None), drs_lap(2, 20, assist=True)], {}) == (False, 0, 3)  # pominięta; z asystą nie liczy się
+
+    def ers_lap(n: int, in_corners_j: float, end_j: float, assist: bool = False) -> Lap:
+        l = lap(n)
+        l.ers_assist = assist
+        deployed = 0.0
+        for d in range(0, 5000, 10):
+            if 600 <= d < 720:  # zakręt 1 w tests.synthetic (600–720 m)
+                deployed += in_corners_j / 12
+            elif 1000 <= d < 1400:
+                deployed += 1_000_000 / 40
+            l.ers.append(ErsSample(float(d), 4_000_000 - deployed if d < 4990 else end_j, deployed, 0.0, 1))
+        return l
+
+    ers = lesson("ers_straights")
+    good, wasted, full = ers_lap(1, 0.0, 1_500_000), ers_lap(2, 900_000, 1_500_000), ers_lap(3, 0.0, 3_900_000)
+    assert evaluate(ers, [good, wasted, full, ers_lap(4, 0.0, 1e6), ers_lap(5, 0.0, 1e6), ers_lap(6, 0.0, 1e6)], {}, track=track()) == (True, 3, 3)
+    assert evaluate(ers, [good, ers_lap(2, 0.0, 1e6, assist=True)], {}, track=track()) == (False, 1, 3)
+    assert evaluate(ers, [good], {}) == (False, 0, 3)  # bez toru nie ma stref hamowania, więc i oceny
+
+    def tyre_lap(n: int, rear: int, wear: float) -> Lap:
+        l = lap(n)
+        for d in range(0, 5000, 25):
+            w = wear * d / 5000
+            l.tyres.append(TyreSample(float(d), (rear, rear, 95, 95), (rear, rear, 95, 95), (10 + w, 10 + w, 10, 10)))
+        return l
+
+    tyres = lesson("tyres_window")
+    assert evaluate(tyres, [tyre_lap(1, 120, 1.0), tyre_lap(2, 98, 1.0), tyre_lap(3, 97, 1.0), tyre_lap(4, 96, 6.0), tyre_lap(5, 98, 1.0)], {}) == (False, 2, 3)
+    assert evaluate(tyres, [tyre_lap(1, 98, 1.0), tyre_lap(2, 97, 1.0), tyre_lap(3, 96, 1.0)], {}) == (True, 3, 3)
+    assert evaluate(tyres, [lap(1)], {}) == (False, 0, 3)  # bez próbek opon okrążenie nie liczy się
+    assert {item.id for item in LESSONS} >= {"drs_zones", "ers_straights", "tyres_window"} and len(free_lessons()) == 4
+
+
 def test_next_lap_target_and_focus_line() -> None:
     assert next_lap_target(msg(1, 1, "brake_late", 1.0, 50)) == "hamuj 20 m wcześniej"  # połowa, max 20
     assert next_lap_target(msg(1, 1, "brake_early", 1.0, 12)) == "hamuj 5 m później"  # min 5

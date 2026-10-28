@@ -6,8 +6,16 @@ sprawdza, czy cel został osiągnięty. Trzy lekcje startowe są darmowe; reszta
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from typing import TYPE_CHECKING
+
+from boxbox.coach.drs import analyze_drs
+from boxbox.coach.ers import advise_ers, analyze_ers
 from boxbox.coach.laps import Lap
 from boxbox.coach.rules import Message
+from boxbox.coach.tyres import advise_tyres, analyze_tyres
+
+if TYPE_CHECKING:
+    from boxbox.tracks.model import Track
 
 
 @dataclass(frozen=True)
@@ -18,7 +26,7 @@ class Lesson:
     laps: int  # ile okrążeń trwa
     rules: tuple[str, ...]  # reguły, o których trener mówi w tej lekcji (reszta milczy)
     corner_only: bool  # True = gracz wybiera jeden zakręt, trener pilnuje tylko jego
-    pass_rule: str  # "clean_streak:3" | "no_rule:brake_late:3" | "laps:N"
+    pass_rule: str  # "clean_streak:3" | "no_rule:brake_late:3" | "laps:N" | "drs:3" | "ers:3" | "tyres:3" (z danych okrążenia, nie z uwag)
     premium: bool = False
     explain: str = ""  # dłuższe wyjaśnienie, do trybu "wytłumacz mi" i słownika
 
@@ -55,9 +63,29 @@ LESSONS: tuple[Lesson, ...] = (
     ),
     Lesson(
         "ers_straights", "Bateria na prostych",
-        "Używaj baterii po wyjściu z zakrętu na prostych. Cel: 3 okrążenia bez uwagi o marnowaniu baterii w zakrętach.",
-        5, (), False, "laps:3", premium=True,
-        explain="Energia z baterii daje najwięcej, gdy auto już przyspiesza na prostej. W zakręcie i w hamowaniu idzie na marne.",
+        "Wyłącz asystę ERS i używaj baterii po wyjściu z zakrętu na prostych. Cel: 3 okrążenia z rzędu, na których bateria "
+        "nie idzie w zakręty i nie zostaje pełna na mecie.",
+        5, (), False, "ers:3", premium=True,
+        explain="Energia z baterii daje najwięcej, gdy auto już przyspiesza na prostej. W zakręcie i w hamowaniu idzie na marne, "
+                "a bateria pełna na mecie to czas zostawiony na torze. Okrążenie liczy się, gdy mniej niż jedna czwarta deployu "
+                "poszła w zakrętach, a na mecie zostało poniżej 90 procent.",
+    ),
+    Lesson(
+        "drs_zones", "DRS w każdej strefie",
+        "Wyłącz asystę DRS. Przez 5 okrążeń włączaj DRS od razu po zielonej lampce. Cel: 3 okrążenia z rzędu bez pominiętej "
+        "i bez spóźnionej strefy.",
+        5, (), False, "drs:3", premium=True,
+        explain="DRS otwiera tylne skrzydło i daje kilkanaście km/h na prostej. Lampka zapala się na początku strefy; każda "
+                "dziesiąta sekundy zwłoki to kilka metrów. Okrążenie liczy się, gdy w każdej strefie DRS był włączony "
+                "najpóźniej pół sekundy po lampce.",
+    ),
+    Lesson(
+        "tyres_window", "Opony w oknie",
+        "Przez 6 okrążeń jedź tak, żeby opony nie przegrzewały się i zużywały równo. Cel: 3 okrążenia z rzędu bez uwagi o oponach.",
+        6, (), False, "tyres:3", premium=True,
+        explain="Tył cieplejszy od przodu to za dużo gazu na wyjściach; przód cieplejszy to za dużo kierownicy i za szybkie "
+                "wejścia. Szybkie albo nierówne zużycie kończy się utratą przyczepności w drugiej połowie wyścigu. Okrążenie "
+                "liczy się, gdy trener nie ma po nim uwagi o oponach.",
     ),
 )
 
@@ -88,7 +116,31 @@ def filter_messages(item: Lesson, messages: Sequence[Message], corner: int | Non
     return out
 
 
-def evaluate(item: Lesson, laps: Sequence[Lap], messages_by_lap: dict[int, Sequence[Message]], corner: int | None = None) -> tuple[bool, int, int]:
+def lap_meets_data_goal(kind: str, lap: Lap, track: "Track | None") -> bool:
+    """Cele liczone z danych okrążenia: DRS w każdej strefie, bateria na prostych, opony bez uwag."""
+    if kind == "drs":
+        if lap.drs_assist:
+            return False  # gra włącza sama: nie ma czego ćwiczyć
+        report = analyze_drs(lap.drs)
+        return report is not None and bool(report.zones) and not report.missed and not report.late
+    if kind == "ers":
+        if lap.ers_assist or track is None:
+            return False
+        report = analyze_ers(lap, lap.ers, track)
+        return report is not None and advise_ers(report, False).kind == "ok"
+    if kind == "tyres":
+        report = analyze_tyres(lap.tyres)
+        return report is not None and advise_tyres(report).kind == "none"
+    raise ValueError(kind)
+
+
+DATA_GOALS = ("drs", "ers", "tyres")
+
+
+def evaluate(
+    item: Lesson, laps: Sequence[Lap], messages_by_lap: dict[int, Sequence[Message]], corner: int | None = None,
+    track: "Track | None" = None,
+) -> tuple[bool, int, int]:
     """(zaliczona?, najdłuższa seria okrążeń spełniających warunek, wymagana seria)."""
     kind, _, rest = item.pass_rule.partition(":")
     needed = int(rest.rsplit(":", 1)[-1]) if ":" in rest else int(rest)
@@ -105,6 +157,8 @@ def evaluate(item: Lesson, laps: Sequence[Lap], messages_by_lap: dict[int, Seque
             ok = not lap.invalid
         elif kind == "clean_streak":
             ok = not lap.invalid and all(m.weight < 1.0 for m in msgs)
+        elif kind in DATA_GOALS:
+            ok = not lap.invalid and lap_meets_data_goal(kind, lap, track)
         else:  # no_rule
             ok = not lap.invalid and not any(m.rule in rules for m in msgs)
         streak = streak + 1 if ok else 0

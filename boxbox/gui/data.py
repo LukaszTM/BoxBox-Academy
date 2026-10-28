@@ -6,12 +6,13 @@ from pathlib import Path
 
 from boxbox.coach.analyze import format_time
 from boxbox.coach.badges import badges, collect, goal_text
+from boxbox.coach.consistency import LapRecord, clean_share, consistency, format_share, then_vs_now
 from boxbox.coach.corners import analyze_lap
 from boxbox.coach.delta import delta_trace
 from boxbox.coach.glossary import GLOSSARY
 from boxbox.coach.laps import Lap, Sample
 from boxbox.coach.lessons import LESSONS
-from boxbox.coach.progress import CLEAN_LAPS_TO_ADVANCE, STEPS
+from boxbox.coach.progress import BIG_ERROR_WEIGHT, CLEAN_LAPS_TO_ADVANCE, STEPS
 from boxbox.coach.skills import MIN_LAPS, PAST_DAYS, WINDOW, SkillProfile, combine, profile_for_track, profile_past
 from boxbox.coach.summary import rule_pl
 from boxbox.games import adapter
@@ -239,7 +240,8 @@ class DataBuilder:
     def _progress(self, db: Database, overview: dict, per_track: dict) -> dict:
         active = self._active_track(overview)
         if active is None:
-            return {"tracks": [], "active": "", "step": 1, "stepName": STEPS[1], "streak": 0, "needed": CLEAN_LAPS_TO_ADVANCE, "nextStep": STEPS[2], "nextText": "", "bestPerStep": {}, "trend": [], "trendDelta": None, "mastered": [], "todo": [], "badges": [], "history": []}
+            return {"tracks": [], "active": "", "step": 1, "stepName": STEPS[1], "streak": 0, "needed": CLEAN_LAPS_TO_ADVANCE, "nextStep": STEPS[2], "nextText": "", "bestPerStep": {}, "trend": [], "trendDelta": None, "mastered": [], "todo": [], "badges": [], "history": [],
+                    "consistency": None, "clean": None, "thenNow": None}
         p = per_track[active]
         rows = db.lap_table(active, limit=200)
         valid_times = [r["lap_time_ms"] for r in reversed(rows) if r["valid"] and r["lap_time_ms"]][-20:]
@@ -252,6 +254,13 @@ class DataBuilder:
         except FileNotFoundError:
             names = {}
         history = []
+        records = []
+        for r in rows:  # spójność i „wtedy vs dziś”: wszystkie przejazdy toru
+            weights = [w for _, _, w in db.lap_messages(r["id"])]
+            clean = bool(r["valid"] and r["lap_time_ms"] and not r["pitted"] and all(w < BIG_ERROR_WEIGHT for w in weights))
+            records.append(LapRecord(date.fromisoformat(r["created_at"][:10]), r["lap_time_ms"], bool(r["valid"]), clean))
+        cons = consistency(valid_times)
+        tn = then_vs_now(records)
         for r in rows[:60]:
             msgs = [(c, rule) for c, rule, w in db.lap_messages(r["id"]) if w >= 0.3]
             delta = (r["lap_time_ms"] - best_all) / 1000 if best_all and r["lap_time_ms"] else None
@@ -268,6 +277,16 @@ class DataBuilder:
             "bestPerStep": [[f"{k} · {STEPS[k]}", format_time(v) if v else "—"] for k, v in ((k, db.best_time_per_step(active).get(k)) for k in sorted(STEPS))],
             "trend": trend, "trendDelta": (valid_times[-1] - valid_times[0]) / 1000 if len(valid_times) > 1 else None,
             "mastered": p["mastered"], "todo": p["todo"], "badges": _badges(db, overview, per_track), "history": history,
+            "consistency": {"laps": cons.laps, "spread": "—" if cons.spread_s is None else f"±{cons.spread_s:.2f} s".replace(".", ","),
+                            "label": cons.label, "advice": cons.advice},
+            "clean": {"share": format_share(clean_share(records)), "laps": sum(1 for r in records if r.lap_time_ms), "cleanLaps": sum(1 for r in records if r.clean)},
+            "thenNow": None if tn is None else {
+                "summary": tn.summary,
+                "rows": [["Okrążeń", str(tn.then.laps), str(tn.now.laps)],
+                         ["Najlepszy czas", format_time(tn.then.best_ms) if tn.then.best_ms else "—", format_time(tn.now.best_ms) if tn.now.best_ms else "—"],
+                         ["Średni czas", format_time(tn.then.mean_ms) if tn.then.mean_ms else "—", format_time(tn.now.mean_ms) if tn.now.mean_ms else "—"],
+                         ["Czyste okrążenia", format_share(tn.then.clean_share), format_share(tn.now.clean_share)]],
+                "thenLabel": tn.then.label, "nowLabel": tn.now.label, "bestDelta": tn.best_delta_s},
         }
 
     def _analysis(self, db: Database) -> dict:
@@ -284,8 +303,12 @@ class DataBuilder:
             return empty
         lap = next((l for l in laps if l.id == sel["lap"]), None) or next((l for l in laps if l.lap_time_ms == session["best"]), laps[-1])
         comps = [{"id": "best", "label": "Najlepsze okrążenie toru"}, {"id": "prev", "label": "Poprzednie okrążenie"}]
-        comp = sel["comp"] if sel["comp"] in ("best", "prev") else "best"
+        comps += [{"id": f"lap:{l.id}", "label": f"Okrążenie {l.number} · {format_time(l.lap_time_ms)}"} for l in laps if l.id != lap.id]  # dowolne z sesji
+        by_comp = {c["id"] for c in comps}
+        comp = sel["comp"] if sel["comp"] in by_comp else "best"
         ref_lap = None
+        if comp.startswith("lap:"):
+            ref_lap = next((l for l in laps if l.id == int(comp[4:])), None)
         if comp == "best" and session["track_id"] is not None:
             # najlepsze okrążenie toru inne niż wybrane; gdy wybrane jest najlepsze, drugie najlepsze
             rows = db.conn.execute(
@@ -328,7 +351,7 @@ class DataBuilder:
             "sessions": [{"id": s["id"], "label": f"{s['created_at'][5:10].replace('-', '.')} · {_track_name(s['track_id'])} · {s['laps']} okr."} for s in sessions],
             "laps": [{"id": l.id, "label": f"Okrążenie {l.number} · {format_time(l.lap_time_ms)}"} for l in laps],
             "comps": comps, "session": session["id"], "lap": lap.id, "comp": comp,
-            "compLabel": "najlepsze okrążenie toru" if comp == "best" else "poprzednie okrążenie",
+            "compLabel": "najlepsze okrążenie toru" if comp == "best" else "poprzednie okrążenie" if comp == "prev" else f"okrążenie {ref_lap.number}" if ref_lap else "brak",
             "track": _track_name(session["track_id"]), "lengthText": f"{length:,.0f} m".replace(",", " "),
             "speed": {"own": _norm(speeds_own, 0, hi), "ref": _norm(speeds_ref, 0, hi) if speeds_ref else []},
             "pedal": {"own": _norm(thr_own, 0, 1), "ref": _norm(thr_ref, 0, 1) if thr_ref else [], "brake": _norm(brk_own, 0, 1)},

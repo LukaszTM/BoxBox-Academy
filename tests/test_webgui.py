@@ -142,6 +142,17 @@ def test_window_wizard_session_and_screens(app, tmp_path: Path) -> None:
     js(w, app, "window.boxbox.navigate('progress'); document.querySelector('[data-sort=\"2\"]').click(); 1")
     pump(app, 0.4)
     assert js(w, app, "document.querySelectorAll('.data-table tbody tr').length") >= 5 and js(w, app, "!!document.querySelector('tr.best-lap')")
+    # spójność jazdy i „wtedy vs dziś” (jedna sesja: porównanie dopiero po drugim dniu)
+    prog = w.data.build()["progress"]
+    assert prog["consistency"]["laps"] >= 3 and prog["consistency"]["spread"].startswith("±") and prog["clean"]["share"].endswith("%")
+    assert prog["thenNow"] is None and "Spójność jazdy" in js(w, app, "document.body.textContent") and "Wtedy vs dziś" in js(w, app, "document.body.textContent")
+    # Analiza: dowolne okrążenie sesji jako referencja
+    an = w.data.build()["analysis"]
+    other = next(c for c in an["comps"] if c["id"].startswith("lap:"))
+    w.data.analysis_sel["comp"] = other["id"]
+    an2 = w.data.build()["analysis"]
+    assert an2["comp"] == other["id"] and an2["compLabel"].startswith("okrążenie ") and an2["speed"]["ref"]
+    w.data.analysis_sel["comp"] = "best"
     js(w, app, "window.boxbox.ui.tutorial=true; window.boxbox.ui.tutorialStep=0; window.boxbox.navigate('start'); 1")
     pump(app, 0.3)
     assert "SAMOUCZEK" in js(w, app, "document.querySelector('.tutorial').textContent")

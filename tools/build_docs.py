@@ -18,6 +18,7 @@ DOCS = {
     "MAKIETA_V2_OCENA.md": ("BoxBox_Academy_makieta_v2_ocena.pdf", "BoxBox Academy – makieta v2 i HUD v2: ocena i zmiany"),
     "LOGO_WYTYCZNE.md": ("BoxBox_Academy_logo_wytyczne.pdf", "BoxBox Academy – logo: wytyczne do przeróbki"),
     "ANALIZA_UMIEJETNOSCI.md": ("BoxBox_Academy_analiza_umiejetnosci.pdf", "BoxBox Academy – zakładka Analiza umiejętności: wytyczne"),
+    "CO_NAGRAC.md": ("BoxBox_Academy_co_nagrac.pdf", "BoxBox Academy – co nagrać (partia 2)"),
 }
 
 

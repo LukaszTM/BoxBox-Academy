@@ -267,6 +267,7 @@ class WebWindow(QMainWindow):
             mode="race" if ui.get("mode") == "race" else "coach", port=s.port, db=self.db_path, record=name if ui.get("record", s.record) else None,
             voice=Path(s.voice_dir), volume=s.volume, corner_messages=not ui.get("quiet", s.quiet),
             lesson=lesson_id, lesson_corner=int(ui.get("corner") or 0) or None, explain_mode=s.explain,
+            shape_dir=self.data.shape_dir, fit_dir=self.data.fit_dir,
         )
 
     def start_from_ui(self, ui: dict) -> None:

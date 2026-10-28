@@ -15,8 +15,16 @@ from boxbox.games import adapter
 from boxbox.gui import texts
 from boxbox.gui.settings import Settings
 from boxbox.storage.db import Database
+from boxbox.tracks.atlas import (
+    FIT_DIR,
+    AtlasFit,
+    fit_path,
+    load_atlas,
+    outline_shape,
+    to_shape,
+)
 from boxbox.tracks.model import load_track_by_id
-from boxbox.tracks.shape import SHAPE_DIR, load_shape, shape_path
+from boxbox.tracks.shape import SHAPE_DIR, TrackShape, load_shape, shape_path
 
 ICONS = {"braking_one_corner": "target", "throttle_exit": "bolt", "clean_lap": "flag", "trail_braking": "layers", "ers_straights": "spark"}
 BUILD = "1101"
@@ -80,11 +88,31 @@ def _photo_data_url(path: str) -> str:
     return f"data:image/{mime};base64," + base64.b64encode(p.read_bytes()).decode("ascii")
 
 
-def map_for(track_id: int, shape_dir: Path = SHAPE_DIR, active: str = "") -> dict | None:
-    path = shape_path(track_id, shape_dir)
-    if not path.exists():
+def _shape_for(track_id: int, shape_dirs: list[Path], fit_dir: Path) -> tuple[TrackShape | None, str]:
+    """Kształt toru w kolejności: recorder (realny ślad) -> atlas dopasowany do gry -> sam obrys z atlasu."""
+    for d in shape_dirs:
+        path = shape_path(track_id, d)
+        if path.exists():
+            return load_shape(path), "recorder"
+    atlas = load_atlas(track_id)
+    if atlas is None:
+        return None, ""
+    fp = fit_path(track_id, fit_dir)
+    if fp.exists():
+        try:
+            track = load_track_by_id(track_id)
+        except FileNotFoundError:
+            track = None
+        fit_ = AtlasFit.load(fp)
+        return to_shape(atlas, fit_, atlas.name, track.length_m if track else atlas.length_m, track), "atlas"
+    return outline_shape(atlas), "outline"
+
+
+def map_for(track_id: int, shape_dir: Path = SHAPE_DIR, active: str = "", fit_dir: Path = FIT_DIR) -> dict | None:
+    dirs = [shape_dir] + ([SHAPE_DIR] if shape_dir != SHAPE_DIR else [])
+    shape, source = _shape_for(track_id, dirs, fit_dir)
+    if shape is None or not shape.points:
         return None
-    shape = load_shape(path)
     xs = [p.x for p in shape.points]
     zs = [p.z for p in shape.points]
     w, h = (max(xs) - min(xs)) or 1.0, (max(zs) - min(zs)) or 1.0
@@ -98,18 +126,20 @@ def map_for(track_id: int, shape_dir: Path = SHAPE_DIR, active: str = "") -> dic
     return {
         "points": [pt(p.x, p.z) for p in shape.points[::step]],
         "corners": [{"name": c.name, "x": pt(c.x, c.z)[0], "y": pt(c.x, c.z)[1]} for c in shape.corners],
-        "start": pt(shape.points[0].x, shape.points[0].z) if shape.points else None,
+        "start": pt(shape.points[0].x, shape.points[0].z) if source != "outline" else None,
+        "source": source,
     }
 
 
 class DataBuilder:
     """Składa `D` z ustawień, bazy i stanu sesji. Okno woła `build()` po każdej zmianie."""
 
-    def __init__(self, settings: Settings, db_path: Path, data_dir: Path, shape_dir: Path = SHAPE_DIR) -> None:
+    def __init__(self, settings: Settings, db_path: Path, data_dir: Path, shape_dir: Path | None = None) -> None:
         self.settings = settings
         self.db_path = db_path
         self.data_dir = data_dir
-        self.shape_dir = shape_dir
+        self.shape_dir = shape_dir or data_dir / "shape"  # kształty z sesji; boxbox/tracks/shape (recorder) jako drugie źródło
+        self.fit_dir = data_dir / "atlas_fit"
         self.status: dict = {"connected": False, "busy": False, "track": "", "fmt": None, "rate": 0, "port": settings.port}
         self.live: dict | None = None
         self.summary: dict | None = None
@@ -249,7 +279,7 @@ class DataBuilder:
             "pedal": {"own": _norm(thr_own, 0, 1), "ref": _norm(thr_ref, 0, 1) if thr_ref else [], "brake": _norm(brk_own, 0, 1)},
             "delta": {"own": _norm(deltas) if deltas else []},
             "axis": [f"{int(length * k / 4):,} m".replace(",", " ") for k in range(5)],
-            "map": map_for(session["track_id"], self.shape_dir) if session["track_id"] is not None else None,
+            "map": map_for(session["track_id"], self.shape_dir, fit_dir=self.fit_dir) if session["track_id"] is not None else None,
             "notes": notes,
         }
 

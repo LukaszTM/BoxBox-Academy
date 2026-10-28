@@ -14,7 +14,9 @@ from datetime import datetime
 from pathlib import Path
 
 from boxbox.coach.laps import LapRecorder
-from boxbox.coach.lessons import Lesson, evaluate as evaluate_lesson, lesson as lesson_by_id
+from boxbox.coach.lessons import Lesson
+from boxbox.coach.lessons import evaluate as evaluate_lesson
+from boxbox.coach.lessons import lesson as lesson_by_id
 from boxbox.coach.live import LiveCoach
 from boxbox.coach.progress import CLEAN_LAPS_TO_ADVANCE, STEPS
 from boxbox.coach.rules import Message
@@ -27,7 +29,10 @@ from boxbox.telemetry.recording import RecordingWriter, is_needed
 from boxbox.telemetry.replay import replay
 from boxbox.telemetry.state import TelemetryState
 from boxbox.telemetry.udp import DEFAULT_PORT, listen
+from boxbox.tracks.atlas import ShapeSampler, fit_path, load_atlas
+from boxbox.tracks.atlas import fit as fit_atlas
 from boxbox.tracks.model import load_track, track_path
+from boxbox.tracks.shape import build_shape, save_shape, shape_path
 from boxbox.ui.overlay_model import SharedCoachState
 from boxbox.voice.player import ClipLibrary, VoicePlayer
 
@@ -89,6 +94,8 @@ class SessionConfig:
     lesson: str | None = None  # id lekcji (boxbox/coach/lessons.py); trener mówi tylko o jej regułach
     lesson_corner: int | None = None
     explain_mode: bool = False  # dłuższe wyjaśnienie przy pierwszej uwadze danego typu
+    shape_dir: Path | None = None  # dokąd zapisać realny kształt toru z pełnego okrążenia (None = nie zapisuj)
+    fit_dir: Path | None = None  # dokąd zapisać dopasowanie atlasu, gdy okrążenie niepełne (None = nie zapisuj)
 
 
 @dataclass
@@ -136,6 +143,7 @@ class CoachSession:
         self._wall0 = self._cpu0 = 0.0
         self.result: SessionResult | None = None
         self.thread: threading.Thread | None = None
+        self.shape_sampler = ShapeSampler()  # pozycja auta do mapy toru (kształt albo dopasowanie atlasu)
 
     # --- przygotowanie -------------------------------------------------
     def make_player(self) -> VoicePlayer | None:
@@ -207,6 +215,7 @@ class CoachSession:
         with self.shared.lock:
             finished = self.recorder.feed(data)
             self.shared.packets += 1
+            self.shape_sampler.feed(self.state)
             if self.engineer is not None:
                 for radio in self.engineer.update(self.state, time.monotonic() - self._t0):
                     self.speak(list(radio.ids), radio.text)
@@ -319,5 +328,37 @@ class CoachSession:
             lap = self.state.lap.player
             race = summarize_race(self.state, self.engineer.start_report, self.engineer.collisions, self.engineer.penalties, lap.total_warnings, lap.num_pit_stops)
             log.info("wyścig: %s", " | ".join(race.lines))
+        self.save_track_shape()
         self.result = SessionResult(self.state, self.recorder, wall, cpu_percent, self.coach is not None, errors, self.recording, summary, lesson_result, race)
         return self.result
+
+    def save_track_shape(self) -> Path | None:
+        """Po sesji: realny kształt toru z pełnego okrążenia (jak recorder) albo dopasowanie atlasu z przejechanych metrów."""
+        cfg, st = self.cfg, self.state
+        if st.session is None or (cfg.shape_dir is None and cfg.fit_dir is None):
+            return None
+        track_id, length = st.session.track_id, float(st.session.track_length_m)
+        if length <= 0:
+            return None
+        try:
+            track = self.coach.track if self.coach is not None else None
+            if cfg.shape_dir is not None:
+                full = self.shape_sampler.complete_lap(length)
+                if full is not None:
+                    shape = build_shape(full, track_id, st.session.track_name, length, track)
+                    path = shape_path(track_id, cfg.shape_dir)
+                    save_shape(shape, path)
+                    log.info("kształt toru %d zapisany z sesji: %s (%d punktów)", track_id, path, len(shape.points))
+                    return path
+            if cfg.fit_dir is not None:
+                atlas = load_atlas(track_id)
+                if atlas is not None and not fit_path(track_id, cfg.fit_dir).exists():
+                    fit_ = fit_atlas(atlas, self.shape_sampler.all_samples(), length)
+                    if fit_ is not None:
+                        path = fit_path(track_id, cfg.fit_dir)
+                        fit_.save(path)
+                        log.info("obrys toru %d dopasowany do gry: błąd %.1f m, %d próbek", track_id, fit_.error_m, fit_.samples)
+                        return path
+        except Exception:  # mapa nie może zepsuć zakończenia sesji
+            log.error("kształt toru: %s", traceback.format_exc())
+        return None

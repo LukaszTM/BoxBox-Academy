@@ -52,7 +52,7 @@ def test_data_builder_empty_db(tmp_path: Path) -> None:
     d = DataBuilder(Settings(nick="X"), tmp_path / "b.sqlite", tmp_path).build()
     assert d["driver"]["nick"] == "X" and d["driver"]["level"] == 1 and d["progress"]["tracks"] == []
     assert d["analysis"]["sessions"] == [] and len(d["lessons"]["cards"]) == 5 and d["glossary"]
-    assert map_for(11, tmp_path) is None
+    assert map_for(11, tmp_path, fit_dir=tmp_path / "fit")["source"] == "outline"  # Monza bez nagrania: sam obrys z atlasu
 
 
 def test_window_wizard_session_and_screens(app, tmp_path: Path) -> None:

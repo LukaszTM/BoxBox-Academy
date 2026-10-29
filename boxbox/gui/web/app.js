@@ -187,6 +187,14 @@ function renderView(){switch(ui.view){case 'start':return D.live?live():ready();
 const app=document.getElementById('app');
 const KEEP_IDS=['session-name','driver-nick','bug-desc','lesson-corner','port'];
 let lastHtml='';
+// Podmiana tylko zmienionych węzłów zamiast całego innerHTML: obrazy, czcionki i animacje nie migają przy każdym odświeżeniu stanu
+function morphChildren(cur,fresh){ const cn=[...cur.childNodes], fn=[...fresh.childNodes];
+  for(let i=0;i<cn.length;i++){ const c=cn[i], f=fn[i]; if(c.nodeType===3&&f.nodeType===3){ if(c.nodeValue!==f.nodeValue) c.nodeValue=f.nodeValue } else if(c.nodeType===1&&f.nodeType===1) morph(c,f); else c.replaceWith(f) } }
+function morph(cur,fresh){ if(cur.isEqualNode(fresh)) return;
+  if(cur.tagName!==fresh.tagName||cur.childNodes.length!==fresh.childNodes.length){ cur.replaceWith(fresh); return }
+  for(const a of [...cur.attributes]) if(!fresh.hasAttribute(a.name)) cur.removeAttribute(a.name);
+  for(const a of [...fresh.attributes]) if(cur.getAttribute(a.name)!==a.value) cur.setAttribute(a.name,a.value);
+  morphChildren(cur,fresh) }
 function render(){ if(!D) return;
   const active=document.activeElement; const keep=active&&active.id&&KEEP_IDS.includes(active.id)?{id:active.id,pos:active.selectionStart}:null;
   const typed={}; for(const id of KEEP_IDS){const el=document.getElementById(id); if(el&&el.value!==el.defaultValue) typed[id]=el.value}  // to, co użytkownik wpisał, przeżywa przerysowanie
@@ -201,7 +209,8 @@ function render(){ if(!D) return;
     const oldTabs=app.querySelector('.hud-v2-page .pill-tabs'), newTabs=box.querySelector('.hud-v2-page .pill-tabs'); if(oldTabs&&newTabs&&oldTabs.outerHTML!==newTabs.outerHTML) oldTabs.replaceWith(newTabs);
     lastHtml=''; }
   else { if(html===lastHtml) return; // nic się nie zmieniło: nie ruszamy DOM (pola tekstowe, hover, kliknięcia)
-    lastHtml=html; app.innerHTML=html; }
+    lastHtml=html; const box=document.createElement('div'); box.innerHTML=html;
+    if(app.childNodes.length!==box.childNodes.length) app.innerHTML=html; else morphChildren(app,box); }
   document.title=`BoxBox Academy | ${H[ui.view]?.[0]||'Start'}`;
   for(const id in typed){const el=document.getElementById(id); if(el) el.value=typed[id]}
   if(keep){const el=document.getElementById(keep.id); if(el){el.focus(); try{el.setSelectionRange(keep.pos,keep.pos)}catch(e){}}} }

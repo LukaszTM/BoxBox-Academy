@@ -20,6 +20,7 @@ DOCS = {
     "ANALIZA_UMIEJETNOSCI.md": ("BoxBox_Academy_analiza_umiejetnosci.pdf", "BoxBox Academy – zakładka Analiza umiejętności: wytyczne"),
     "CO_NAGRAC.md": ("BoxBox_Academy_co_nagrac.pdf", "BoxBox Academy – co nagrać (partia 2)"),
     "ANTYWIRUS.md": ("BoxBox_Academy_antywirus.pdf", "BoxBox Academy – gdy Windows blokuje program"),
+    "FORMULARZE_NAGRAN.md": ("BoxBox_Academy_formularze_nagran.pdf", "BoxBox Academy – formularze do nagrań partii 2"),
 }
 
 

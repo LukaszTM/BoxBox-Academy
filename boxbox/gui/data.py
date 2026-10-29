@@ -150,6 +150,18 @@ def map_for(track_id: int, shape_dir: Path = SHAPE_DIR, active: str = "", fit_di
     }
 
 
+def _rotate_fit(points: list[list[float]], width: float = 500.0, height: float = 270.0, margin: float = 18.0) -> list[list[float]]:
+    """Obraca obrys o 90° (scena Startu jest szeroka, a większość torów wysoka) i wpasowuje go w ramkę SVG."""
+    if len(points) < 3:
+        return points
+    rot = [(y, -x) for x, y in points]
+    xs, ys = [q[0] for q in rot], [q[1] for q in rot]
+    w, h = (max(xs) - min(xs)) or 1.0, (max(ys) - min(ys)) or 1.0
+    scale = min((width - 2 * margin) / w, (height - 2 * margin) / h)
+    ox, oy = (width - w * scale) / 2, (height - h * scale) / 2
+    return [[round(ox + (x - min(xs)) * scale, 1), round(oy + (y - min(ys)) * scale, 1)] for x, y in rot]
+
+
 class DataBuilder:
     """Składa `D` z ustawień, bazy i stanu sesji. Okno woła `build()` po każdej zmianie."""
 
@@ -231,7 +243,7 @@ class DataBuilder:
         m = map_for(tid, self.shape_dir, fit_dir=self.fit_dir)
         if m is None or len(m.get("points", [])) < 3:
             tid, m = 11, map_for(11, self.shape_dir, fit_dir=self.fit_dir)
-        return {"points": m["points"] if m else [], "name": _track_name(tid)}
+        return {"points": _rotate_fit(m["points"]) if m else [], "name": _track_name(tid)}
 
     def _active_track(self, overview: dict) -> int | None:
         if self.progress_track is not None:

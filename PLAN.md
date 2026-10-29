@@ -139,7 +139,7 @@ Siedem etapów, każdy z kryterium ukończenia, które da się sprawdzić bez dy
 
 - [x] Reguły inżyniera: zużycie opon, okno pit-stopu, flagi, przewaga/strata do rywali, uszkodzenia, deszcz. (`engineer/rules.py`; temperatury opon: później)
 - [ ] Komendy głosowe: 5–8 pytań z lokalnym rozpoznawaniem mowy.
-- [x] Okno aplikacji z wyborem trybu, instrukcją włączenia telemetrii w grze i sprawdzeniem połączenia. (zrobione: okno PySide6 ze Startem nauka/wyścig, kreatorem pierwszego uruchomienia i sprawdzeniem telemetrii)
+- [x] Okno aplikacji z wyborem trybu, instrukcją włączenia telemetrii w grze i sprawdzeniem połączenia. (29.10: scena Startu to obrys toru z kropkami-bolidami animowanymi w SVG zamiast klatek PNG bolidu, które migały; w trakcie sesji kropki stoją) (zrobione: okno PySide6 ze Startem nauka/wyścig, kreatorem pierwszego uruchomienia i sprawdzeniem telemetrii)
 - [ ] `PyInstaller` → jeden `.exe`, test na czystym Windowsie.
 - [ ] Kryterium: pełny wyścig na żywo bez awarii, `.exe` uruchamia się u drugiej osoby.
 

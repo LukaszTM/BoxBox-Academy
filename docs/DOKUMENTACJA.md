@@ -295,6 +295,10 @@ ważne, pełne, pit, skrzynia, TC, ABS, sektory S1–S3), `corner_metrics` (wszy
 Migracje dodają brakujące kolumny przy starcie. Obok bazy dziennik `boxbox.log`: start, cwd, wersja
 Pythona, start trenera i tor, każdy komunikat z czasem, każde okrążenie, błędy wątków, obciążenie.
 
+Scena na Starcie: obrys ostatnio jeżdżonego toru (domyślnie Monza) z pięcioma kolorowymi kropkami-bolidami
+animowanymi w SVG (`animateMotion`), bez JavaScriptu; w trakcie sesji kropki stoją. Strona podmienia tylko
+zmienione węzły DOM przy odświeżeniu stanu, więc obrazy i animacje nie migają.
+
 ## 12. Nakładki
 
 Nakładka trenera (`--overlay`): okno zawsze na wierzchu, bez ramki, przeciągane, Esc kończy sesję.

@@ -225,6 +225,14 @@ class DataBuilder:
             s["cornerName"] = (names or {}).get(s["corner"], "") if s["corner"] is not None else ""
         return d
 
+    def _stage(self, track_id: int | None) -> dict:
+        """Scena Startu: obrys toru (ostatnio jeżdżonego, domyślnie Monza) do animacji kropek-bolidów."""
+        tid = 11 if track_id is None else track_id
+        m = map_for(tid, self.shape_dir, fit_dir=self.fit_dir)
+        if m is None or len(m.get("points", [])) < 3:
+            tid, m = 11, map_for(11, self.shape_dir, fit_dir=self.fit_dir)
+        return {"points": m["points"] if m else [], "name": _track_name(tid)}
+
     def _active_track(self, overview: dict) -> int | None:
         if self.progress_track is not None:
             return self.progress_track
@@ -434,7 +442,7 @@ class DataBuilder:
         return {
             "app": {"version": texts.VERSION, "build": f"BUILD {BUILD}", "game": f"{game.name} · 2026 Season Pack", "gameShort": game.name, "dataDir": str(self.data_dir.resolve()),
                     "recordingsDir": str(Path("recordings").resolve())},
-            "status": self.status,
+            "status": self.status, "stage": self._stage(active_id),
             "settings": {"nick": s.nick, "volume": int(round(s.volume * 100)), "overlayDefault": s.overlay, "quietDefault": s.quiet, "record": s.record,
                          "autoStart": s.auto_start, "autoStopS": s.auto_stop_s, "port": s.port, "voice": "Piotr", "explain": s.explain,
                          "consent": s.consent, "wizardDone": s.wizard_done, "tutorialDone": s.tutorial_done, "scale": int(round(s.overlay_scale * 100)),

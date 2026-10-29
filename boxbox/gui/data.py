@@ -187,7 +187,7 @@ class DataBuilder:
             "progressPct": round(100 * streak / CLEAN_LAPS_TO_ADVANCE),
             "nextText": (f"Do następnego kroku: {CLEAN_LAPS_TO_ADVANCE - streak} czyste okrążenia" if nxt else "Jedziesz bez asyst: pracujemy nad czasem"),
             "since": s.since, "sessions": overview["sessions"], "hours": f"{db.track_hours():.1f} h".replace(".", ","),
-            "photo": _photo_data_url(s.photo), "tracks": tracks,
+            "photo": _photo_data_url(s.photo), "photoFit": {"x": 50, "y": 50, "zoom": 100, **s.photo_fit}, "tracks": tracks,
         }
 
     def _skills(self, db: Database, overview: dict) -> dict:

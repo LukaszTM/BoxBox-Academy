@@ -335,6 +335,9 @@ class WebWindow(QMainWindow):
                     s.overlay_scale = float(value["scale"]) / 100
                 if self.overlay is not None:
                     self.overlay.set_layout(value)
+            elif key == "photoFit" and isinstance(value, dict):  # dopasowanie zdjęcia: wartości przycięte do zakresu
+                s.photo_fit = {"x": max(0, min(100, int(value.get("x", 50)))), "y": max(0, min(100, int(value.get("y", 50)))),
+                               "zoom": max(100, min(300, int(value.get("zoom", 100))))}
             elif key == "quietDefault":
                 s.quiet = bool(value)
             elif key == "autoStart":

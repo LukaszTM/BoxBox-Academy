@@ -14,6 +14,7 @@ class Settings:
     player_id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     nick: str = ""
     photo: str = ""  # ścieżka do skopiowanego zdjęcia w data/
+    photo_fit: dict = field(default_factory=dict)  # ręczne dopasowanie zdjęcia: x, y (0–100 %), zoom (100–300 %)
     volume: float = 1.5
     overlay: bool = True
     overlay_scale: float = 1.0

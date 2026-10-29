@@ -14,6 +14,7 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from boxbox.coach.rules import Message
+from boxbox.coach.sectors import LOSS_TEXTS, NEXT_TEXTS, SECTOR_TEXTS
 from boxbox.engineer.phrases import engineer_catalog
 
 ORDINAL = [
@@ -104,6 +105,11 @@ MISC_TEXTS: dict[str, str] = {
 
 # Prowadzenie w zakręcie (boxbox/coach/guide_live.py): krótkie komendy przed punktem z okrążenia referencyjnego.
 # "intro" idzie po klipie zakrętu: "Zakręt czwarty. Prowadzę." Reszta to pojedyncze słowa, bo liczy się czas.
+# po okrążeniu: sektor z największą stratą (kubełek) i polecenie na następne okrążenie z liczbą metrów (klip num_)
+MISC_TEXTS.update({f"sector_{n}": t for n, t in SECTOR_TEXTS.items()})
+MISC_TEXTS.update({f"loss_{k}": t for k, t in LOSS_TEXTS.items()})
+MISC_TEXTS.update({f"next_{k}": t for k, t in NEXT_TEXTS.items()})
+
 TUTORIAL_TEXTS: dict[str, str] = {  # lektor samouczka w oknie: jeden klip na krok (kolejność jak TUTORIAL w app.js)
     "0": "Witaj w akademii. Tu zaczynasz każdy trening. Zostaw to okno otwarte i uruchom grę.",
     "1": "Zielona pastylka w rogu znaczy, że gra wysyła telemetrię. Szara: program czeka na grę.",

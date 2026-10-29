@@ -113,6 +113,20 @@ misc_tyres_front_hot,Przód grzeje się bardziej niż tył. Mniej kierownicy w z
 misc_tyres_side_hot,"Jedna strona opon dużo cieplejsza. Na tym torze to normalne, ale nie dociskaj w szybkich zakrętach."
 misc_tyres_wear_fast,Opony zużywają się szybko. Mniej ślizgania: płynniej gaz i mniej blokowania kół.
 misc_tyres_wear_uneven,"Jedno koło zużyte dużo bardziej niż reszta. Zobacz w analizie, w których zakrętach ślizgasz."
+misc_sector_1,"Najwięcej tracisz w pierwszym sektorze,"
+misc_sector_2,"Najwięcej tracisz w drugim sektorze,"
+misc_sector_3,"Najwięcej tracisz w trzecim sektorze,"
+misc_loss_0_2,około dwie dziesiąte.
+misc_loss_0_3,około trzy dziesiąte.
+misc_loss_0_5,około pół sekundy.
+misc_loss_0_8,około osiem dziesiątych.
+misc_loss_1,około sekundę.
+misc_loss_1_5,około półtorej sekundy.
+misc_loss_2,około dwie sekundy.
+misc_loss_3,ponad trzy sekundy.
+misc_next_brake_earlier,"Na następnym okrążeniu zacznij hamować wcześniej, o jakieś"
+misc_next_brake_later,"Na następnym okrążeniu zacznij hamować później, o jakieś"
+misc_next_throttle_earlier,"Na następnym okrążeniu pełny gaz wcześniej, o jakieś"
 guide_intro,Prowadzę.
 guide_lift,Puść gaz.
 guide_brake_hard,Mocny hamulec.

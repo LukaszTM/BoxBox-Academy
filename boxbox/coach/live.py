@@ -17,6 +17,7 @@ from boxbox.coach.tyres import advise_tyres, analyze_tyres
 from boxbox.coach.glossary import explain
 from boxbox.coach.guide_live import KINDS, CornerGuide, kinds_for_rules
 from boxbox.coach.lessons import Lesson, filter_messages
+from boxbox.coach.sectors import best_sectors, next_lap_directive, sector_utterance, worst_sector
 from boxbox.coach.progress import TrackProgress
 from boxbox.coach.laps import Lap, LapRecorder
 from boxbox.coach.rules import MIN_TIME_LOSS_S, Message, biggest_loss, evaluate_corner, evaluate_lap, pick_top
@@ -53,6 +54,8 @@ class LiveCoach:
     explained: set[str] = field(default_factory=set)
     guidance: bool = True  # prowadzenie w nieopanowanych zakrętach (komendy przed punktem z referencji)
     guided_corners: set[int] = field(default_factory=set)  # zakręty do prowadzenia na start (np. z poprzednich sesji)
+    sector_advice: bool = True  # po okrążeniu: sektor z największą stratą i polecenie na następne okrążenie
+    best_sectors: tuple[int | None, int | None, int | None] = (None, None, None)  # najlepsze sektory z tej sesji (ważne okrążenia)
     guide: CornerGuide = field(init=False)
 
     def __post_init__(self) -> None:
@@ -158,6 +161,10 @@ class LiveCoach:
             for m in top:
                 self._say_message(m)
             out += top
+            if self.sector_advice:
+                directive = next_lap_directive(top[0])  # jedno wykonalne polecenie z liczbą do najważniejszej uwagi
+                if directive is not None:
+                    self.speak(*directive)
         elif not lap.invalid:
             soft = biggest_loss(spoken)
             if soft is not None:
@@ -170,6 +177,12 @@ class LiveCoach:
             self.best_time_ms = lap.lap_time_ms
             self.reference = analysis
             self._say_misc("lap_best")
+        if usable and lap.sector3_ms:  # sektor z największą stratą do najlepszych sektorów sesji, potem aktualizacja najlepszych
+            if self.sector_advice:
+                worst = worst_sector(lap.sectors_ms, self.best_sectors)
+                if worst is not None:
+                    self.speak(*sector_utterance(worst))
+            self.best_sectors = best_sectors([self.best_sectors, lap.sectors_ms])
         # prowadzenie na następnym okrążeniu: zakręty z uwag tego okrążenia (lekcja z zakrętem: tylko on)
         if self.lesson_corner is None:
             self.guide.set_guided([m.corner for m in pick_top(spoken)])

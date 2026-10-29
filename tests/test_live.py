@@ -43,6 +43,12 @@ def test_live_corner_and_lap_messages_with_reference(monza: RecordedSession) -> 
     assert summary and summary[0][1] < 50
     after = [s for s in spoken if s[0] == 5 and s[1] < 50 and "zacznij" in s[3].lower()]
     assert after
+    # po okrążeniu: polecenie z liczbą do najważniejszej uwagi i sektor z największą stratą (sektory z Lap Data nagrania)
+    directives = [s for s in spoken if s[2][0].startswith("misc_next_")]
+    assert directives and directives[0][2][1].startswith("num_") and directives[0][3].startswith("Na następnym okrążeniu") and directives[0][3].endswith("metrów.")
+    sectors = [s for s in spoken if s[2][0].startswith("misc_sector_")]
+    assert sectors and all(s[2][1].startswith("misc_loss_") and s[3].startswith("Najwięcej tracisz w") for s in sectors)
+    assert coach.best_sectors[2] is not None and all(v and v < 60_000 for v in coach.best_sectors)
     # okrążenie 3 (czyste, 1:28.0): "najwięcej do zyskania" albo czyste - ale nie pełne podsumowanie
     lap3 = [s for s in spoken if s[0] == 4 and s[1] < 50]
     assert lap3 and (lap3[0][2][0] in ("misc_lap_clean", "misc_biggest_loss") or lap3[0][2] == ["misc_lap_summary"])

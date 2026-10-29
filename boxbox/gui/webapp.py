@@ -23,6 +23,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow
 
 from boxbox.coach.analyze import format_sector, format_time, report_laps
 from boxbox.coach.ers import ERS_MAX_J
+from boxbox.coach.sectors import best_sectors, format_sector_delta
 from boxbox.coach.delta import lap_csv
 from boxbox.coach.progress import CLEAN_LAPS_TO_ADVANCE
 from boxbox.gui import texts
@@ -472,8 +473,17 @@ class WebWindow(QMainWindow):
         if session.best_before_ms and best:
             delta = (best - session.best_before_ms) / 1000
         rate = int(packets / max(1.0, time.monotonic() - self.session_started_at))
+        valid_done = [l.sectors_ms for l in session.recorder.laps if not l.invalid and not l.pitted and l.sector3_ms]
+        best_secs = best_sectors(valid_done)
+        current = session.recorder.current
+        sectors = []
+        for i, name in enumerate(("S1", "S2", "S3")):
+            v = current.sectors_ms[i] if current is not None else None
+            b = best_secs[i]
+            sectors.append({"name": name, "time": format_sector(v) if v else "—", "delta": format_sector_delta(v - b) if v and b else "",
+                            "best": bool(v and b and v <= b)})
         self.data.live = {
-            "name": self.session_ui.get("name", ""), "elapsed": time.monotonic() - self.session_started_at, "recording": session.recording is not None,
+            "sectors": sectors, "name": self.session_ui.get("name", ""), "elapsed": time.monotonic() - self.session_started_at, "recording": session.recording is not None,
             "recordingName": session.recording.name if session.recording else "", "lesson": session.lesson.title if session.lesson else "",
             "lapLine": view.lap_line, "pit": bool(lap and lap.pit_status), "invalid": bool(lap and lap.current_lap_invalid),
             "corner": view.corner_line.split("  ")[0] if view.corner_line else "", "dist": (view.corner_line.split("  ")[1].replace("za ", "") if "  " in view.corner_line else ("TERAZ" if view.corner_line.endswith("TERAZ") else "")),
@@ -659,6 +669,13 @@ class WebWindow(QMainWindow):
             lap_rows.append({"number": l.number, "time": format_time(l.lap_time_ms), "delta": f"{d:+.3f}" if d is not None else "", "valid": not l.invalid, "notes": notes_by_lap.get(l.number, 0),
                              "sectors": [format_sector(sm) for sm in l.sectors_ms], "bestSectors": [sm is not None and sm == best_sectors[i] for i, sm in enumerate(l.sectors_ms)]})
         ideal = sum(best_sectors) if all(best_sectors) else None  # type: ignore[arg-type]
+        best_lap = next((l for l in laps if l.lap_time_ms == best_ms), None) if best_ms else None
+        sectors_line = ""
+        if best_lap is not None and best_lap.sector3_ms:
+            parts = []
+            for i, (v, b) in enumerate(zip(best_lap.sectors_ms, best_sectors), start=1):
+                parts.append(f"S{i} {format_sector(v)}" + (f" ({format_sector_delta(v - b)} do najlepszego sektora)" if v and b and v > b else " (najlepszy)"))
+            sectors_line = "Sektory najlepszego okrążenia: " + " · ".join(parts) + (f". Z najlepszych sektorów: {format_time(ideal)}." if ideal and ideal < best_ms else ".")
         corner_rows = []
         if session.coach is not None and session.coach.reference is not None:
             names = {c.number: (c.name or f"Z{c.number}") for c in session.coach.track.corners}
@@ -679,7 +696,7 @@ class WebWindow(QMainWindow):
             "coach": result.coach_started, "best": format_time(best_ms) if best_ms else "", "clean": summary.clean_laps if summary else 0, "delta": delta,
             "cpu": f"{result.cpu_percent:.1f}% jednego rdzenia" if not session.cfg.replay and result.wall_s > 1 else "",
             "good": (result.race.good if result.race else summary.good if summary else ""), "toWork": (result.race.to_work if result.race else summary.to_work if summary else ""),
-            "lapRows": lap_rows, "cornerRows": corner_rows, "report": report, "idealLap": format_time(ideal) if ideal else "",
+            "lapRows": lap_rows, "cornerRows": corner_rows, "report": report, "idealLap": format_time(ideal) if ideal else "", "sectorsLine": sectors_line,
             "race": ({"lines": result.race.lines, "rating": result.race.safety_rating} if result.race else None),
             "lesson": ({"title": session.lesson.title, "passed": result.lesson_result[0], "best": result.lesson_result[1], "needed": result.lesson_result[2]} if session.lesson and result.lesson_result else None),
         }

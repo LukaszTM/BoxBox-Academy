@@ -190,6 +190,15 @@ z poprzednich sesji w bazie; zakręt bez uwagi wypada z listy sam. Lekcja z jedn
 prowadzi tylko ten zakręt. Wyłączenie: `--guidance off`. Klipy `guide_*` w katalogu fraz
 (do dogrania tym samym skryptem co reszta; bez klipu komenda jest tylko w tekście na nakładce).
 
+### Sektory i polecenie na następne okrążenie
+
+`coach/sectors.py`: po ważnym okrążeniu trener mówi, w którym sektorze gracz traci najwięcej do swoich
+najlepszych sektorów z tej sesji („Najwięcej tracisz w drugim sektorze, około pół sekundy.”; kubełki
+0,2 / 0,3 / 0,5 / 0,8 / 1 / 1,5 / 2 / ponad 3 s, poniżej 0,2 s cicho), a do najważniejszej uwagi z metrami
+dokłada polecenie: „Na następnym okrążeniu zacznij hamować wcześniej, o jakieś dwadzieścia metrów”
+(połowa różnicy, 5–20 m, jak cel na nakładce). Panel na żywo pokazuje S1–S3 bieżącego okrążenia z różnicą
+do najlepszych sektorów sesji, podsumowanie sesji zdanie o sektorach najlepszego okrążenia.
+
 ### DRS i opony po okrążeniu
 
 `coach/drs.py`: strefy DRS z telemetrii (lampka `drsAllowed` z Car Status, skrzydło z Car Telemetry), czas reakcji

@@ -32,6 +32,7 @@ GLOS MECHANIKA: klipy sa w assets\\voice. Jesli paczka jest "bez-glosu", skopiuj
   albo wygeneruj je przez wygeneruj_glos.bat (klucz ElevenLabs tylko w zmiennej srodowiskowej).
 
 DOKUMENTACJA: folder docs (PDF). Gdy Windows blokuje program: BoxBox_Academy_antywirus.pdf.
+TESTERZY: Discord https://discord.gg/t82VhVkVq (zgloszenia bledow, nagrania, pomysly).
 DANE: wszystko zostaje na tym komputerze w folderach data i recordings obok programu.
 """
 

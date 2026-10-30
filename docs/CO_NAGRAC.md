@@ -72,6 +72,8 @@ Na co zwrócić uwagę w notatkach:
 
 ## 4. Po każdym nagraniu
 
+Testerzy: zgłoszenia, formularze i pytania na Discordzie: https://discord.gg/t82VhVkVq
+
 1. Zakończ sesję przyciskiem **Zakończ sesję** albo zjedź do garażu i poczekaj 20 s.
 2. Plik nagrania jest w `recordings\<nazwa>_<data>.bin`. Obok może być `.guide.json`, wyślij go też.
 3. Spakuj plik: w folderze repo `spakuj.bat recordings\<plik>.bin`. Powstanie `.bin.xz` (albo części, jeśli jest duży).

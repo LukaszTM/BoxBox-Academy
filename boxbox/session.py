@@ -15,6 +15,8 @@ from pathlib import Path
 
 from boxbox.coach.guide_live import is_urgent_cue
 from boxbox.coach.laps import Lap, LapRecorder
+from boxbox.coach.corner_model import describe as describe_models
+from boxbox.coach.corner_model import merge_reference, models_from_db
 from boxbox.coach.lessons import Lesson
 from boxbox.coach.lessons import evaluate as evaluate_lesson
 from boxbox.coach.lessons import lesson as lesson_by_id
@@ -133,6 +135,7 @@ class CoachSession:
         self.messages: list[tuple[float, str]] = []  # (sekundy od startu, tekst), pod shared.lock
         self.lap_messages: list[Message] = []  # wszystkie uwagi z okrążeń (do podsumowania sesji)
         self.reference_before: tuple | None = None  # metryki referencji z bazy sprzed sesji
+        self.reference_label = "pierwsze okrążenie sesji"  # skąd referencja: najlepsze okrążenie / model zakrętów (do okna i podsumowania)
         self.best_before_ms: int | None = None
         self.lesson: Lesson | None = lesson_by_id(cfg.lesson) if cfg.lesson else None
         self.messages_by_lap: dict[int, list[Message]] = {}
@@ -242,27 +245,33 @@ class CoachSession:
                 return
         reference = best_time = progress = None
         guided: set[int] = set()
+        targets: dict = {}
         if cfg.db is not None:
             db = Database(cfg.db)
             ref = db.reference(track.track_id)
             progress = db.load_progress(track.track_id)
             issues = db.recent_corner_issues(track.track_id)
+            if ref is not None:  # model zakrętów z czystych okrążeń na tym samym kroku asyst (MAD + ważona średnia + EMA)
+                targets = models_from_db(db, track.track_id, ref.lap.traction_control, ref.lap.abs_on)
             db.close()
             if ref is not None:
-                reference, best_time = ref.analysis, ref.lap.lap_time_ms
-                self.reference_before, self.best_before_ms = ref.corners, ref.lap.lap_time_ms
+                reference, best_time = merge_reference(ref.analysis, targets), ref.lap.lap_time_ms
+                self.reference_before, self.best_before_ms = reference.corners, ref.lap.lap_time_ms
+            self.reference_label = describe_models(targets, len(track.corners)) if ref is not None else "pierwsze okrążenie sesji"
+            if targets:
+                self.note(f"Referencja: {self.reference_label}.")
             # zakręty z uwagami w ostatnich okrążeniach poprzednich sesji dostają prowadzenie od razu
             guided = set(sorted(issues, key=lambda c: -len(issues[c]))[:3])
         if progress is not None:
             self.shared.progress_line = progress_line(progress.step, progress.streak)
-        log.info("trener: tor %s (%s), referencja %s, krok %s", track.name, path,
-                 f"{best_time} ms" if best_time else "brak", progress.step if progress else "-")
+        log.info("trener: tor %s (%s), referencja %s (%s), krok %s", track.name, path,
+                 f"{best_time} ms" if best_time else "brak", self.reference_label, progress.step if progress else "-")
         self.coach = LiveCoach(
             track, self.speak, reference, corner_messages=cfg.corner_messages, best_time_ms=best_time,
             said_hello=self.player is not None,  # powitanie poszło już na starcie
             available=(lambda i: i in self.player.library) if self.player is not None else None,
             progress=progress, lesson=self.lesson, lesson_corner=cfg.lesson_corner, explain_mode=cfg.explain_mode,
-            guidance=cfg.corner_guidance, guided_corners=guided,
+            guidance=cfg.corner_guidance, guided_corners=guided, corner_targets=targets,
         )
 
     # --- przetwarzanie --------------------------------------------------

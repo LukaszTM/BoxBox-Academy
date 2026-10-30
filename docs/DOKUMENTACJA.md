@@ -147,6 +147,16 @@ hamulca, maksymalny hamulec, punkt pełnego gazu. Referencja: najlepsze ważne o
 toru; bez niej pierwsze pełne okrążenie sesji; w replayu także duch rywala z Time Trial (prędkość
 ducha liczona z dystansu i czasu, bo pole z gry jest błędne).
 
+Model zakrętów (`coach/corner_model.py`, z feedbacku 30.10): punkt hamowania zależy od paliwa, opon,
+asyst i stylu, więc jedno okrążenie nie jest prawdą objawioną. Dla każdego zakrętu program zbiera próby
+z czystych okrążeń toru na tym samym kroku asyst (do 12 ostatnich sesji), odrzuca nietypowe przez MAD
+(czas zakrętu i punkt hamowania, 3 odchylenia), a cel liczy jako średnią ważoną lepszej połowy prób:
+waga maleje z czasem zakrętu i z niższą prędkością wyjścia, a próby ze starszych sesji ważą mniej
+((1 − 0,35)^wiek sesji, czyli wygładzanie wykładnicze). Od 4 prób cel modelu zastępuje metryki
+najlepszego okrążenia w tym zakręcie; reguły trenera czytają go tak samo. Zakręty bez dość prób
+i okrążenie referencyjne zostają jako drugi punkt odniesienia. Nowe najlepsze okrążenie w sesji nie
+nadpisuje celów modelu. Podsumowanie sesji pokazuje, skąd była referencja.
+
 ## 7. Reguły trenera
 
 Każda reguła zwraca komunikat z wagą równą szacowanej stracie czasu. Trener mówi, gdy strata w

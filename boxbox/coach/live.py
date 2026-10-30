@@ -17,6 +17,7 @@ from boxbox.coach.tyres import advise_tyres, analyze_tyres
 from boxbox.coach.glossary import explain
 from boxbox.coach.guide_live import KINDS, CornerGuide, kinds_for_rules
 from boxbox.coach.lessons import Lesson, filter_messages
+from boxbox.coach.corner_model import CornerTarget, merge_reference
 from boxbox.coach.sectors import best_sectors, next_lap_directive, sector_utterance, worst_sector
 from boxbox.coach.progress import TrackProgress
 from boxbox.coach.laps import Lap, LapRecorder
@@ -55,6 +56,7 @@ class LiveCoach:
     guidance: bool = True  # prowadzenie w nieopanowanych zakrętach (komendy przed punktem z referencji)
     guided_corners: set[int] = field(default_factory=set)  # zakręty do prowadzenia na start (np. z poprzednich sesji)
     sector_advice: bool = True  # po okrążeniu: sektor z największą stratą i polecenie na następne okrążenie
+    corner_targets: dict[int, CornerTarget] = field(default_factory=dict)  # model zakrętów z poprzednich sesji (MAD + EMA); nadpisuje metryki referencji
     best_sectors: tuple[int | None, int | None, int | None] = (None, None, None)  # najlepsze sektory z tej sesji (ważne okrążenia)
     guide: CornerGuide = field(init=False)
 
@@ -146,7 +148,7 @@ class LiveCoach:
         usable = not lap.invalid and lap.lap_time_ms is not None
         if self.reference is None:
             if usable:
-                self.reference = analysis
+                self.reference = merge_reference(analysis, self.corner_targets)
                 self.best_time_ms = lap.lap_time_ms
                 self.ers_plan = make_ers_plan(self.track, lap)
                 self._say_misc("no_reference")
@@ -175,7 +177,7 @@ class LiveCoach:
                 self._say_misc("lap_clean")
         if usable and (self.best_time_ms is None or lap.lap_time_ms < self.best_time_ms):  # type: ignore[operator]
             self.best_time_ms = lap.lap_time_ms
-            self.reference = analysis
+            self.reference = merge_reference(analysis, self.corner_targets)  # cele z modelu zostają: jedno okrążenie ich nie przesuwa
             self._say_misc("lap_best")
         if usable and lap.sector3_ms:  # sektor z największą stratą do najlepszych sektorów sesji, potem aktualizacja najlepszych
             if self.sector_advice:

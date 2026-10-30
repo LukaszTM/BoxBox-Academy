@@ -693,7 +693,7 @@ class WebWindow(QMainWindow):
         self.data.summary = {
             "name": self.session_ui.get("name", ""), "track": track_name, "trackId": result.state.session.track_id if result.state.session else None,
             "laps": len(laps), "elapsed": result.wall_s, "date": datetime.now().strftime("%d.%m.%Y"),
-            "coach": result.coach_started, "best": format_time(best_ms) if best_ms else "", "clean": summary.clean_laps if summary else 0, "delta": delta,
+            "coach": result.coach_started, "reference": session.reference_label, "best": format_time(best_ms) if best_ms else "", "clean": summary.clean_laps if summary else 0, "delta": delta,
             "cpu": f"{result.cpu_percent:.1f}% jednego rdzenia" if not session.cfg.replay and result.wall_s > 1 else "",
             "good": (result.race.good if result.race else summary.good if summary else ""), "toWork": (result.race.to_work if result.race else summary.to_work if summary else ""),
             "lapRows": lap_rows, "cornerRows": corner_rows, "report": report, "idealLap": format_time(ideal) if ideal else "", "sectorsLine": sectors_line,

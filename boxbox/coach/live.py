@@ -18,6 +18,7 @@ from boxbox.coach.glossary import explain
 from boxbox.coach.guide_live import KINDS, CornerGuide, kinds_for_rules
 from boxbox.coach.lessons import Lesson, filter_messages
 from boxbox.coach.corner_model import CornerTarget, merge_reference
+from boxbox.coach.context import Adjustment, adjust, comparable, lap_context
 from boxbox.coach.master import MasterGap, master_gap, master_utterance
 from boxbox.coach.sectors import best_sectors, next_lap_directive, sector_utterance, worst_sector
 from boxbox.coach.progress import TrackProgress
@@ -61,6 +62,8 @@ class LiveCoach:
     master: LapAnalysis | None = None  # okrążenie najlepszych (duch z rankingu Time Trial) na tym torze
     master_advice: bool = True
     last_master_gap: MasterGap | None = None  # ostatnia strata do mistrza (do okna)
+    last_master_adjust: Adjustment | None = None  # rozbicie straty na warunki i jazdę
+    last_master_note: str = ""  # „paliwo 40 kg +1,1 s · opony średnie +0,6 s” albo powód braku porównania
     best_sectors: tuple[int | None, int | None, int | None] = (None, None, None)  # najlepsze sektory z tej sesji (ważne okrążenia)
     guide: CornerGuide = field(init=False)
 
@@ -195,10 +198,15 @@ class LiveCoach:
             self.reference = merge_reference(analysis, self.corner_targets)  # cele z modelu zostają: jedno okrążenie ich nie przesuwa
             self._say_misc("lap_best")
         if usable and self.master is not None and self.master_advice:  # trening względem najlepszych: strata i jeden zakręt z wskazówką
-            gap = master_gap(analysis, self.master)
+            ctx = lap_context(lap)
+            ok, reason = comparable(ctx)
+            self.last_master_note = reason
+            gap = master_gap(analysis, self.master) if ok else None
             self.last_master_gap = gap
+            self.last_master_adjust = adjust(gap.total_ms, ctx) if gap is not None else None
             if gap is not None:
-                self.speak(*master_utterance(gap, self._corner_name(gap.corner)))
+                self.last_master_note = self.last_master_adjust.describe()  # type: ignore[union-attr]
+                self.speak(*master_utterance(gap, self._corner_name(gap.corner), self.last_master_adjust.adjusted_ms))  # type: ignore[union-attr]
         if usable and lap.sector3_ms:  # sektor z największą stratą do najlepszych sektorów sesji, potem aktualizacja najlepszych
             if self.sector_advice:
                 worst = worst_sector(lap.sectors_ms, self.best_sectors)

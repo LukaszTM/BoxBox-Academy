@@ -3,6 +3,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 
 from boxbox.coach.ers_sample import ErsSample
+from boxbox.telemetry.car_status import VISUAL_TYRE_NAMES
 from boxbox.coach.lap_samples import TYRE_SAMPLE_M, DrsSample, TyreSample
 from boxbox.telemetry.header import PacketId
 from boxbox.telemetry.state import TelemetryState
@@ -44,6 +45,14 @@ class Lap:
             self.ers_assist = ers_assist
 
     track_length_m: float | None = None  # z pakietu Session, gdy znana
+    # Warunki okrążenia (do uczciwego porównania z mistrzem): paliwo na starcie, mieszanka, wiek opon, pogoda, uszkodzenia.
+    fuel_kg: float | None = None
+    compound: str = "unknown"
+    tyre_age_laps: int | None = None
+    damage_percent: int = 0  # największe uszkodzenie skrzydeł/podłogi/dyfuzora w trakcie okrążenia
+    weather: int | None = None
+    track_temp_c: int | None = None
+    session_type: int | None = None
     sector1_ms: int | None = None  # z Lap Data w trakcie okrążenia (gra zeruje na mecie)
     sector2_ms: int | None = None
     sector3_ms: int | None = None  # czas okrążenia minus S1 i S2, liczony po mecie
@@ -127,6 +136,21 @@ class LapRecorder:
             status.anti_lock_brakes if status else None,
             self.state.session.assists.ers if self.state.session else None,
         )
+        if status is not None:
+            if self.current.fuel_kg is None:  # warunki z pierwszego pakietu stanu w okrążeniu
+                self.current.fuel_kg = status.fuel_in_tank_kg
+                self.current.compound = VISUAL_TYRE_NAMES.get(status.visual_tyre_compound, "unknown")
+                self.current.tyre_age_laps = status.tyres_age_laps
+        if self.state.session is not None and self.current.weather is None:
+            self.current.weather = self.state.session.weather
+            self.current.track_temp_c = self.state.session.track_temperature
+            self.current.session_type = self.state.session.session_type
+        if self.state.damage is not None:
+            d = self.state.damage.player
+            self.current.damage_percent = max(
+                self.current.damage_percent, d.front_left_wing_damage_percent, d.front_right_wing_damage_percent,
+                d.rear_wing_damage_percent, d.floor_damage_percent, d.diffuser_damage_percent,
+            )
         if status is not None:
             self.current.ers.append(ErsSample(
                 lap.lap_distance, status.ers_store_energy_j, status.ers_deployed_this_lap_j,

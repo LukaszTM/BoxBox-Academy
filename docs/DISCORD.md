@@ -115,7 +115,7 @@ rogu okna, podawaj ją w każdym zgłoszeniu. Dzięki, że jesteś!
 ### #ogłoszenia (pierwszy wpis)
 
 ```
-Paczka testowa 0.6.0-beta: [link do ZIP]
+Paczka testowa 0.7.0-beta: [link do ZIP]
 
 W środku: program, CZYTAJ-TO.txt z czterema krokami startu, PDF-y w docs:
 co nagrać, formularze, antywirus, dokumentacja.

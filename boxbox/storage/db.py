@@ -1,7 +1,8 @@
 """SQLite: sesje, okrążenia, metryki zakrętów, próbki. Najlepsze ważne okrążenie = referencja."""
+import json
 import sqlite3
 import struct
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -45,6 +46,7 @@ CREATE TABLE IF NOT EXISTS laps (
     sector1_ms INTEGER,
     sector2_ms INTEGER,
     sector3_ms INTEGER,
+    context TEXT,
     UNIQUE (session_id, number)
 );
 CREATE TABLE IF NOT EXISTS corner_metrics (
@@ -114,10 +116,17 @@ class StoredLap:
     sector1_ms: int | None = None
     sector2_ms: int | None = None
     sector3_ms: int | None = None
+    context: dict = field(default_factory=dict)  # warunki okrążenia: fuel_kg, compound, tyre_age_laps, wear_percent, damage_percent, weather, ...
 
     @property
     def sectors_ms(self) -> tuple[int | None, int | None, int | None]:
         return (self.sector1_ms, self.sector2_ms, self.sector3_ms)
+
+
+def context_dict(lap: Lap) -> dict:
+    wear = max(lap.tyres[-1].wear_percent) if lap.tyres and lap.tyres[-1].wear_percent is not None else None
+    return {"fuel_kg": lap.fuel_kg, "compound": lap.compound, "tyre_age_laps": lap.tyre_age_laps, "wear_percent": wear,
+            "damage_percent": lap.damage_percent, "weather": lap.weather, "track_temp_c": lap.track_temp_c, "session_type": lap.session_type}
 
 
 @dataclass(frozen=True)
@@ -187,6 +196,8 @@ class Database:
         for column in ("sector1_ms", "sector2_ms", "sector3_ms"):  # sektory dodane po pierwszych bazach
             if column not in laps_cols:
                 self.conn.execute(f"ALTER TABLE laps ADD COLUMN {column} INTEGER")
+        if "context" not in laps_cols:  # warunki okrążenia (paliwo, opony, pogoda, uszkodzenia) jako JSON
+            self.conn.execute("ALTER TABLE laps ADD COLUMN context TEXT")
         self.conn.commit()
 
     def close(self) -> None:
@@ -235,13 +246,13 @@ class Database:
             self.conn.execute("DELETE FROM laps WHERE id = ?", (old["id"],))
         cur = self.conn.execute(
             "INSERT INTO laps (session_id, track_id, number, lap_time_ms, valid, complete, pitted,"
-            " gearbox, traction_control, abs_on, created_at, sector1_ms, sector2_ms, sector3_ms)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " gearbox, traction_control, abs_on, created_at, sector1_ms, sector2_ms, sector3_ms, context)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 session_id, track_id, lap.number, lap.lap_time_ms, int(not lap.invalid),
                 int(lap.is_complete(track_length_m)), int(lap.pitted),
                 gearbox, traction_control, None if abs_on is None else int(abs_on), _now(),
-                lap.sector1_ms, lap.sector2_ms, lap.sector3_ms,
+                lap.sector1_ms, lap.sector2_ms, lap.sector3_ms, json.dumps(context_dict(lap)),
             ),
         )
         lap_id = int(cur.lastrowid)  # type: ignore[arg-type]
@@ -271,6 +282,7 @@ class Database:
             pitted=bool(row["pitted"]), gearbox=row["gearbox"], traction_control=row["traction_control"],
             abs_on=None if row["abs_on"] is None else bool(row["abs_on"]),
             sector1_ms=row["sector1_ms"], sector2_ms=row["sector2_ms"], sector3_ms=row["sector3_ms"],
+            context=json.loads(row["context"]) if row["context"] else {},
         )
 
     def laps_for_track(self, track_id: int) -> list[StoredLap]:

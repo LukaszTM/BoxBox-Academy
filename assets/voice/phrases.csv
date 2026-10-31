@@ -137,6 +137,7 @@ misc_master_brake_later,"Najlepsi hamują tu później, o jakieś"
 misc_master_throttle_earlier,"Najlepsi dodają pełny gaz wcześniej, o jakieś"
 misc_master_apex,Najlepsi są tu w apeksie wyraźnie szybsi: wchodzą z większą prędkością i trzymają ją.
 misc_master_target_half,Cel na dziś: połowa tej różnicy.
+misc_master_similar,W podobnych warunkach
 guide_intro,Prowadzę.
 guide_lift,Puść gaz.
 guide_brake_hard,Mocny hamulec.

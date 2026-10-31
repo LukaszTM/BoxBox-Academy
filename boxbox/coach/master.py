@@ -25,6 +25,7 @@ MASTER_TEXTS: dict[str, str] = {
     "master_throttle_earlier": "Najlepsi dodają pełny gaz wcześniej, o jakieś",
     "master_apex": "Najlepsi są tu w apeksie wyraźnie szybsi: wchodzą z większą prędkością i trzymają ją.",
     "master_target_half": "Cel na dziś: połowa tej różnicy.",
+    "master_similar": "W podobnych warunkach",  # + kubełek straty: "W podobnych warunkach około pięć sekund."
 }
 
 
@@ -57,12 +58,18 @@ def master_gap(own: LapAnalysis, master: LapAnalysis) -> MasterGap | None:
     return MasterGap(max(0, own.lap_time_ms - master.lap_time_ms), worst.corner, worst.time_delta_ms, hint, meters)
 
 
-def master_utterance(gap: MasterGap, corner_name: str) -> tuple[list[str], str]:
-    """Klipy i tekst: strata, zakręt, wskazówka z krokiem na dziś (połowa różnicy, 5-20 m)."""
+def master_utterance(gap: MasterGap, corner_name: str, adjusted_ms: int | None = None) -> tuple[list[str], str]:
+    """Klipy i tekst: strata (i strata w podobnych warunkach, gdy warunki wyjaśniają inny kubełek), zakręt,
+    wskazówka z krokiem na dziś (połowa różnicy, 5-20 m)."""
     from boxbox.voice.phrases import corner_key, corner_text, meters_text  # lokalnie: phrases importuje stąd teksty
 
-    ids = ["misc_master_gap", f"misc_loss_{loss_bucket(gap.total_ms)}", "misc_master_in", f"corner_{corner_key(corner_name)}"]
-    text = f"{MASTER_TEXTS['master_gap']} {LOSS_TEXTS[loss_bucket(gap.total_ms)]} {MASTER_TEXTS['master_in']} {corner_text(corner_name)}"
+    ids = ["misc_master_gap", f"misc_loss_{loss_bucket(gap.total_ms)}"]
+    text = f"{MASTER_TEXTS['master_gap']} {LOSS_TEXTS[loss_bucket(gap.total_ms)]}"
+    if adjusted_ms is not None and adjusted_ms >= MIN_GAP_MS and loss_bucket(adjusted_ms) != loss_bucket(gap.total_ms):
+        ids += ["misc_master_similar", f"misc_loss_{loss_bucket(adjusted_ms)}"]
+        text += f" {MASTER_TEXTS['master_similar']} {LOSS_TEXTS[loss_bucket(adjusted_ms)]}"
+    ids += ["misc_master_in", f"corner_{corner_key(corner_name)}"]
+    text += f" {MASTER_TEXTS['master_in']} {corner_text(corner_name)}"
     if gap.hint in ("brake_later", "throttle_earlier"):
         num = max(10, min(300, round(gap.hint_m / 10) * 10))
         step = next_lap_step_m(gap.hint_m)

@@ -1,7 +1,7 @@
 """Wszystkie teksty okna w jednym miejscu: po polsku; w przyszłości angielski i lektor (samouczek)."""
 
 APP_NAME = "BoxBox Academy"
-VERSION = "0.6.0-beta"
+VERSION = "0.7.0-beta"
 
 NAV = {"home": "Start", "profile": "Karta kierowcy", "progress": "Postęp", "settings": "Ustawienia"}
 

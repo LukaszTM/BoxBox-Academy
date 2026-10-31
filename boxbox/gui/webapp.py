@@ -492,7 +492,9 @@ class WebWindow(QMainWindow):
             "goalText": f"Cel: {CLEAN_LAPS_TO_ADVANCE} czyste okrążenia z rzędu" if progress is not None else "",
             "streak": progress.streak if progress is not None else 0, "needed": CLEAN_LAPS_TO_ADVANCE,
             "best": format_time(best) if best else "", "delta": delta, "laps": lap_count, "rate": rate,
-            "masterGap": format_gap(session.coach.last_master_gap.total_ms) if session.coach is not None and session.coach.last_master_gap is not None else "",
+            "masterGap": format_gap(session.coach.last_master_adjust.adjusted_ms) if session.coach is not None and session.coach.last_master_adjust is not None else "",
+            "masterRaw": format_gap(session.coach.last_master_gap.total_ms) if session.coach is not None and session.coach.last_master_gap is not None else "",
+            "masterNote": session.coach.last_master_note if session.coach is not None else "",
             "masterTime": format_time(session.master_time_ms) if session.master_time_ms else "",
             "cpu": "liczone po sesji", "statusLine": view.status_line, "error": error, "chart": self.chart_cache,
         }
@@ -697,7 +699,9 @@ class WebWindow(QMainWindow):
             "name": self.session_ui.get("name", ""), "track": track_name, "trackId": result.state.session.track_id if result.state.session else None,
             "laps": len(laps), "elapsed": result.wall_s, "date": datetime.now().strftime("%d.%m.%Y"),
             "coach": result.coach_started, "reference": session.reference_label,
-            "masterLine": (f"Najlepsi na tym torze: {format_time(session.master_time_ms)}, do nich brakuje {format_gap(best_ms - session.master_time_ms)}."
+            "masterLine": (f"Najlepsi na tym torze: {format_time(session.master_time_ms)}, do nich brakuje {format_gap(best_ms - session.master_time_ms)}"
+                           + (f" (w podobnych warunkach {format_gap(session.coach.last_master_adjust.adjusted_ms)}; {session.coach.last_master_note})."
+                              if session.coach is not None and session.coach.last_master_adjust is not None else ".")
                            if session.master_time_ms and best_ms and best_ms > session.master_time_ms else ""), "best": format_time(best_ms) if best_ms else "", "clean": summary.clean_laps if summary else 0, "delta": delta,
             "cpu": f"{result.cpu_percent:.1f}% jednego rdzenia" if not session.cfg.replay and result.wall_s > 1 else "",
             "good": (result.race.good if result.race else summary.good if summary else ""), "toWork": (result.race.to_work if result.race else summary.to_work if summary else ""),

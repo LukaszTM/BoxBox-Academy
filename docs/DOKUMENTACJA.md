@@ -212,6 +212,18 @@ to połowa różnicy. W oknie: kafelek „Do najlepszych” na żywo, zdanie w p
 „Najlepsi na świecie”. Reguły trenera dalej porównują do własnej referencji i modelu zakrętów: mistrz jest
 kierunkiem, nie progiem błędu.
 
+### Warunki okrążenia i uczciwość porównania
+
+`coach/context.py`: rejestrator zapisuje z każdym okrążeniem warunki z telemetrii: paliwo na starcie okrążenia,
+mieszankę i wiek opon, zużycie na końcu, największe uszkodzenie skrzydeł/podłogi, pogodę, temperaturę toru,
+typ sesji i asysty (kolumna `context` w bazie). Przed porównaniem z mistrzem program sprawdza, czy ma ono sens:
+deszcz, opony deszczowe, uszkodzenia powyżej 10 % albo zużycie powyżej 60 % wstrzymują porównanie z podanym
+powodem. Gdy ma sens, strata jest rozbijana na warunki i jazdę: paliwo ok. 0,03 s na kilogram ponad poziom
+Time Trial, mieszanka średnia +0,6 s i twarda +1,2 s względem miękkiej, zużycie powyżej 30 % ok. 0,02 s na
+procent. Współczynniki są orientacyjne (reguły kciuka z F1, nie wartości z gry) i zebrane w jednym miejscu.
+Asysty nie dostają sekund, tylko etykietę. Trener mówi „tracisz około osiem sekund, w podobnych warunkach
+około pięć”, a okno pokazuje rozbicie pod kafelkiem „Do najlepszych” i w podsumowaniu.
+
 ### Sektory i polecenie na następne okrążenie
 
 `coach/sectors.py`: po ważnym okrążeniu trener mówi, w którym sektorze gracz traci najwięcej do swoich

@@ -16,6 +16,7 @@ Kolejność ma znaczenie: jeśli masz czas tylko na jedno, zrób nagranie 1.
 | 1 | monza-nauka | Nauka | ok. 20 min |
 | 2 | wyscig-ai-5 | Wyścig | ok. 15 min |
 | 3 | madryt-auto | Nauka | ok. 15 min |
+| 3a | monza-mistrz | Nauka (Time Trial z duchem z rankingu) | ok. 10 min |
 
 Zasady wspólne dla wszystkich nagrań: bez flashbacku, bez zmiany asyst w trakcie, bez pauzy dłuższej niż 15 s (po 20 s ciszy program kończy sesję). Pogoda: sucho, dzień.
 
@@ -69,6 +70,21 @@ Na co zwrócić uwagę w notatkach:
 - Od którego okrążenia mechanik zaczął komentować zakręty.
 - Czy liczba zakrętów T1..Tn zgadza się mniej więcej z torem i czy jakiś ważny zakręt pominął albo podzielił na dwa.
 - Czy komentarze pasowały do miejsc, w których faktycznie hamujesz.
+
+## 3a. Monza, Time Trial z duchem z rankingu, 3 okrążenia (krótkie, 10 min)
+
+Cel: dać programowi „okrążenie najlepszych” na Monzy. Od tej chwili trener porównuje Cię też do najlepszych na świecie.
+
+- W grze: Time Trial → Monza → z tablicy wyników wybierz ducha z pierwszej dziesiątki (najlepiej nr 1) i włącz go.
+- W programie: tryb **Nauka**, nazwa `monza-mistrz`, Format UDP taki sam jak w nagraniu 1.
+- Przejedź 3 okrążenia w swoim tempie. Duch musi przejechać całe okrążenie, więc nie przerywaj sesji wcześniej.
+- Po sesji program powie „Mam okrążenie najlepszych na tym torze”, a w podsumowaniu pojawi się zdanie „Najlepsi na tym torze: …”.
+
+Na co zwrócić uwagę w notatkach:
+
+- Czy komunikat o stracie do najlepszych („tracisz około … sekund, najwięcej w zakręcie …”) brzmiał sensownie.
+- Czy wskazówka (hamują później / gaz wcześniej / szybszy apeks) zgadza się z tym, co widzisz u ducha.
+- Czy rozbicie na warunki (paliwo, opony) pod kafelkiem „Do najlepszych” ma sens.
 
 ## 4. Po każdym nagraniu
 

@@ -18,7 +18,7 @@ from boxbox.gui import texts  # noqa: E402
 PDFS = (
     "BoxBox_Academy_dokumentacja.pdf", "BoxBox_Academy_instrukcja_nagran.pdf", "BoxBox_Academy_antywirus.pdf",
     "BoxBox_Academy_co_nagrac.pdf", "BoxBox_Academy_formularze_nagran.pdf", "BoxBox_Academy_analiza_umiejetnosci.pdf",
-    "BoxBox_Academy_lista_torow.pdf",
+    "BoxBox_Academy_lista_torow.pdf", "BoxBox_Academy_wydanie.pdf",
 )
 README = """BoxBox Academy {version} - trener jazdy do F1 25 (beta)
 

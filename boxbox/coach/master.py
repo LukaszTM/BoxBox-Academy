@@ -20,7 +20,7 @@ APEX_SLOWER_MIN_KMH = 8
 MASTER_TEXTS: dict[str, str] = {
     "master_intro": "Mam okrążenie najlepszych na tym torze. Porównuję też do nich.",
     "master_gap": "Do najlepszych na świecie tracisz",
-    "master_in": "Najwięcej w",
+    "master_in": "Największa strata:",  # + klip zakrętu („Zakręt czwarty.”), bez odmiany przez przypadki
     "master_brake_later": "Najlepsi hamują tu później, o jakieś",
     "master_throttle_earlier": "Najlepsi dodają pełny gaz wcześniej, o jakieś",
     "master_apex": "Najlepsi są tu w apeksie wyraźnie szybsi: wchodzą z większą prędkością i trzymają ją.",

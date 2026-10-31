@@ -29,7 +29,7 @@ def test_master_gap_picks_worst_corner_and_hint() -> None:
     assert gap.hint == "throttle_earlier" and gap.hint_m == 50  # Z3: ten sam punkt hamowania, gaz 50 m później niż mistrz
     ids, text = master_utterance(gap, "T3")
     assert ids == ["misc_master_gap", "misc_loss_8", "misc_master_in", "corner_t3", "misc_master_throttle_earlier", "num_50", "misc_master_target_half"]
-    assert text.startswith("Do najlepszych na świecie tracisz około osiem sekund. Najwięcej w Zakręt trzeci. Najlepsi dodają pełny gaz wcześniej, o jakieś pięćdziesiąt metrów.")
+    assert text.startswith("Do najlepszych na świecie tracisz około osiem sekund. Największa strata: Zakręt trzeci. Najlepsi dodają pełny gaz wcześniej, o jakieś pięćdziesiąt metrów.")
     assert text.endswith("(20 m)")  # krok na dziś: połowa, maks. 20 m
     brake = master_gap(LapAnalysis(3, 90_000, (cm(1, 500, 6500),)), LapAnalysis(0, 88_000, (cm(1, 540, 6000),)))
     assert brake is not None and brake.hint == "brake_later" and brake.hint_m == 40 and master_utterance(brake, "T1")[0][4:6] == ["misc_master_brake_later", "num_40"]
@@ -90,7 +90,7 @@ def test_session_learns_master_from_time_trial_ghost(tmp_path: Path) -> None:
     assert s.master_time_ms == 86_764 and s.coach is not None and s.coach.master is not None
     assert any(t.startswith("Mam okrążenie najlepszych") for t in said)
     gaps = [t for t in said if t.startswith("Do najlepszych na świecie tracisz")]
-    assert gaps and all("Najwięcej w Zakręt" in t or "Najwięcej w Zakręty" in t for t in gaps)
+    assert gaps and all("Największa strata: Zakręt" in t for t in gaps)
     db = Database(cfg.db)
     master = db.master(3)
     db.close()

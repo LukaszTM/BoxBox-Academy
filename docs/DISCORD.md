@@ -1,124 +1,215 @@
-# BoxBox Academy – serwer Discord dla testerów: konfiguracja krok po kroku
+# BoxBox Academy – serwer Discord: struktura, role, boty i treści
 
 Zaproszenie: https://discord.gg/t82VhVkVq
 
-Cel serwera: zamknięte testy bety. Ma być prosty: pięć kanałów tekstowych, jeden głosowy, dwie role.
-Konfiguracja zajmuje około 20 minut. Wszystko robisz w aplikacji Discord na komputerze.
+Serwer ma jeden cel na teraz: zamknięte testy bety z grupą 10–30 osób. Druga faza (publiczna beta) jest opisana na końcu, żeby nie przebudowywać serwera po drodze. Wszystkie teksty do wklejenia są w części 6.
 
-## 1. Ustawienia serwera
+## 1. Zasady, które porządkują wszystko
 
-1. Kliknij nazwę serwera (lewy górny róg) → **Ustawienia serwera**.
-2. **Przegląd:** wgraj logo z `assets/` (plik `logo_small.png` z `dist/` po zbudowaniu PDF-ów albo logo z repo).
-3. **Bezpieczeństwo → Poziom weryfikacji:** „Średni” (konto starsze niż 5 minut). Blokuje najprostsze boty, nie blokuje ludzi.
-4. **Bezpieczeństwo → Filtr treści:** „Skanuj wiadomości od wszystkich”.
-5. **Zaproszenia:** jeśli chcesz kontrolować liczbę testerów, zrób nowe zaproszenie z limitem użyć (np. 25) zamiast bezterminowego.
-6. **Społeczność:** na razie nie włączaj. Serwer społecznościowy wymaga regulaminu, kanału zasad i bywa widoczny szerzej.
+1. Jedno miejsce na jedną rzecz: błędy tylko w `#zgłoszenia`, nagrania tylko w `#nagrania`, pomysły tylko w `#pomysły`. Dyskusja ogólna w `#off-topic`.
+2. Jedno zgłoszenie = jeden wątek. Kanały zgłoszeń i nagrań są forami, więc każdy temat ma własny wątek i tagi.
+3. Nowa osoba bez roli widzi tylko `#start`, `#ogłoszenia` i `#przedstaw-się`. Resztę odblokowuje rola Tester, nadawana ręcznie.
+4. Nic prywatnego na serwerze: bez kluczy API, bez ścieżek z nazwiskiem w zrzutach, bez nagrań z nazwami graczy (program anonimizuje nagrania sam).
+5. Ty piszesz w `#ogłoszenia`, reszta tylko czyta i reaguje.
 
-## 2. Role
+## 2. Struktura kanałów
 
-**Ustawienia serwera → Role → Utwórz rolę.** Dwie wystarczą.
+Kolejność na liście jest celowa: od góry to, co nowa osoba ma zobaczyć najpierw.
 
-| Rola | Kolor | Uprawnienia | Kto |
+| Kategoria | Kanał | Typ | Kto widzi | Kto pisze | Po co |
+| --- | --- | --- | --- | --- | --- |
+| (bez kategorii) | #start | tekstowy | wszyscy | tylko Autor | przypięte powitanie i instrukcja startu |
+| INFO | #ogłoszenia | ogłoszeniowy | wszyscy | tylko Autor | nowe wersje, link do paczki, co się zmieniło |
+| INFO | #przedstaw-się | tekstowy | wszyscy | wszyscy | jedna wiadomość od nowej osoby: na czym jeździ, jaki poziom; po niej rola Tester |
+| INFO | #faq | tekstowy | wszyscy | tylko Autor | pytania, które padły więcej niż raz, z odpowiedziami |
+| TESTY | #zgłoszenia | forum | Tester | Tester | błędy i problemy, jeden wątek na zgłoszenie, tagi: błąd, pytanie, działa, naprawione |
+| TESTY | #nagrania | forum | Tester | Tester | jedna sesja = jeden wątek: formularz, zrzut, link do nagrania; tagi: Monza, Bahrajn, Suzuka, Madryt, inny tor, wyścig |
+| TESTY | #pomysły | forum | Tester | Tester | propozycje funkcji, jeden wątek na pomysł; tagi: trener, okno, HUD, głos, inne |
+| TESTY | #wersje-testowe | tekstowy | Tester | tylko Autor | paczki przed ogłoszeniem, do szybkiego sprawdzenia przez 2–3 osoby |
+| SPOŁECZNOŚĆ | #off-topic | tekstowy | Tester | Tester | reszta: wyniki, memy, sprzęt |
+| SPOŁECZNOŚĆ | #zrzuty-i-klipy | tekstowy | Tester | Tester | zrzuty z programu i filmy z jazdy z mechanikiem |
+| SPOŁECZNOŚĆ | Sesja na żywo | głosowy | Tester | Tester | wspólna jazda, słuchanie komunikatów, limit 10 osób |
+| ZAPLECZE | #dziennik-zmian | tekstowy | Tester | webhook GitHub | automatyczne wpisy o commitach i wydaniach (część 4) |
+| ZAPLECZE | #autor-notatki | tekstowy | tylko Autor | tylko Autor | Twoje notatki z testów, lista do zrobienia |
+
+Na start możesz pominąć `#faq`, `#wersje-testowe`, `#zrzuty-i-klipy` i `#autor-notatki`; dodasz je, gdy będzie ruch. Minimum to: `#start`, `#ogłoszenia`, `#przedstaw-się`, `#zgłoszenia`, `#nagrania`, `#pomysły`, `#off-topic`, głosowy.
+
+Kanał typu „ogłoszeniowy” (Discord: Announcement) pozwala testerom „śledzić” kanał na własnych serwerach; jeśli serwer nie ma włączonej Społeczności, zostaw zwykły tekstowy z uprawnieniami tylko dla Ciebie.
+
+## 3. Role i uprawnienia
+
+| Rola | Kolor | Kto | Uprawnienia ponad @everyone |
 | --- | --- | --- | --- |
-| Autor | czerwony | Administrator | tylko Ty |
-| Tester | cyjan | domyślne + „Załączaj pliki”, „Osadzaj linki”, „Dodawaj reakcje” | każdy zaproszony |
+| Autor | czerwony | Ty | Administrator |
+| Moderator | pomarańczowy | 1–2 zaufane osoby, gdy serwer urośnie | Zarządzaj wiadomościami, Zarządzaj wątkami, Wyrzucaj członków, Moderuj członków (timeout) |
+| Tester | cyjan | każdy po przedstawieniu się | Wyświetl kanały TESTY i SPOŁECZNOŚĆ, Załączaj pliki, Osadzaj linki, Twórz wątki publiczne, Dodawaj reakcje, Używaj poleceń aplikacji |
+| Tester PRO | fioletowy | osoby, które przysłały 3 nagrania z formularzem | jak Tester + dostęp do #wersje-testowe; wyróżnienie na liście |
+| @everyone | brak | każdy z linku | Wyświetl #start, #ogłoszenia, #przedstaw-się, #faq; Czytaj historię; Wysyłaj wiadomości tylko w #przedstaw-się |
 
-Rolę Tester nadajesz ręcznie po wejściu osoby (klik na nick → Role). Dzięki temu ktoś z przypadkowego linku
-nie widzi kanałów testowych: w kroku 3 ustawiasz, że kanały widzi tylko Tester.
+Ustawienie `@everyone`: Ustawienia serwera → Role → @everyone → wyłącz „Wysyłaj wiadomości”, „Załączaj pliki”, „Twórz zaproszenia” (zaproszenia robisz Ty, z limitem użyć), „Zmieniaj pseudonim” zostaw włączone.
 
-Rola `@everyone`: w **Role → @everyone → Uprawnienia** wyłącz „Wysyłaj wiadomości” i „Załączaj pliki”.
-Nowa osoba bez roli zobaczy tylko `#start` i nic nie napisze, dopóki nie dostanie roli.
+Nadawanie roli Tester: klik na nick w `#przedstaw-się` → Role → Tester. Jedno zdanie od osoby wystarczy; chodzi o to, żeby boty i przypadkowi goście z Facebooka nie weszli do kanałów testowych.
 
-## 3. Kategorie i kanały
+Poziom weryfikacji serwera: „Średni” (konto starsze niż 5 minut). Filtr treści: „Skanuj wiadomości od wszystkich”. Tryb Społeczności: na razie wyłączony (wymaga kanału zasad i otwiera serwer szerzej); włączysz go w fazie publicznej.
 
-Prawy klik na liście kanałów → **Utwórz kategorię**, potem w kategorii **Utwórz kanał**.
+## 4. Boty: co jest potrzebne, a co nie
 
-Kategoria **INFO**
+Na 10–30 testerów nie potrzebujesz żadnego bota zewnętrznego. Wszystko, co ważne, robi sam Discord:
 
-| Kanał | Typ | Uprawnienia | Po co |
-| --- | --- | --- | --- |
-| #ogłoszenia | tekstowy | pisze tylko Autor, czytają wszyscy | nowe wersje, co się zmieniło, link do paczki |
-| #start | tekstowy | pisze tylko Autor, widzą wszyscy | przypięta instrukcja startu (tekst w p. 5) |
+| Potrzeba | Rozwiązanie bez bota | Bot dopiero gdy |
+| --- | --- | --- |
+| wpisy o nowych wersjach z GitHuba | wbudowany webhook: Ustawienia kanału #dziennik-zmian → Integracje → Webhooki → Nowy webhook → skopiuj URL; w repozytorium GitHub: Settings → Webhooks → Add webhook, URL z końcówką `/github`, zdarzenia: Pushes, Releases | nigdy, webhook wystarczy |
+| filtr spamu i linków | wbudowany AutoMod: Ustawienia serwera → AutoMod → włącz „Blokuj spam” i „Blokuj podejrzane linki”, dodaj regułę na wzmianki (ponad 5 w wiadomości) | nigdy w tej skali |
+| rola po przedstawieniu się | ręcznie, 2 kliknięcia | powyżej ok. 50 osób: Carl-bot albo MEE6 (reakcja pod wiadomością w #start nadaje rolę Tester) |
+| ankiety | wbudowane ankiety Discorda (ikona + przy polu wiadomości) | nigdy |
+| statystyki serwera | zakładka Insights w ustawieniach (po włączeniu Społeczności) | nigdy |
+| przypomnienia o sesjach | wbudowane Wydarzenia (ikona kalendarza) | nigdy |
+| moderacja | AutoMod + rola Moderator + timeouty | powyżej 100 osób: Dyno albo Carl-bot do logów i ostrzeżeń |
 
-Kategoria **TESTY** (widoczna tylko dla roli Tester: w ustawieniach kategorii → Uprawnienia → @everyone: „Wyświetl kanał” wyłączone; Tester: włączone)
+Jeśli kiedyś dojdzie bot, zasady: tylko jeden, z oficjalnej strony bota (nie z linku od użytkownika), z minimalnymi uprawnieniami (bez Administratora), dodany na kanał `#zaplecze`, nie na cały serwer. Bot ma dostęp do treści serwera, więc to samo, co wpuszczenie kogoś z zewnątrz.
 
-| Kanał | Typ | Ustawienia | Po co |
-| --- | --- | --- | --- |
-| #zgłoszenia | forum | wymagane tagi: błąd, pytanie, działa; szablon w p. 5 jako wytyczne postów | jedno zgłoszenie = jeden wątek |
-| #nagrania | forum | tagi: Monza, wyścig, Madryt, inny tor | jedna sesja = jeden wątek z plikami |
-| #pomysły | tekstowy | tryb wolny (slowmode) 30 s | propozycje, bez błędów |
-| #off-topic | tekstowy | bez ograniczeń | reszta |
-| Sesja na żywo | głosowy | limit 10 osób | wspólna jazda, słuchanie mechanika |
+Czego nie dodawać: botów muzycznych, botów z poziomami i XP, botów „powitalnych” z grafikami. Hałas bez pożytku w serwerze testowym.
 
-Kanały typu **forum** są lepsze od zwykłych na zgłoszenia i nagrania: każdy temat ma własny wątek i tagi,
-nic nie ginie w strumieniu. Przy tworzeniu kanału wybierz „Forum” zamiast „Tekstowy”.
+## 5. Onboarding testera, krok po kroku
 
-## 4. Limity plików
+1. Osoba wchodzi z linku, widzi `#start` z przypiętym powitaniem i `#przedstaw-się`.
+2. Pisze jedno zdanie w `#przedstaw-się` (szablon w części 6).
+3. Ty nadajesz rolę Tester. Od tej chwili widzi TESTY i SPOŁECZNOŚĆ.
+4. Pobiera paczkę z `#ogłoszenia`, przechodzi `CZYTAJ-TO.txt`, jedzie pierwszą sesję.
+5. Po sesji: wątek w `#nagrania` (formularz + zrzut + link do nagrania), błędy w `#zgłoszenia`.
+6. Po trzech nagraniach z formularzem: rola Tester PRO i dostęp do `#wersje-testowe`.
 
-Discord bez Nitro przyjmuje pliki do 10 MB (serwer bez poziomów boostów). Nagrania po `spakuj.bat`
-mają części po 20 MB, więc na Discord będą za duże. Dwie opcje:
+Limity plików: Discord bez boostów przyjmuje załączniki do 10 MB. Zrzuty i formularze się mieszczą, nagrania po `spakuj.bat` (części po 20 MB) nie. Nagrania idą przez GitHub albo dysk w chmurze, a w wątku na Discordzie jest tylko link. Jeśli wolisz wszystko na Discordzie, dzielenie w `spakuj.bat` można zmniejszyć do 9 MB.
 
-1. Nagrania nadal wysyłane na GitHub (jak dotąd), a na Discord tylko formularz i zrzut podsumowania. Prostsze dla Ciebie.
-2. Zmiana dzielenia na części po 9 MB w `spakuj.bat` (parametr rozmiaru części). Więcej plików, ale wszystko w jednym miejscu.
+## 6. Treści do wklejenia
 
-Rekomendacja na start: opcja 1. W `#nagrania` tester wkleja formularz i zrzut, a plik nagrania wysyła przez
-GitHub albo dowolny dysk w chmurze z linkiem w wątku.
+Po wklejeniu: przytrzymaj wiadomość (telefon) albo prawy klik (komputer) → Przypnij.
 
-## 5. Teksty do przypięcia
-
-Po wklejeniu wiadomości: prawy klik → **Przypnij wiadomość**.
-
-### #start
+### #start (przypięte)
 
 ```
-Cześć, to zamknięte testy BoxBox Academy, trenera jazdy do F1 25. Program czyta telemetrię gry
-na Twoim komputerze i mówi głosem mechanika, co poprawić. Nic nie wysyła do sieci.
+Cześć! To zamknięte testy BoxBox Academy, trenera jazdy do F1 25.
+Program czyta telemetrię gry na Twoim komputerze i mówi głosem mechanika, co poprawić
+w zakrętach, w którym sektorze tracisz czas i co zrobić na następnym okrążeniu.
+Nic nie wysyła do sieci, dane zostają u Ciebie.
 
-Jak zacząć:
-1. Pobierz paczkę z #ogłoszenia i rozpakuj. Potrzebny Python 3.12 lub nowszy (python.org, zaznacz "Add to PATH").
-2. Uruchom akademia.bat. Gdy Windows ostrzega, zobacz PDF o antywirusie w folderze docs.
-3. W grze włącz telemetrię UDP: port 20777, adres 127.0.0.1, format 2025 albo 2026.
+JAK ZACZĄĆ
+1. Napisz jedno zdanie w #przedstaw-się. Dostaniesz rolę Tester i zobaczysz resztę kanałów.
+2. Pobierz paczkę z #ogłoszenia i rozpakuj. Potrzebny Python 3.12 lub nowszy
+   (python.org, przy instalacji zaznacz "Add python.exe to PATH").
+3. Uruchom akademia.bat. Gdy Windows ostrzega, zobacz docs\BoxBox_Academy_antywirus.pdf w paczce.
+4. W grze: Ustawienia -> Telemetria UDP włączona, port 20777, adres 127.0.0.1, format 2025 albo 2026.
    Dla nakładki HUD gra w oknie bez ramki.
-4. Przejdź kreator, kliknij JEDŹ i jedź trening. Pierwsze okrążenie to odniesienie, od drugiego mechanik mówi.
+5. Przejdź kreator, kliknij JEDŹ, jedź trening. Pierwsze okrążenie to odniesienie, od drugiego mechanik mówi.
 
-Po sesji: błędy do #zgłoszenia (szablon w wytycznych kanału), nagrania i formularze do #nagrania,
-pomysły do #pomysły. Obsługiwane są tylko F1 25 i 2026 Season Pack. Wersja programu jest w lewym
-dolnym rogu okna, podawaj ją w każdym zgłoszeniu.
-```
+GDZIE CO
+#zgłoszenia - błędy (szablon w wytycznych kanału)
+#nagrania - nagrania sesji z formularzem (docs\formularze w paczce)
+#pomysły - propozycje
+#off-topic - reszta
 
-### #zgłoszenia (wytyczne postów w ustawieniach kanału forum)
-
-```
-Wersja (lewy dolny róg okna):
-Tor, tryb w grze, format UDP (2025/2026):
-Co zrobiłem:
-Co się stało:
-Czego się spodziewałem:
-Zrzut ekranu albo film:
-Plik z "Pomoc i wsparcie -> Raport błędu" (ZIP), jeśli program nie działa:
-```
-
-### #nagrania (wytyczne postów)
-
-```
-Jeden wątek na jedną sesję. W wątku: wypełniony formularz z docs/formularze, zrzut Podsumowania sesji,
-link do nagrania (.bin.xz po spakuj.bat) albo informacja, że poszło na GitHub.
-Nagrania zawierają tylko telemetrię gry, bez Twoich danych.
+Obsługiwane: F1 25 i 2026 Season Pack na PC. F1 23/24 nie. Wersja programu jest w lewym dolnym
+rogu okna, podawaj ją w każdym zgłoszeniu. Dzięki, że jesteś!
 ```
 
 ### #ogłoszenia (pierwszy wpis)
 
 ```
 Paczka testowa 0.6.0-beta: [link do ZIP]
-W środku: program, instrukcja startu (CZYTAJ-TO.txt), PDF-y w docs (co nagrać, formularze, antywirus).
-Zmiany względem postu na Facebooku: model zakrętów z wielu okrążeń zamiast jednego referencyjnego,
-komunikat o sektorze z największą stratą i konkretne polecenie na następne okrążenie.
+
+W środku: program, CZYTAJ-TO.txt z czterema krokami startu, PDF-y w docs:
+co nagrać, formularze, antywirus, dokumentacja.
+
+Co nowego względem posta na Facebooku:
+- model zakrętów: cel na każdy zakręt liczony z wielu czystych okrążeń (MAD + średnia ważona + EMA),
+  najlepsze okrążenie zostaje jako drugi punkt odniesienia
+- po okrążeniu: sektor z największą stratą i konkretne polecenie, np. "zacznij hamować wcześniej, o 20 m"
+- sektory S1-S3 w panelu na żywo i w podsumowaniu, moduł DRS/bateria/sektory na HUD
+
+Na czym mi najbardziej zależy w tej rundzie: trening na Monzy (8-10 okrążeń) z formularzem
+i wyścig z AI na 5 okrążeń. Szczegóły w docs\BoxBox_Academy_co_nagrac.pdf.
 ```
 
-## 6. Po konfiguracji
+### #przedstaw-się (przypięte)
 
-1. Wyślij zaproszenie czterem osobom z komentarzy (Kuba Mikołajczyk, Michał Grela, Sergiusz Stańko, Tomasz Krystianowski) i nadaj im rolę Tester.
-2. Wrzuć paczkę ZIP do `#ogłoszenia`. Plik ma 112 MB, więc trafi tam jako link (GitHub Releases albo dysk w chmurze), nie jako załącznik.
-3. Sam przejdź ścieżkę testera na czystym koncie Discord: czy bez roli widzisz tylko `#start`, czy po roli widzisz TESTY.
+```
+Jedno zdanie wystarczy, np.:
+"Cześć, jeżdżę w F1 25 na padzie, TC pełna, ABS wł., głównie Time Trial na Monzy i Bahrajnie.
+Format UDP 2026." Po wpisie dostajesz rolę Tester.
+```
 
-Czego nie robić: nie wklejaj na serwer klucza API, ścieżek z własnym nazwiskiem ani zrzutów z karty kierowcy z prawdziwym zdjęciem, jeśli nie chcesz, żeby zostały na stałe u testerów.
+### #zgłoszenia (wytyczne postów forum)
+
+```
+Tytuł wątku: krótko, co się dzieje, np. "Brak komunikatów po 3. okrążeniu na Suzuce".
+W treści:
+Wersja (lewy dolny róg okna):
+Tor, tryb w grze, format UDP (2025/2026):
+Asysty (skrzynia / TC / ABS):
+Co zrobiłem:
+Co się stało:
+Czego się spodziewałem:
+Zrzut ekranu albo film:
+ZIP z "Pomoc i wsparcie -> Raport błędu" (jeśli program nie działa albo mechanik milczy):
+Tag: błąd / pytanie / działa. Gdy naprawione, zmieniam tag na "naprawione" i zamykam wątek.
+```
+
+### #nagrania (wytyczne postów forum)
+
+```
+Jeden wątek na jedną sesję. Tytuł: tor i tryb, np. "Monza trening, 9 okrążeń".
+W wątku:
+1. Wypełniony formularz z docs\formularze (txt albo wklejony tekst).
+2. Zrzut Podsumowania sesji (zakładka Start po zakończeniu).
+3. Link do nagrania .bin.xz (po spakuj.bat) albo informacja, że poszło na GitHub.
+Nagrania zawierają tylko telemetrię gry, nazwy graczy są usuwane przy zapisie.
+Najważniejsze są Twoje odczucia: czy podpowiedzi przyszły na czas i czy pasowały do sytuacji.
+```
+
+### #pomysły (wytyczne postów forum)
+
+```
+Jeden wątek na jeden pomysł. Napisz: co ma robić, kiedy (w trakcie jazdy / po okrążeniu / po sesji)
+i jaki problem rozwiązuje. Przed założeniem wątku sprawdź, czy ktoś już tego nie zgłosił: dopisz się
+reakcją zamiast dublować. Tag: trener / okno / HUD / głos / inne.
+```
+
+### #faq (pierwszy wpis, uzupełniany)
+
+```
+Czy program wysyła coś do sieci? Nie. Słucha tylko telemetrii gry na tym komputerze. Dane są w folderze data obok programu.
+Skąd są podpowiedzi? Z Twojej telemetrii: porównanie z celem na zakręt policzonym z Twoich czystych okrążeń
+i z Twoim najlepszym okrążeniem. Nic nie jest generowane przez model językowy; głos to nagrane wcześniej zdania.
+Czy działa z F1 23 / F1 24? Nie, tylko F1 25 i 2026 Season Pack (formaty UDP 2025 i 2026).
+Mechanik milczy. Sprawdź: telemetria UDP włączona w grze, port 20777, pastylka w oknie zielona,
+klipy w assets\voice. Pierwsze okrążenie jest zawsze ciche (odniesienie).
+Windows blokuje plik. docs\BoxBox_Academy_antywirus.pdf w paczce.
+Jak odinstalować? Usuń folder. Program nie zapisuje niczego poza swoim folderem.
+```
+
+### Wytyczne dla roli Moderator (do #autor-notatki, gdy dojdzie moderator)
+
+```
+Przenoś błędy wrzucone w #off-topic do #zgłoszenia (odpowiedz linkiem, poproś o wątek).
+Nie usuwaj wiadomości testerów poza spamem i treściami z danymi osobowymi (klucze, adresy, nazwiska w zrzutach).
+Timeout 1 h za spam, dłużej tylko po uzgodnieniu z Autorem.
+Nie odpowiadaj za Autora na pytania o plany i terminy, kieruj do #ogłoszenia.
+```
+
+## 7. Konfiguracja krok po kroku (komputer)
+
+1. Ustawienia serwera → Przegląd: logo z `assets/`, nazwa „BoxBox Academy”.
+2. Ustawienia serwera → Bezpieczeństwo: weryfikacja „Średni”, filtr treści „Wszyscy”.
+3. Ustawienia serwera → Role: utwórz Autor (Administrator), Tester, Tester PRO, Moderator jak w części 3; @everyone bez „Wysyłaj wiadomości”.
+4. Utwórz kategorie INFO, TESTY, SPOŁECZNOŚĆ, ZAPLECZE. W TESTY, SPOŁECZNOŚĆ i ZAPLECZE: Uprawnienia kategorii → @everyone „Wyświetl kanał” X, Tester „Wyświetl kanał” ✓; dla kanałów w kategorii „Synchronizuj uprawnienia”.
+5. Utwórz kanały z tabeli w części 2; `#zgłoszenia`, `#nagrania`, `#pomysły` jako Forum z tagami.
+6. `#ogłoszenia`, `#start`, `#faq`: Uprawnienia → @everyone „Wysyłaj wiadomości” X, „Twórz wątki” X, „Wyświetl kanał” ✓. `#przedstaw-się`: @everyone „Wysyłaj wiadomości” ✓, „Załączaj pliki” X.
+7. AutoMod: włącz „Blokuj spam” i „Blokuj podejrzane linki”.
+8. Webhook GitHub do `#dziennik-zmian` (część 4), zdarzenia Pushes i Releases.
+9. Wklej i przypnij treści z części 6.
+10. Przejdź ścieżkę na drugim koncie: bez roli widoczne tylko INFO i `#start`; po roli Tester reszta.
+11. Zaproszenie: Ustawienia serwera → Zaproszenia → nowy link, limit 25 użyć, bez wygaśnięcia. Wyślij czterem osobom z komentarzy pod postem.
+
+## 8. Faza publiczna (później)
+
+Gdy beta wyjdzie na GitHub Releases: włącz tryb Społeczności (kanał zasad i ogłoszeń systemowych są wymagane), dodaj `#zasady` (krótkie: szacunek, bez spamu, bez danych osobowych, bez piractwa), `#pobieranie` z aktualnym linkiem i sumą kontrolną, `#pomoc` otwarte dla wszystkich (bez roli), bota do roli przez reakcję (Carl-bot), ewentualnie kanał po angielsku, gdy pojawią się zagraniczni użytkownicy. Struktura testowa zostaje bez zmian, tylko kategoria TESTY wymaga wtedy roli Tester nadawanej za aktywność, nie za samo wejście.

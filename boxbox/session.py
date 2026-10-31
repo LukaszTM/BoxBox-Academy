@@ -17,6 +17,8 @@ from boxbox.coach.guide_live import is_urgent_cue
 from boxbox.coach.laps import Lap, LapRecorder
 from boxbox.coach.corner_model import describe as describe_models
 from boxbox.coach.corner_model import merge_reference, models_from_db
+from boxbox.coach.corners import analyze_lap
+from boxbox.coach.ghost import GhostRecorder
 from boxbox.coach.lessons import Lesson
 from boxbox.coach.lessons import evaluate as evaluate_lesson
 from boxbox.coach.lessons import lesson as lesson_by_id
@@ -130,6 +132,8 @@ class CoachSession:
         self.on_note = on_note or (lambda text: None)
         self.on_packet = on_packet
         self.recorder = LapRecorder()
+        self.ghost = GhostRecorder("rival")  # duch z rankingu Time Trial: okrążenie najlepszych na tym torze
+        self.master_time_ms: int | None = None
         self.state = self.recorder.state
         self.shared = SharedCoachState(self.state, recording_name=cfg.record if not cfg.replay else None)
         self.messages: list[tuple[float, str]] = []  # (sekundy od startu, tekst), pod shared.lock
@@ -246,6 +250,7 @@ class CoachSession:
         reference = best_time = progress = None
         guided: set[int] = set()
         targets: dict = {}
+        master_lap = None
         if cfg.db is not None:
             db = Database(cfg.db)
             ref = db.reference(track.track_id)
@@ -253,6 +258,7 @@ class CoachSession:
             issues = db.recent_corner_issues(track.track_id)
             if ref is not None:  # model zakrętów z czystych okrążeń na tym samym kroku asyst (MAD + ważona średnia + EMA)
                 targets = models_from_db(db, track.track_id, ref.lap.traction_control, ref.lap.abs_on)
+            master_lap = db.master(track.track_id)
             db.close()
             if ref is not None:
                 reference, best_time = merge_reference(ref.analysis, targets), ref.lap.lap_time_ms
@@ -273,6 +279,10 @@ class CoachSession:
             progress=progress, lesson=self.lesson, lesson_corner=cfg.lesson_corner, explain_mode=cfg.explain_mode,
             guidance=cfg.corner_guidance, guided_corners=guided, corner_targets=targets,
         )
+        if master_lap is not None:
+            self.coach.set_master(analyze_lap(master_lap, track), announce=False)
+            self.master_time_ms = master_lap.lap_time_ms
+            self.note(f"Okrążenie najlepszych na tym torze: {master_lap.lap_time_ms / 1000:.3f} s. Trener porównuje też do nich.")
 
     # --- przetwarzanie --------------------------------------------------
     def handle(self, data: bytes) -> None:
@@ -286,6 +296,12 @@ class CoachSession:
             finished = self.recorder.feed(data)
             self.shared.packets += 1
             self.shape_sampler.feed(self.state)
+            ghost_lap = self.ghost.feed(self.state)
+            if ghost_lap is not None and self.coach is not None and ghost_lap.lap_time_ms and ghost_lap.is_complete(self.coach.track.length_m) \
+                    and (self.master_time_ms is None or ghost_lap.lap_time_ms < self.master_time_ms):
+                self.master_time_ms = ghost_lap.lap_time_ms  # duch z rankingu przejechał pełne okrążenie: od teraz mistrz
+                self.coach.set_master(analyze_lap(ghost_lap, self.coach.track))
+                log.info("duch z rankingu: okrążenie %d ms, trener porównuje do najlepszych", ghost_lap.lap_time_ms)
             if self.engineer is not None:
                 for radio in self.engineer.update(self.state, time.monotonic() - self._t0):
                     self.speak(list(radio.ids), radio.text)
@@ -389,6 +405,16 @@ class CoachSession:
                 log.error("podsumowanie: %s", traceback.format_exc())
             if summary is not None:
                 log.info("podsumowanie: dobrze: %s | do pracy: %s", summary.good, summary.to_work)
+        if self.coach is not None and self.cfg.db is not None:  # zapis okrążenia mistrza (bez nazwiska ducha)
+            best_ghost = self.ghost.best_lap(self.coach.track.length_m)
+            if best_ghost is not None:
+                try:
+                    db = Database(self.cfg.db)
+                    if db.save_master(self.coach.track.track_id, best_ghost):
+                        log.info("zapisane okrążenie najlepszych: %d ms (tor %s)", best_ghost.lap_time_ms, self.coach.track.track_id)
+                    db.close()
+                except Exception:
+                    log.error("zapis okrążenia mistrza: %s", traceback.format_exc())
         lesson_result = None
         if self.lesson is not None and self.coach is not None:
             lesson_result = evaluate_lesson(self.lesson, self.recorder.laps, self.messages_by_lap, self.cfg.lesson_corner, self.coach.track)

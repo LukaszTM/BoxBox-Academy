@@ -123,10 +123,20 @@ misc_loss_0_8,około osiem dziesiątych.
 misc_loss_1,około sekundę.
 misc_loss_1_5,około półtorej sekundy.
 misc_loss_2,około dwie sekundy.
-misc_loss_3,ponad trzy sekundy.
+misc_loss_3,około trzy sekundy.
+misc_loss_5,około pięć sekund.
+misc_loss_8,około osiem sekund.
+misc_loss_10,ponad dziesięć sekund.
 misc_next_brake_earlier,"Na następnym okrążeniu zacznij hamować wcześniej, o jakieś"
 misc_next_brake_later,"Na następnym okrążeniu zacznij hamować później, o jakieś"
 misc_next_throttle_earlier,"Na następnym okrążeniu pełny gaz wcześniej, o jakieś"
+misc_master_intro,Mam okrążenie najlepszych na tym torze. Porównuję też do nich.
+misc_master_gap,Do najlepszych na świecie tracisz
+misc_master_in,Najwięcej w
+misc_master_brake_later,"Najlepsi hamują tu później, o jakieś"
+misc_master_throttle_earlier,"Najlepsi dodają pełny gaz wcześniej, o jakieś"
+misc_master_apex,Najlepsi są tu w apeksie wyraźnie szybsi: wchodzą z większą prędkością i trzymają ją.
+misc_master_target_half,Cel na dziś: połowa tej różnicy.
 guide_intro,Prowadzę.
 guide_lift,Puść gaz.
 guide_brake_hard,Mocny hamulec.

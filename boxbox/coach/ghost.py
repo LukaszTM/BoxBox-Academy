@@ -66,46 +66,80 @@ def _to_lap(number: int, raw: list[_Raw]) -> Lap:
     return Lap(number=number, samples=samples, lap_time_ms=raw[-1].last_lap_time_ms or None)
 
 
+class GhostRecorder:
+    """Duch (rywal albo rekord osobisty) zbierany na żywo z TelemetryState, pakiet po pakiecie.
+
+    `feed(state)` wołaj po każdym pakiecie: próbka trafia tylko wtedy, gdy dystans ducha wzrósł,
+    więc powtórzone wywołania i pakiety innych typów nic nie psują. `finished` to okrążenia ducha
+    zamknięte przy powrocie na linię mety.
+    """
+
+    def __init__(self, kind: GhostKind = "rival") -> None:
+        self.kind = kind
+        self.car_index = NO_CAR
+        self.finished: list[Lap] = []
+        self._current: list[_Raw] = []
+        self._raw_laps: list[list[_Raw]] = []
+
+    def feed(self, state: TelemetryState) -> Lap | None:
+        """Zwraca okrążenie ducha, które właśnie się zamknęło (albo None)."""
+        if state.lap is None or state.telemetry is None:
+            return None
+        idx = state.lap.time_trial_rival_car_idx if self.kind == "rival" else state.lap.time_trial_pb_car_idx
+        if idx == NO_CAR or idx >= state.lap.header.num_cars:
+            return None
+        self.car_index = idx
+        lap = state.lap.car(idx)
+        car = state.telemetry.car(idx)
+        if lap.lap_distance < 0:
+            return None
+        done: Lap | None = None
+        if self._current and lap.lap_distance < self._current[-1].distance_m - 1000:
+            self._raw_laps.append(self._current)  # duch wrócił na linię mety: nowe okrążenie
+            done = _to_lap(len(self._raw_laps), self._current)
+            self.finished.append(done)
+            self._current = []
+        if self._current and lap.lap_distance <= self._current[-1].distance_m:
+            return done  # brak postępu: duch czeka na gracza albo powtórzony pakiet
+        self._current.append(_Raw(
+            lap.lap_distance, lap.current_lap_time_ms, car.throttle, car.brake, car.gear, car.steer, lap.last_lap_time_ms,
+        ))
+        return done
+
+    def all_laps(self) -> list[Lap]:
+        laps = list(self.finished)
+        if self._current:
+            laps.append(_to_lap(len(self._raw_laps) + 1, self._current))
+        return laps
+
+    def best_lap(self, track_length_m: float) -> Lap | None:
+        full = [lap for lap in self.all_laps() if lap.is_complete(track_length_m) and lap.lap_time_ms]
+        return min(full, key=lambda lap: lap.lap_time_ms or 0) if full else None
+
+    def name(self, state: TelemetryState) -> str | None:
+        if self.car_index == NO_CAR or state.participants is None or self.car_index >= len(state.participants.cars):
+            return None
+        return state.participants.cars[self.car_index].name or None
+
+
 def extract_ghost_laps(path: Path, kind: GhostKind = "rival") -> GhostLaps | None:
     state = TelemetryState()
-    laps: list[list[_Raw]] = []
-    current: list[_Raw] = []
-    car_index = NO_CAR
+    rec = GhostRecorder(kind)
     lap_data_seen = False
 
     def handle(data: bytes) -> None:
-        nonlocal current, car_index, lap_data_seen
+        nonlocal lap_data_seen
         kind_id = state.feed(data)
         if kind_id is PacketId.LAP_DATA:
             lap_data_seen = True
             return
-        if kind_id is not PacketId.CAR_TELEMETRY or not lap_data_seen or state.lap is None:
+        if kind_id is not PacketId.CAR_TELEMETRY or not lap_data_seen:
             return
         lap_data_seen = False
-        idx = state.lap.time_trial_rival_car_idx if kind == "rival" else state.lap.time_trial_pb_car_idx
-        if idx == NO_CAR or idx >= state.lap.header.num_cars:
-            return
-        car_index = idx
-        lap = state.lap.car(idx)
-        car = state.telemetry.car(idx)  # type: ignore[union-attr]
-        if lap.lap_distance < 0:
-            return
-        if current and lap.lap_distance < current[-1].distance_m - 1000:
-            laps.append(current)  # duch wrócił na linię mety: nowe okrążenie
-            current = []
-        if current and lap.lap_distance <= current[-1].distance_m:
-            return  # brak postępu: duch czeka na gracza albo powtórzony pakiet
-        current.append(_Raw(
-            lap.lap_distance, lap.current_lap_time_ms, car.throttle, car.brake, car.gear, car.steer,
-            lap.last_lap_time_ms,
-        ))
+        rec.feed(state)
 
     replay(path, handle, speed=0)
-    if current:
-        laps.append(current)
-    if car_index == NO_CAR or not laps:
+    laps = rec.all_laps()
+    if rec.car_index == NO_CAR or not laps:
         return None
-    name = None
-    if state.participants is not None and car_index < len(state.participants.cars):
-        name = state.participants.cars[car_index].name or None
-    return GhostLaps(kind, car_index, name, [_to_lap(i + 1, raw) for i, raw in enumerate(laps)])
+    return GhostLaps(kind, rec.car_index, rec.name(state), laps)

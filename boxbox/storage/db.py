@@ -73,6 +73,13 @@ CREATE TABLE IF NOT EXISTS lap_channels (
     data BLOB NOT NULL,
     PRIMARY KEY (lap_id, kind)
 );
+CREATE TABLE IF NOT EXISTS master_laps (
+    track_id INTEGER PRIMARY KEY,  -- najlepsze okrążenie ducha z rankingu Time Trial na tym torze (bez nazwiska)
+    lap_time_ms INTEGER NOT NULL,
+    samples BLOB NOT NULL,
+    source TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS lap_messages (
     lap_id INTEGER NOT NULL REFERENCES laps(id) ON DELETE CASCADE,
     corner INTEGER NOT NULL,
@@ -305,6 +312,26 @@ class Database:
     def samples(self, lap_id: int) -> tuple[Sample, ...]:
         row = self.conn.execute("SELECT data FROM lap_samples WHERE lap_id = ?", (lap_id,)).fetchone()
         return unpack_samples(row["data"]) if row else ()
+
+    def save_master(self, track_id: int, lap: Lap, source: str = "duch z rankingu") -> bool:
+        """Zapisuje okrążenie mistrza, jeśli szybsze od zapisanego; zwraca True przy zapisie."""
+        if not lap.lap_time_ms or not lap.samples:
+            return False
+        row = self.conn.execute("SELECT lap_time_ms FROM master_laps WHERE track_id = ?", (track_id,)).fetchone()
+        if row is not None and row["lap_time_ms"] <= lap.lap_time_ms:
+            return False
+        self.conn.execute(
+            "INSERT OR REPLACE INTO master_laps (track_id, lap_time_ms, samples, source, created_at) VALUES (?, ?, ?, ?, ?)",
+            (track_id, lap.lap_time_ms, pack_samples(lap.samples), source, _now()),
+        )
+        self.conn.commit()
+        return True
+
+    def master(self, track_id: int) -> Lap | None:
+        row = self.conn.execute("SELECT lap_time_ms, samples FROM master_laps WHERE track_id = ?", (track_id,)).fetchone()
+        if row is None:
+            return None
+        return Lap(number=0, samples=list(unpack_samples(row["samples"])), lap_time_ms=row["lap_time_ms"])
 
     def drs_samples(self, lap_id: int) -> tuple[DrsSample, ...]:
         row = self.conn.execute("SELECT data FROM lap_channels WHERE lap_id = ? AND kind = 'drs'", (lap_id,)).fetchone()

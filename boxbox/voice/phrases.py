@@ -14,6 +14,7 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from boxbox.coach.rules import Message
+from boxbox.coach.master import MASTER_TEXTS
 from boxbox.coach.sectors import LOSS_TEXTS, NEXT_TEXTS, SECTOR_TEXTS
 from boxbox.engineer.phrases import engineer_catalog
 
@@ -109,6 +110,7 @@ MISC_TEXTS: dict[str, str] = {
 MISC_TEXTS.update({f"sector_{n}": t for n, t in SECTOR_TEXTS.items()})
 MISC_TEXTS.update({f"loss_{k}": t for k, t in LOSS_TEXTS.items()})
 MISC_TEXTS.update({f"next_{k}": t for k, t in NEXT_TEXTS.items()})
+MISC_TEXTS.update(MASTER_TEXTS)  # trening względem najlepszych: duch z rankingu Time Trial
 
 TUTORIAL_TEXTS: dict[str, str] = {  # lektor samouczka w oknie: jeden klip na krok (kolejność jak TUTORIAL w app.js)
     "0": "Witaj w akademii. Tu zaczynasz każdy trening. Zostaw to okno otwarte i uruchom grę.",

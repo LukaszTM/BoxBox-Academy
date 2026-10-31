@@ -200,6 +200,18 @@ z poprzednich sesji w bazie; zakręt bez uwagi wypada z listy sam. Lekcja z jedn
 prowadzi tylko ten zakręt. Wyłączenie: `--guidance off`. Klipy `guide_*` w katalogu fraz
 (do dogrania tym samym skryptem co reszta; bez klipu komenda jest tylko w tekście na nakładce).
 
+### Trening względem najlepszych na świecie
+
+`coach/master.py` + `GhostRecorder` w `coach/ghost.py`: w Time Trial gra wysyła przez UDP telemetrię ducha
+wybranego z rankingu (np. nr 1 na świecie). Program zbiera jego okrążenia na żywo; pierwsze pełne staje się
+„okrążeniem najlepszych” na tym torze (zapis w `master_laps`, tylko czas i próbki, bez nazwiska). Od tej
+chwili, także w zwykłym treningu i wyścigu na tym torze, trener po każdym ważnym okrążeniu mówi, ile gracz
+traci do najlepszych (kubełki do „ponad dziesięć sekund”), w którym zakręcie najwięcej i jedną wskazówkę:
+najlepsi hamują tu później o X m / dodają pełny gaz wcześniej o X m / są szybsi w apeksie; cel na dziś
+to połowa różnicy. W oknie: kafelek „Do najlepszych” na żywo, zdanie w podsumowaniu, w Analizie referencja
+„Najlepsi na świecie”. Reguły trenera dalej porównują do własnej referencji i modelu zakrętów: mistrz jest
+kierunkiem, nie progiem błędu.
+
 ### Sektory i polecenie na następne okrążenie
 
 `coach/sectors.py`: po ważnym okrążeniu trener mówi, w którym sektorze gracz traci najwięcej do swoich

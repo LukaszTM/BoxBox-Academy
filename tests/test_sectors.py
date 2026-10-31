@@ -21,11 +21,12 @@ def test_best_sectors_and_losses() -> None:
 def test_sector_utterance_and_buckets() -> None:
     ids, text = sector_utterance(SectorLoss(2, 600))
     assert ids == ["misc_sector_2", "misc_loss_0_5"] and text == "Najwięcej tracisz w drugim sektorze, około pół sekundy."
-    assert SectorLoss(1, 200).bucket == "0_2" and SectorLoss(3, 1_100).bucket == "1" and SectorLoss(3, 5_000).bucket == "3"
+    assert SectorLoss(1, 200).bucket == "0_2" and SectorLoss(3, 1_100).bucket == "1" and SectorLoss(3, 3_000).bucket == "3"
+    assert SectorLoss(3, 5_000).bucket == "5" and SectorLoss(3, 8_500).bucket == "8" and SectorLoss(3, 20_000).bucket == "10"
     entries = catalog()
     for n in (1, 2, 3):
         assert f"misc_sector_{n}" in entries
-    for key in ("0_2", "0_3", "0_5", "0_8", "1", "1_5", "2", "3"):
+    for key in ("0_2", "0_3", "0_5", "0_8", "1", "1_5", "2", "3", "5", "8", "10"):
         assert f"misc_loss_{key}" in entries
     assert format_sector_delta(123) == "+0,12" and format_sector_delta(-1_050) == "−1,05"
 

@@ -12,12 +12,18 @@ from boxbox.coach.rules import Message
 
 MIN_SECTOR_LOSS_MS = 200  # poniżej nie ma o czym mówić
 LOSS_BUCKETS: tuple[tuple[int, str], ...] = (  # górna granica ms -> klucz klipu misc_loss_<key>
-    (250, "0_2"), (400, "0_3"), (650, "0_5"), (900, "0_8"), (1250, "1"), (1750, "1_5"), (2500, "2"), (10**9, "3"),
+    (250, "0_2"), (400, "0_3"), (650, "0_5"), (900, "0_8"), (1250, "1"), (1750, "1_5"), (2500, "2"), (4000, "3"),
+    (6500, "5"), (9000, "8"), (10**9, "10"),
 )
 LOSS_TEXTS: dict[str, str] = {
     "0_2": "około dwie dziesiąte.", "0_3": "około trzy dziesiąte.", "0_5": "około pół sekundy.", "0_8": "około osiem dziesiątych.",
-    "1": "około sekundę.", "1_5": "około półtorej sekundy.", "2": "około dwie sekundy.", "3": "ponad trzy sekundy.",
+    "1": "około sekundę.", "1_5": "około półtorej sekundy.", "2": "około dwie sekundy.", "3": "około trzy sekundy.",
+    "5": "około pięć sekund.", "8": "około osiem sekund.", "10": "ponad dziesięć sekund.",
 }
+
+
+def loss_bucket(loss_ms: int) -> str:
+    return next(key for limit, key in LOSS_BUCKETS if loss_ms < limit)
 SECTOR_TEXTS: dict[int, str] = {
     1: "Najwięcej tracisz w pierwszym sektorze,", 2: "Najwięcej tracisz w drugim sektorze,", 3: "Najwięcej tracisz w trzecim sektorze,",
 }
@@ -35,7 +41,7 @@ class SectorLoss:
 
     @property
     def bucket(self) -> str:
-        return next(key for limit, key in LOSS_BUCKETS if self.loss_ms < limit)
+        return loss_bucket(self.loss_ms)
 
 
 def best_sectors(laps_sectors: Sequence[tuple[int | None, int | None, int | None]]) -> tuple[int | None, int | None, int | None]:

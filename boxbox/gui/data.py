@@ -342,6 +342,9 @@ class DataBuilder:
         lap = next((l for l in laps if l.id == sel["lap"]), None) or next((l for l in laps if l.lap_time_ms == session["best"]), laps[-1])
         comps = [{"id": "best", "label": "Najlepsze okrążenie toru"}, {"id": "prev", "label": "Poprzednie okrążenie"}]
         comps += [{"id": f"lap:{l.id}", "label": f"Okrążenie {l.number} · {format_time(l.lap_time_ms)}"} for l in laps if l.id != lap.id]  # dowolne z sesji
+        master_lap = db.master(session["track_id"]) if session["track_id"] is not None else None
+        if master_lap is not None:
+            comps.append({"id": "master", "label": f"Najlepsi na świecie · {format_time(master_lap.lap_time_ms)}"})
         by_comp = {c["id"] for c in comps}
         comp = sel["comp"] if sel["comp"] in by_comp else "best"
         ref_lap = None
@@ -360,7 +363,7 @@ class DataBuilder:
             idx = [l.id for l in laps].index(lap.id)
             ref_lap = laps[idx - 1] if idx > 0 else None
         own = db.samples(lap.id)
-        ref = db.samples(ref_lap.id) if ref_lap else ()
+        ref = db.samples(ref_lap.id) if ref_lap else (tuple(master_lap.samples) if comp == "master" and master_lap is not None else ())
         speeds_own, speeds_ref = _resample(own, "speed_kmh"), _resample(ref, "speed_kmh")
         hi = max(speeds_own + speeds_ref) if speeds_own else 1
         thr_own, thr_ref = _resample(own, "throttle"), _resample(ref, "throttle")
@@ -383,7 +386,7 @@ class DataBuilder:
         if track is not None and own:
             brakes = [m.brake_point_m for m in analyze_lap(Lap(lap.number, list(own)), track).corners if m.brake_point_m is not None]
             if ref:
-                ref_brakes = [m.brake_point_m for m in analyze_lap(Lap(ref_lap.number, list(ref)), track).corners if m.brake_point_m is not None]
+                ref_brakes = [m.brake_point_m for m in analyze_lap(Lap(ref_lap.number if ref_lap else 0, list(ref)), track).corners if m.brake_point_m is not None]
         names = {c.number: (c.name or f"Z{c.number}") for c in track.corners} if track else {}
         notes = []
         for corner, rule, weight in sorted(db.lap_messages(lap.id), key=lambda x: -x[2]):
@@ -393,7 +396,7 @@ class DataBuilder:
             "sessions": [{"id": s["id"], "label": f"{s['created_at'][5:10].replace('-', '.')} · {_track_name(s['track_id'])} · {s['laps']} okr."} for s in sessions],
             "laps": [{"id": l.id, "label": f"Okrążenie {l.number} · {format_time(l.lap_time_ms)}"} for l in laps],
             "comps": comps, "session": session["id"], "lap": lap.id, "comp": comp,
-            "compLabel": "najlepsze okrążenie toru" if comp == "best" else "poprzednie okrążenie" if comp == "prev" else f"okrążenie {ref_lap.number}" if ref_lap else "brak",
+            "compLabel": "najlepsze okrążenie toru" if comp == "best" else "poprzednie okrążenie" if comp == "prev" else "najlepsi na świecie (duch z rankingu)" if comp == "master" else f"okrążenie {ref_lap.number}" if ref_lap else "brak",
             "track": _track_name(session["track_id"]), "lengthText": f"{length:,.0f} m".replace(",", " "),
             "speed": {"own": _norm(speeds_own, 0, hi), "ref": _norm(speeds_ref, 0, hi) if speeds_ref else []},
             "pedal": {"own": _norm(thr_own, 0, 1), "ref": _norm(thr_ref, 0, 1) if thr_ref else [], "brake": _norm(brk_own, 0, 1)},
